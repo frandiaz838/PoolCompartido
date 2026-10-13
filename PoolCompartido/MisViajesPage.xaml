@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:PoolCompartido"
+             x:Class="PoolCompartido.MisViajesPage"
+             Title="Mis viajes">
+
+    <Grid Padding="16" RowSpacing="12" RowDefinitions="Auto,*">
+
+        <Label Grid.Row="0"
+               Text="Viajes en los que participás, ordenados por fecha."
+               FontSize="14" />
+
+        <!-- HU8: viajes del usuario como conductor y como pasajero -->
+        <CollectionView x:Name="listaMisViajes" Grid.Row="1" SelectionMode="None">
+            <CollectionView.EmptyView>
+                <Label Text="Todavía no publicaste ni te anotaste a ningún viaje."
+                       HorizontalOptions="Center"
+                       Margin="0,30" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+            </CollectionView.ItemsLayout>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="local:Viaje">
+                    <Border Padding="12"
+                            StrokeShape="RoundRectangle 10"
+                            StrokeThickness="1"
+                            Stroke="{AppThemeBinding Light=#DDDDDD, Dark=#555555}">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="{Binding Ruta}" FontSize="17" FontAttributes="Bold" />
+                                <Label Text="{Binding Detalle}" FontSize="13" />
+                                <Label Text="{Binding AsientosDisponibles, StringFormat='Asientos libres: {0}'}" FontSize="13" />
+                            </VerticalStackLayout>
+                            <!-- Rol del usuario en este viaje -->
+                            <Border Grid.Column="1"
+                                    VerticalOptions="Center"
+                                    Padding="10,4"
+                                    StrokeShape="RoundRectangle 12"
+                                    Stroke="#512BD4"
+                                    BackgroundColor="{AppThemeBinding Light=#EFEAFB, Dark=#2A2340}">
+                                <Label Text="{Binding RolUsuarioActual}" FontSize="13" FontAttributes="Bold" />
+                            </Border>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+
+</ContentPage>

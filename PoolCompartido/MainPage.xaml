@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:PoolCompartido"
+             x:Class="PoolCompartido.MainPage"
+             Title="Viajes disponibles">
+
+    <Grid Padding="16" RowSpacing="12" RowDefinitions="Auto,*,Auto,Auto">
+
+        <!-- HU2: filtros por destino y horario (se aplican solos al escribir o elegir) -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+            <Entry x:Name="entryDestino"
+                   Grid.Column="0"
+                   Placeholder="Filtrar por destino"
+                   TextChanged="OnDestinoCambiado" />
+            <Picker x:Name="pickerHorario"
+                    Grid.Column="1"
+                    Title="Horario"
+                    WidthRequest="110"
+                    SelectedIndexChanged="OnHorarioCambiado" />
+            <Button Grid.Column="2"
+                    Text="Limpiar"
+                    Clicked="OnLimpiarClicked" />
+        </Grid>
+
+        <!-- HU2: lista de viajes -->
+        <CollectionView x:Name="listaViajes" Grid.Row="1" SelectionMode="None">
+            <CollectionView.EmptyView>
+                <Label Text="No hay viajes para ese filtro."
+                       HorizontalOptions="Center"
+                       Margin="0,30" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+            </CollectionView.ItemsLayout>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="local:Viaje">
+                    <Border Padding="12"
+                            StrokeShape="RoundRectangle 10"
+                            StrokeThickness="1"
+                            Stroke="{AppThemeBinding Light=#DDDDDD, Dark=#555555}">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="{Binding Ruta}" FontSize="17" FontAttributes="Bold" />
+                                <Label Text="{Binding Detalle}" FontSize="13" />
+                                <Label Text="{Binding AsientosDisponibles, StringFormat='Asientos libres: {0}'}" FontSize="13" />
+                                <Label Text="✓ Estás anotado"
+                                       FontSize="13"
+                                       FontAttributes="Bold"
+                                       TextColor="#4CAF50"
+                                       IsVisible="{Binding EstoyAnotado}" />
+                                <Label Text="Publicado por vos"
+                                       FontSize="13"
+                                       FontAttributes="Bold"
+                                       TextColor="#9C8CF0"
+                                       IsVisible="{Binding EsDelUsuarioActual}" />
+                            </VerticalStackLayout>
+                            <!-- HU3: anotarse -->
+                            <Button Grid.Column="1"
+                                    Text="Anotarme"
+                                    VerticalOptions="Center"
+                                    Clicked="OnAnotarmeClicked" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <!-- Aviso que muestran los eventos (por ejemplo, la notificación al conductor) -->
+        <Border x:Name="panelAviso"
+                Grid.Row="2"
+                IsVisible="False"
+                Padding="10"
+                StrokeShape="RoundRectangle 8"
+                Stroke="#512BD4"
+                BackgroundColor="{AppThemeBinding Light=#EFEAFB, Dark=#2A2340}">
+            <Label x:Name="lblAviso" FontSize="13" />
+        </Border>
+
+        <!-- HU1: publicar -->
+        <Button Grid.Row="3"
+                Text="Publicar un viaje"
+                FontAttributes="Bold"
+                Clicked="OnPublicarClicked" />
+    </Grid>
+
+</ContentPage>

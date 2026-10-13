@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="PoolCompartido.PublicarViajePage"
+             Title="Publicar un viaje">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="6">
+
+            <Label Text="Origen" />
+            <Entry x:Name="entryOrigen" Placeholder="Ej: Palermo" />
+
+            <Label Text="Destino" Margin="0,8,0,0" />
+            <Entry x:Name="entryDestino" Placeholder="Ej: Facultad" />
+
+            <Label Text="Fecha" Margin="0,8,0,0" />
+            <DatePicker x:Name="dpFecha" Format="dd/MM/yyyy" />
+
+            <Label Text="Hora de salida" Margin="0,8,0,0" />
+            <Picker x:Name="pickerHora" Title="Elegí un horario" />
+
+            <Label Text="Asientos disponibles" Margin="0,8,0,0" />
+            <Picker x:Name="pickerAsientos" Title="Elegí la cantidad" />
+
+            <Label Text="Comentario (opcional)" Margin="0,8,0,0" />
+            <Editor x:Name="editorComentario"
+                    HeightRequest="80"
+                    Placeholder="Ej: salgo desde la esquina de la plaza" />
+
+            <Label x:Name="lblError"
+                   TextColor="Red"
+                   IsVisible="False"
+                   Margin="0,8,0,0" />
+
+            <Button Text="Publicar viaje"
+                    FontAttributes="Bold"
+                    Margin="0,12,0,0"
+                    Clicked="OnConfirmarClicked" />
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>
