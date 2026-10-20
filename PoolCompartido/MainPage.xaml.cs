@@ -145,6 +145,27 @@ public partial class MainPage : ContentPage
         }
     }
 
+    /// <summary>HU22: abre la ruta del viaje en Google Maps.</summary>
+    private async void OnVerRutaClicked(object? sender, EventArgs e)
+    {
+        if (sender is not Button { BindingContext: Viaje viaje }) return;
+
+        try
+        {
+            await ServicioMapas.AbrirRutaAsync(viaje);
+        }
+        catch (ArgumentException ex)
+        {
+            RegistroErrores.RegistrarAviso(ex, "Ver ruta");
+            await DisplayAlertAsync("No se puede mostrar la ruta", ex.Message, "OK");
+        }
+        catch (MapaNoDisponibleException ex)
+        {
+            RegistroErrores.RegistrarError(ex, "Ver ruta");
+            await DisplayAlertAsync("Mapa no disponible", ex.Message, "OK");
+        }
+    }
+
     /// <summary>Registra la excepción como aviso y se la muestra al usuario.</summary>
     private async Task MostrarProblemaAsync(string titulo, Exception ex)
     {

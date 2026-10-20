@@ -37,6 +37,27 @@ public partial class MisViajesPage : ContentPage
         await Navigation.PushAsync(new PerfilPage());
     }
 
+    /// <summary>HU22: abre la ruta del viaje en Google Maps.</summary>
+    private async void OnVerRutaClicked(object? sender, EventArgs e)
+    {
+        if (sender is not Button { BindingContext: Viaje viaje }) return;
+
+        try
+        {
+            await ServicioMapas.AbrirRutaAsync(viaje);
+        }
+        catch (ArgumentException ex)
+        {
+            RegistroErrores.RegistrarAviso(ex, "Ver ruta");
+            await DisplayAlertAsync("No se puede mostrar la ruta", ex.Message, "OK");
+        }
+        catch (MapaNoDisponibleException ex)
+        {
+            RegistroErrores.RegistrarError(ex, "Ver ruta");
+            await DisplayAlertAsync("Mapa no disponible", ex.Message, "OK");
+        }
+    }
+
     /// <summary>HU5: el conductor cancela su viaje.</summary>
     private async void OnCancelarViajeClicked(object? sender, EventArgs e)
     {

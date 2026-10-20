@@ -20,6 +20,16 @@ public class PermisoDenegadoException : Exception
         : base("El servidor rechazó la operación por falta de permisos.") { }
 }
 
+/// <summary>
+/// HU22: el dispositivo no pudo abrir Google Maps (por ejemplo, no hay navegador o app para abrirlo).
+/// Si hubo una excepción original, queda en InnerException.
+/// </summary>
+public class MapaNoDisponibleException : Exception
+{
+    public MapaNoDisponibleException(Exception? causa)
+        : base("No se pudo abrir Google Maps en este dispositivo.", causa) { }
+}
+
 /// <summary>El servidor respondió con un error inesperado.</summary>
 public class ServidorException : Exception
 {
