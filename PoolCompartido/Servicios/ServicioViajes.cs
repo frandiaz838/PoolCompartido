@@ -14,8 +14,6 @@ public class ServicioViajes
     /// <summary>Única instancia compartida por toda la app.</summary>
     public static ServicioViajes Instancia { get; } = new();
 
-    public static readonly string[] Horarios = { "07:00", "08:00", "09:00", "13:00", "18:00", "19:00" };
-
     /// <summary>Bucle despachador con la tabla de eventos de los viajes.</summary>
     public Despachador<ViajeEvento, Viaje> Eventos { get; private set; } = new();
 
@@ -149,9 +147,15 @@ public class ServicioViajes
         if (string.IsNullOrWhiteSpace(hora))
             throw new ArgumentException("Elegí un horario de salida.");
 
+        if (!FranjasHorarias.TryLeerHora(hora, out TimeSpan horaSalida))
+            throw new ArgumentException("La hora de salida no es válida.");
+
         // innerException: null elige el constructor que deja el mensaje limpio
         if (fecha.Date < DateTime.Today)
             throw new ArgumentOutOfRangeException("La fecha del viaje no puede ser anterior a hoy.", innerException: null);
+
+        if (fecha.Date == DateTime.Today && horaSalida < DateTime.Now.TimeOfDay)
+            throw new ArgumentOutOfRangeException("Esa hora de hoy ya pasó. Elegí una hora más tarde.", innerException: null);
 
         if (asientos < 1 || asientos > 4)
             throw new ArgumentOutOfRangeException("Elegí entre 1 y 4 asientos disponibles.", innerException: null);

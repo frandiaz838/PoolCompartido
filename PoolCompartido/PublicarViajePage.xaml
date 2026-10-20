@@ -17,7 +17,8 @@
             <DatePicker x:Name="dpFecha" Format="dd/MM/yyyy" />
 
             <Label Text="Hora de salida" Margin="0,8,0,0" />
-            <Picker x:Name="pickerHora" Title="Elegí un horario" />
+            <!-- Cualquier hora (antes era una lista fija de 6 horarios) -->
+            <TimePicker x:Name="tpHora" Format="HH:mm" />
 
             <Label Text="Asientos disponibles" Margin="0,8,0,0" />
             <Picker x:Name="pickerAsientos" Title="Elegí la cantidad" />

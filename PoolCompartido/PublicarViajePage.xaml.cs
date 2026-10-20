@@ -9,7 +9,9 @@ public partial class PublicarViajePage : ContentPage
         InitializeComponent();
 
         dpFecha.MinimumDate = DateTime.Today;
-        pickerHora.ItemsSource = ServicioViajes.Horarios;
+        // Por defecto, la próxima hora en punto
+        int proximaHora = Math.Min(DateTime.Now.Hour + 1, 23);
+        tpHora.Time = new TimeSpan(proximaHora, 0, 0);
         pickerAsientos.ItemsSource = new[] { "1", "2", "3", "4" };
     }
 
@@ -27,9 +29,10 @@ public partial class PublicarViajePage : ContentPage
                 : 0;
 
             DateTime fecha = ((DateTime?)dpFecha.Date) ?? DateTime.Today;
+            TimeSpan hora = ((TimeSpan?)tpHora.Time) ?? TimeSpan.Zero;
 
             await _servicio.PublicarAsync(entryOrigen.Text, entryDestino.Text, fecha,
-                                          pickerHora.SelectedItem as string, asientos, editorComentario.Text);
+                                          FranjasHorarias.HoraATexto(hora), asientos, editorComentario.Text);
 
             await DisplayAlertAsync("Listo", "¡Viaje publicado! Ya lo pueden ver los demás.", "OK");
             await Navigation.PopAsync();

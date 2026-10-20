@@ -12,7 +12,7 @@
 
     <Grid Padding="16" RowSpacing="12" RowDefinitions="Auto,*,Auto,Auto">
 
-        <!-- HU2: filtros por destino y horario (se aplican solos al escribir o elegir) -->
+        <!-- HU2: filtros por destino y franja horaria (se aplican solos al escribir o elegir) -->
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
             <Entry x:Name="entryDestino"
                    Grid.Column="0"
@@ -20,8 +20,8 @@
                    TextChanged="OnDestinoCambiado" />
             <Picker x:Name="pickerHorario"
                     Grid.Column="1"
-                    Title="Horario"
-                    WidthRequest="110"
+                    Title="Franja"
+                    WidthRequest="120"
                     SelectedIndexChanged="OnHorarioCambiado" />
             <Button Grid.Column="2"
                     Text="Limpiar"
@@ -60,12 +60,19 @@
                                        TextColor="#9C8CF0"
                                        IsVisible="{Binding EsDelUsuarioActual}" />
                             </VerticalStackLayout>
-                            <!-- HU3: anotarse (no aparece en tus viajes ni donde ya estás anotado) -->
-                            <Button Grid.Column="1"
-                                    Text="Anotarme"
-                                    VerticalOptions="Center"
-                                    IsVisible="{Binding PuedeAnotarse}"
-                                    Clicked="OnAnotarmeClicked" />
+                            <VerticalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
+                                <!-- HU3: anotarse (no aparece en tus viajes ni donde ya estás anotado) -->
+                                <Button Text="Anotarme"
+                                        IsVisible="{Binding PuedeAnotarse}"
+                                        Clicked="OnAnotarmeClicked" />
+                                <!-- HU22: ver el recorrido en Google Maps -->
+                                <Button Text="Ver ruta"
+                                        BackgroundColor="Transparent"
+                                        TextColor="{AppThemeBinding Light=#512BD4, Dark=#AC99EA}"
+                                        BorderColor="{AppThemeBinding Light=#512BD4, Dark=#AC99EA}"
+                                        BorderWidth="1"
+                                        Clicked="OnVerRutaClicked" />
+                            </VerticalStackLayout>
                         </Grid>
                     </Border>
                 </DataTemplate>

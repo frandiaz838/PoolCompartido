@@ -54,6 +54,13 @@
                                         BackgroundColor="{AppThemeBinding Light=#EFEAFB, Dark=#2A2340}">
                                     <Label Text="{Binding RolUsuarioActual}" FontSize="13" FontAttributes="Bold" />
                                 </Border>
+                                <!-- HU22: ver el recorrido en Google Maps -->
+                                <Button Text="Ver ruta"
+                                        BackgroundColor="Transparent"
+                                        TextColor="{AppThemeBinding Light=#512BD4, Dark=#AC99EA}"
+                                        BorderColor="{AppThemeBinding Light=#512BD4, Dark=#AC99EA}"
+                                        BorderWidth="1"
+                                        Clicked="OnVerRutaClicked" />
                                 <!-- HU5: solo aparece en tus viajes como conductor que no estén cancelados -->
                                 <Button Text="Cancelar viaje"
                                         IsVisible="{Binding PuedeCancelar}"
