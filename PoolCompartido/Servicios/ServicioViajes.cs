@@ -273,6 +273,60 @@ public class ServicioViajes
         throw new ConflictoException();
     }
 
+    /// <summary>
+    /// HU4: el usuario actual se sale de un viaje en el que estaba anotado como pasajero.
+    /// Se libera su asiento y se dispara ASIENTO_LIBERADO (el conductor recibe el aviso por la sincronización).
+    /// No se busca reemplazo: eso solo pasa cuando cancela el conductor (HU6).
+    /// </summary>
+    /// <exception cref="ArgumentNullException">No se indicó el viaje.</exception>
+    /// <exception cref="ViajeException">No está anotado, o el viaje ya fue cancelado o ya pasó.</exception>
+    /// <exception cref="SinConexionException">No hay internet.</exception>
+    public async Task SalirseAsync(Viaje viaje)
+    {
+        ArgumentNullException.ThrowIfNull(viaje);
+        var usuario = UsuarioRequerido;
+
+        // Validación temprana con lo que ya sabemos
+        ValidarSalirse(viaje.Cancelado, viaje.PasajerosPorUid.ContainsKey(usuario.Uid), viaje.Fecha);
+
+        for (int intento = 1; intento <= ReintentosPorConflicto; intento++)
+        {
+            var (datos, etag) = await _remoto.ObtenerConEtagAsync(viaje.Id);
+            if (datos is null)
+                throw new ViajeCanceladoException();
+
+            datos.Pasajeros ??= new Dictionary<string, string>();
+            try
+            {
+                // Se vuelve a validar con los datos frescos: el conductor pudo cancelar recién
+                ValidarSalirse(datos.Cancelado, datos.Pasajeros.ContainsKey(usuario.Uid), viaje.Fecha);
+            }
+            catch (ViajeException)
+            {
+                viaje.ActualizarDesde(datos);   // la pantalla muestra el estado real
+                throw;
+            }
+
+            datos.AsientosDisponibles++;
+            datos.Pasajeros.Remove(usuario.Uid);
+            if (datos.Pasajeros.Count == 0)
+                datos.Pasajeros = null;   // así no se guarda un "pasajeros" vacío en Firebase
+
+            if (await _remoto.ReemplazarSiNoCambioAsync(viaje.Id, datos, etag))
+            {
+                int pasajerosAntes = viaje.PasajerosPorUid.Count;
+                viaje.ActualizarDesde(datos);
+                if (viaje.PasajerosPorUid.Count < pasajerosAntes)
+                    Eventos.Disparar(ViajeEvento.ASIENTO_LIBERADO, viaje);
+                GuardarCache();
+                return;
+            }
+            // Otra persona modificó el viaje entre que lo leímos y lo guardamos: se reintenta
+        }
+
+        throw new ConflictoException();
+    }
+
     /// <summary>HU8: viajes en los que participa el usuario actual (como conductor o pasajero), por fecha.</summary>
     public IEnumerable<Viaje> MisViajes() =>
         _viajes.Where(v => v.EsDelUsuarioActual || v.EstoyAnotado)
@@ -289,6 +343,13 @@ public class ServicioViajes
         if (yaAnotado) throw new YaAnotadoException();
         if (fecha.Date < DateTime.Today) throw new ViajeVencidoException();
         if (asientos <= 0) throw new ViajeCompletoException();
+    }
+
+    private static void ValidarSalirse(bool cancelado, bool anotado, DateTime fecha)
+    {
+        if (cancelado) throw new ViajeCanceladoException();
+        if (!anotado) throw new NoAnotadoException();
+        if (fecha.Date < DateTime.Today) throw new ViajeVencidoException();
     }
 
     private void CambiarConexion(bool hayConexion)

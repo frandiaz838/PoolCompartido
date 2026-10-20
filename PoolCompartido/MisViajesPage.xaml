@@ -65,6 +65,10 @@
                                 <Button Text="Cancelar viaje"
                                         IsVisible="{Binding PuedeCancelar}"
                                         Clicked="OnCancelarViajeClicked" />
+                                <!-- HU4: solo aparece en los viajes activos donde estás anotado como pasajero -->
+                                <Button Text="Salirme"
+                                        IsVisible="{Binding PuedeSalirse}"
+                                        Clicked="OnSalirmeClicked" />
                             </VerticalStackLayout>
                         </Grid>
                     </Border>
