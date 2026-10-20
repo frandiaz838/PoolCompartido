@@ -12,7 +12,7 @@
 
     <Grid Padding="16" RowSpacing="12" RowDefinitions="Auto,*,Auto,Auto">
 
-        <!-- HU2: filtros por destino y horario (se aplican solos al escribir o elegir) -->
+        <!-- HU2: filtros por destino y franja horaria (se aplican solos al escribir o elegir) -->
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
             <Entry x:Name="entryDestino"
                    Grid.Column="0"
@@ -20,8 +20,8 @@
                    TextChanged="OnDestinoCambiado" />
             <Picker x:Name="pickerHorario"
                     Grid.Column="1"
-                    Title="Horario"
-                    WidthRequest="110"
+                    Title="Franja"
+                    WidthRequest="120"
                     SelectedIndexChanged="OnHorarioCambiado" />
             <Button Grid.Column="2"
                     Text="Limpiar"

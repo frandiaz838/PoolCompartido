@@ -14,7 +14,7 @@ public partial class MainPage : ContentPage
         InitializeComponent();
 
         listaViajes.ItemsSource = _viajesVisibles;
-        pickerHorario.ItemsSource = new[] { "Todos" }.Concat(ServicioViajes.Horarios).ToList();
+        pickerHorario.ItemsSource = FranjasHorarias.Nombres;
         pickerHorario.SelectedIndex = 0;
 
         // Tabla de eventos: qué hace esta pantalla cuando ocurre cada evento (callbacks).
@@ -69,12 +69,12 @@ public partial class MainPage : ContentPage
     private void Redibujar()
     {
         string destino = entryDestino.Text?.Trim() ?? "";
-        string? horario = pickerHorario.SelectedIndex > 0 ? pickerHorario.SelectedItem as string : null;
+        var franja = (FranjaHoraria)Math.Max(pickerHorario.SelectedIndex, 0);
 
         var filtrados = _servicio.Viajes
             .Where(v => !v.Cancelado)
             .Where(v => destino == "" || v.Destino.Contains(destino, StringComparison.OrdinalIgnoreCase))
-            .Where(v => horario == null || v.Hora == horario)
+            .Where(v => FranjasHorarias.Incluye(franja, v.Hora))
             .OrderBy(v => v.Fecha)
             .ThenBy(v => v.Hora);
 
