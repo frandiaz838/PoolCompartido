@@ -28,6 +28,26 @@ public partial class MainPage : ContentPage
         _servicio.Eventos.Registrar(ViajeEvento.ASIENTO_RESERVADO, viaje =>
             MostrarAviso($"Aviso para {viaje.Conductor}: un pasajero se anotó a tu viaje a {viaje.Destino}. Quedan {viaje.AsientosDisponibles} asientos."));
 
+        // HU5: se avisa a todos los pasajeros anotados (simulado en este dispositivo)
+        _servicio.Eventos.Registrar(ViajeEvento.VIAJE_CANCELADO, viaje =>
+        {
+            Redibujar();
+            MostrarAviso(viaje.Pasajeros.Count == 0
+                ? $"Se canceló el viaje {viaje.Ruta} del {viaje.Fecha:dd/MM}. No había pasajeros anotados."
+                : $"Aviso para {string.Join(", ", viaje.Pasajeros)}: {viaje.Conductor} canceló el viaje {viaje.Ruta} del {viaje.Fecha:dd/MM} a las {viaje.Hora}.");
+        });
+
+        Redibujar();
+
+        // Si hubo un problema al leer el archivo de viajes, avisamos
+        if (_servicio.AvisoAlIniciar is string aviso)
+            MostrarAviso(aviso);
+    }
+
+    // Cada vez que se vuelve a esta pantalla, se redibuja (por si cambiaron los datos)
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
         Redibujar();
     }
 
@@ -40,7 +60,8 @@ public partial class MainPage : ContentPage
         string? horario = pickerHorario.SelectedIndex > 0 ? pickerHorario.SelectedItem as string : null;
 
         var filtrados = _servicio.Viajes
-            .Where(v => destino == "" || v.Destino.Contains(destino, StringComparison.OrdinalIgnoreCase))
+            .Where(v => !v.Cancelado)
+            .Where(v => destino == "" ||v.Destino.Contains(destino, StringComparison.OrdinalIgnoreCase))
             .Where(v => horario == null || v.Hora == horario)
             .OrderBy(v => v.Fecha)
             .ThenBy(v => v.Hora);
@@ -83,15 +104,27 @@ public partial class MainPage : ContentPage
         // Excepciones específicas primero, la más general al final
         catch (AutoReservaException ex)
         {
-            await DisplayAlertAsync("Acción no permitida", ex.Message, "OK");
+            await MostrarProblemaAsync("Acción no permitida", ex);
         }
         catch (ViajeCompletoException ex)
         {
-            await DisplayAlertAsync("Sin lugar", ex.Message, "OK");
+            await MostrarProblemaAsync("Sin lugar", ex);
         }
         catch (ViajeException ex)
         {
-            await DisplayAlertAsync("No disponible", ex.Message, "OK");
+            await MostrarProblemaAsync("No disponible", ex);
         }
+        catch (PersistenciaException ex)
+        {
+            // Ya quedó registrada como ERROR en el servicio
+            await DisplayAlertAsync("Atención", ex.Message, "OK");
+        }
+    }
+
+    /// <summary>Registra la excepción como aviso y se la muestra al usuario.</summary>
+    private async Task MostrarProblemaAsync(string titulo, Exception ex)
+    {
+        RegistroErrores.RegistrarAviso(ex, "Anotarse a un viaje");
+        await DisplayAlertAsync(titulo, ex.Message, "OK");
     }
 }

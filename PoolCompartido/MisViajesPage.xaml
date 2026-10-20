@@ -5,6 +5,10 @@
              x:Class="PoolCompartido.MisViajesPage"
              Title="Mis viajes">
 
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Registro de errores" Clicked="OnRegistroClicked" />
+    </ContentPage.ToolbarItems>
+
     <Grid Padding="16" RowSpacing="12" RowDefinitions="Auto,*">
 
         <Label Grid.Row="0"
@@ -32,16 +36,27 @@
                                 <Label Text="{Binding Ruta}" FontSize="17" FontAttributes="Bold" />
                                 <Label Text="{Binding Detalle}" FontSize="13" />
                                 <Label Text="{Binding AsientosDisponibles, StringFormat='Asientos libres: {0}'}" FontSize="13" />
+                                <Label Text="{Binding PasajerosTexto}" FontSize="13" IsVisible="{Binding EsDelUsuarioActual}" />
+                                <Label Text="Cancelado"
+                                       FontSize="13"
+                                       FontAttributes="Bold"
+                                       TextColor="#E5484D"
+                                       IsVisible="{Binding Cancelado}" />
                             </VerticalStackLayout>
-                            <!-- Rol del usuario en este viaje -->
-                            <Border Grid.Column="1"
-                                    VerticalOptions="Center"
-                                    Padding="10,4"
-                                    StrokeShape="RoundRectangle 12"
-                                    Stroke="#512BD4"
-                                    BackgroundColor="{AppThemeBinding Light=#EFEAFB, Dark=#2A2340}">
-                                <Label Text="{Binding RolUsuarioActual}" FontSize="13" FontAttributes="Bold" />
-                            </Border>
+                            <VerticalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="Center">
+                                <!-- Rol del usuario en este viaje -->
+                                <Border HorizontalOptions="End"
+                                        Padding="10,4"
+                                        StrokeShape="RoundRectangle 12"
+                                        Stroke="#512BD4"
+                                        BackgroundColor="{AppThemeBinding Light=#EFEAFB, Dark=#2A2340}">
+                                    <Label Text="{Binding RolUsuarioActual}" FontSize="13" FontAttributes="Bold" />
+                                </Border>
+                                <!-- HU5: solo aparece en tus viajes como conductor que no estén cancelados -->
+                                <Button Text="Cancelar viaje"
+                                        IsVisible="{Binding PuedeCancelar}"
+                                        Clicked="OnCancelarViajeClicked" />
+                            </VerticalStackLayout>
                         </Grid>
                     </Border>
                 </DataTemplate>

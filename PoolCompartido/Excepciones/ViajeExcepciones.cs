@@ -30,6 +30,29 @@ public class ViajeVencidoException : ViajeException
         : base("Este viaje ya pasó su fecha de salida.") { }
 }
 
+/// <summary>
+/// El cambio se hizo, pero no se pudo guardar en el archivo.
+/// Envuelve la excepción original (IOException, etc.) en InnerException.
+/// </summary>
+public class PersistenciaException : Exception
+{
+    public PersistenciaException(string mensaje, Exception causa) : base(mensaje, causa) { }
+}
+
+/// <summary>El viaje fue cancelado por el conductor.</summary>
+public class ViajeCanceladoException : ViajeException
+{
+    public ViajeCanceladoException()
+        : base("Este viaje fue cancelado por el conductor.") { }
+}
+
+/// <summary>Alguien que no es el conductor intenta cancelar el viaje.</summary>
+public class NoEsConductorException : ViajeException
+{
+    public NoEsConductorException()
+        : base("Solo el conductor puede cancelar el viaje.") { }
+}
+
 /// <summary>No quedan asientos libres.</summary>
 public class ViajeCompletoException : ViajeException
 {

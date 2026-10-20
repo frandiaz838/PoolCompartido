@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -17,6 +17,10 @@ namespace PoolCompartido.WinUI
         public App()
         {
             this.InitializeComponent();
+
+            // Controlador global en Windows: los errores de la interfaz llegan por acá
+            this.UnhandledException += (sender, e) =>
+                RegistroErrores.RegistrarError(e.Exception, "Error no controlado (Windows)");
         }
 
         protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();

@@ -35,20 +35,27 @@ public partial class PublicarViajePage : ContentPage
         // ArgumentOutOfRangeException hereda de ArgumentException: va primero la más específica
         catch (ArgumentOutOfRangeException ex)
         {
-            MostrarError(ex.Message);
+            MostrarError(ex, ex.Message);
         }
         catch (ArgumentException ex)
         {
-            MostrarError(ex.Message);
+            MostrarError(ex, ex.Message);
         }
-        catch (FormatException)
+        catch (FormatException ex)
         {
-            MostrarError("La cantidad de asientos no es un número válido.");
+            MostrarError(ex, "La cantidad de asientos no es un número válido.");
+        }
+        catch (PersistenciaException ex)
+        {
+            // El viaje se publicó igual; solo falló el guardado (ya registrado como ERROR)
+            await DisplayAlertAsync("Atención", ex.Message, "OK");
+            await Navigation.PopAsync();
         }
     }
 
-    private void MostrarError(string mensaje)
+    private void MostrarError(Exception ex, string mensaje)
     {
+        RegistroErrores.RegistrarAviso(ex, "Publicar viaje");
         lblError.Text = mensaje;
         lblError.IsVisible = true;
     }

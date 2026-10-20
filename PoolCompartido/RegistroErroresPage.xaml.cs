@@ -1,0 +1,53 @@
+namespace PoolCompartido;
+
+public partial class RegistroErroresPage : ContentPage
+{
+    public RegistroErroresPage()
+    {
+        InitializeComponent();
+    }
+
+    // Se ejecuta cada vez que se muestra la pantalla (evento del ciclo de vida)
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        MostrarRegistro();
+    }
+
+    private async void OnRestablecerClicked(object? sender, EventArgs e)
+    {
+        bool confirmar = await DisplayAlertAsync("Datos de ejemplo",
+            "Se van a borrar todos los viajes y se van a cargar los de ejemplo. ¿Seguir?", "Sí", "No");
+        if (!confirmar) return;
+
+        try
+        {
+            ServicioViajes.Instancia.RestablecerDatosDeEjemplo();
+            await DisplayAlertAsync("Listo", "Se cargaron los viajes de ejemplo.", "OK");
+        }
+        catch (PersistenciaException ex)
+        {
+            await DisplayAlertAsync("Atención", ex.Message, "OK");
+        }
+        MostrarRegistro();
+    }
+
+    private void MostrarRegistro()
+    {
+        lblRutas.Text = $"Registro: {RegistroErrores.RutaArchivo}\nViajes guardados en: {ServicioViajes.Instancia.RutaDatos}";
+
+        try
+        {
+            lblContenido.Text = RegistroErrores.LeerTodo();
+        }
+        // FileNotFoundException hereda de IOException: va primero la más específica
+        catch (FileNotFoundException)
+        {
+            lblContenido.Text = "Todavía no hay nada registrado.";
+        }
+        catch (IOException ex)
+        {
+            lblContenido.Text = $"No se pudo leer el registro: {ex.Message}";
+        }
+    }
+}

@@ -28,10 +28,34 @@ public class Viaje : INotifyPropertyChanged
     public bool EstoyAnotado => _pasajeros.Contains(ServicioViajes.UsuarioActual);
     public string RolUsuarioActual => EsDelUsuarioActual ? "Conductor" : EstoyAnotado ? "Pasajero" : "";
 
+    // HU5: un viaje cancelado deja de estar disponible, pero queda en el historial
+    private bool _cancelado;
+    public bool Cancelado
+    {
+        get => _cancelado;
+        private set
+        {
+            if (_cancelado == value) return;
+            _cancelado = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(PuedeCancelar));
+        }
+    }
+
+    /// <summary>Solo el conductor puede cancelar, y solo si todavía no lo canceló.</summary>
+    public bool PuedeCancelar => EsDelUsuarioActual && !Cancelado;
+
+    public void Cancelar() => Cancelado = true;
+
+    public string PasajerosTexto => _pasajeros.Count == 0
+        ? "Sin pasajeros anotados"
+        : $"Pasajeros: {string.Join(", ", _pasajeros)}";
+
     public void AgregarPasajero(string nombre)
     {
         _pasajeros.Add(nombre);
         OnPropertyChanged(nameof(Pasajeros));
+        OnPropertyChanged(nameof(PasajerosTexto));
         OnPropertyChanged(nameof(EstoyAnotado));
         OnPropertyChanged(nameof(RolUsuarioActual));
     }
