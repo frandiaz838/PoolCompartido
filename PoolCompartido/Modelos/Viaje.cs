@@ -9,24 +9,36 @@ namespace PoolCompartido;
 /// </summary>
 public class Viaje : INotifyPropertyChanged
 {
-    private static int _ultimoId;
-
-    public int Id { get; } = Interlocked.Increment(ref _ultimoId);
+    /// <summary>Identificador del viaje en Firebase.</summary>
+    public string Id { get; init; } = "";
     public string Origen { get; init; } = "";
     public string Destino { get; init; } = "";
     public DateTime Fecha { get; init; }
     public string Hora { get; init; } = "";
+    public string ConductorUid { get; init; } = "";
+    /// <summary>Nombre del conductor (el que se muestra).</summary>
     public string Conductor { get; init; } = "";
     public string Comentario { get; init; } = "";
 
-    /// <summary>Nombres de los pasajeros anotados (se usa para avisarles si se cancela el viaje).</summary>
-    private readonly List<string> _pasajeros = new();
-    public IReadOnlyList<string> Pasajeros => _pasajeros;
+    // Pasajeros anotados: uid → nombre
+    private readonly Dictionary<string, string> _pasajeros = new();
+    public IReadOnlyDictionary<string, string> PasajerosPorUid => _pasajeros;
+    public IReadOnlyCollection<string> Pasajeros => _pasajeros.Values;
 
-    // Relación del viaje con el usuario que está usando la app
-    public bool EsDelUsuarioActual => Conductor == ServicioViajes.UsuarioActual;
-    public bool EstoyAnotado => _pasajeros.Contains(ServicioViajes.UsuarioActual);
-    public string RolUsuarioActual => EsDelUsuarioActual ? "Conductor" : EstoyAnotado ? "Pasajero" : "";
+    /// <summary>Nombre del último pasajero que se anotó (para la notificación al conductor).</summary>
+    public string? UltimoPasajeroAnotado { get; private set; }
+
+    private int _asientosDisponibles;
+    public int AsientosDisponibles
+    {
+        get => _asientosDisponibles;
+        private set
+        {
+            if (_asientosDisponibles == value) return;
+            _asientosDisponibles = value;
+            OnPropertyChanged();
+        }
+    }
 
     // HU5: un viaje cancelado deja de estar disponible, pero queda en el historial
     private bool _cancelado;
@@ -39,42 +51,54 @@ public class Viaje : INotifyPropertyChanged
             _cancelado = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(PuedeCancelar));
+            OnPropertyChanged(nameof(PuedeAnotarse));
         }
     }
+
+    // Relación del viaje con el usuario que inició sesión
+    public bool EsDelUsuarioActual => ConductorUid == ServicioAutenticacion.UidActual;
+    public bool EstoyAnotado => ServicioAutenticacion.UidActual is string uid && _pasajeros.ContainsKey(uid);
+    public string RolUsuarioActual => EsDelUsuarioActual ? "Conductor" : EstoyAnotado ? "Pasajero" : "";
+
+    /// <summary>El botón "Anotarme" solo aparece en viajes ajenos, activos y donde no estoy anotado.</summary>
+    public bool PuedeAnotarse => !EsDelUsuarioActual && !EstoyAnotado && !Cancelado;
 
     /// <summary>Solo el conductor puede cancelar, y solo si todavía no lo canceló.</summary>
     public bool PuedeCancelar => EsDelUsuarioActual && !Cancelado;
 
-    public void Cancelar() => Cancelado = true;
-
-    public string PasajerosTexto => _pasajeros.Count == 0
-        ? "Sin pasajeros anotados"
-        : $"Pasajeros: {string.Join(", ", _pasajeros)}";
-
-    public void AgregarPasajero(string nombre)
-    {
-        _pasajeros.Add(nombre);
-        OnPropertyChanged(nameof(Pasajeros));
-        OnPropertyChanged(nameof(PasajerosTexto));
-        OnPropertyChanged(nameof(EstoyAnotado));
-        OnPropertyChanged(nameof(RolUsuarioActual));
-    }
-
-    private int _asientosDisponibles;
-    public int AsientosDisponibles
-    {
-        get => _asientosDisponibles;
-        set
-        {
-            if (_asientosDisponibles == value) return;
-            _asientosDisponibles = value;
-            OnPropertyChanged();
-        }
-    }
-
     // Textos listos para mostrar en la lista
     public string Ruta => $"{Origen} → {Destino}";
     public string Detalle => $"{Fecha:dd/MM} · {Hora} hs · Conductor: {Conductor}";
+    public string PasajerosTexto => _pasajeros.Count == 0
+        ? "Sin pasajeros anotados"
+        : $"Pasajeros: {string.Join(", ", _pasajeros.Values)}";
+
+    /// <summary>Actualiza el viaje con los datos que llegaron del servidor.</summary>
+    internal void ActualizarDesde(ViajeDatos datos)
+    {
+        var nuevos = datos.Pasajeros ?? new Dictionary<string, string>();
+        bool cambiaronPasajeros = nuevos.Count != _pasajeros.Count || nuevos.Keys.Any(uid => !_pasajeros.ContainsKey(uid));
+
+        if (cambiaronPasajeros)
+        {
+            var agregado = nuevos.FirstOrDefault(p => !_pasajeros.ContainsKey(p.Key));
+            if (agregado.Key != null)
+                UltimoPasajeroAnotado = agregado.Value;
+
+            _pasajeros.Clear();
+            foreach (var (uid, nombre) in nuevos)
+                _pasajeros[uid] = nombre;
+
+            OnPropertyChanged(nameof(Pasajeros));
+            OnPropertyChanged(nameof(PasajerosTexto));
+            OnPropertyChanged(nameof(EstoyAnotado));
+            OnPropertyChanged(nameof(RolUsuarioActual));
+            OnPropertyChanged(nameof(PuedeAnotarse));
+        }
+
+        AsientosDisponibles = datos.AsientosDisponibles;
+        Cancelado = datos.Cancelado;
+    }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 

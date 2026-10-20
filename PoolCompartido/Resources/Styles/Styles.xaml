@@ -109,7 +109,8 @@
         </Setter>
     </Style>
 
-    <Style TargetType="Entry">
+    <!-- ApplyToDerivedTypes: también lo usan los controles que heredan de Entry (como EntryConIcono) -->
+    <Style TargetType="Entry" ApplyToDerivedTypes="True">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="FontFamily" Value="OpenSansRegular"/>

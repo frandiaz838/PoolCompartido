@@ -30,15 +30,6 @@ public class ViajeVencidoException : ViajeException
         : base("Este viaje ya pasó su fecha de salida.") { }
 }
 
-/// <summary>
-/// El cambio se hizo, pero no se pudo guardar en el archivo.
-/// Envuelve la excepción original (IOException, etc.) en InnerException.
-/// </summary>
-public class PersistenciaException : Exception
-{
-    public PersistenciaException(string mensaje, Exception causa) : base(mensaje, causa) { }
-}
-
 /// <summary>El viaje fue cancelado por el conductor.</summary>
 public class ViajeCanceladoException : ViajeException
 {
@@ -58,4 +49,14 @@ public class ViajeCompletoException : ViajeException
 {
     public ViajeCompletoException()
         : base("Este viaje ya no tiene asientos disponibles.") { }
+}
+
+/// <summary>
+/// Otra persona modificó el viaje al mismo tiempo (por ejemplo, dos se anotan al último lugar)
+/// y no se pudo guardar después de varios intentos.
+/// </summary>
+public class ConflictoException : ViajeException
+{
+    public ConflictoException()
+        : base("El viaje cambió mientras hacías la operación. Probá de nuevo.") { }
 }

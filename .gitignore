@@ -361,3 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# Datos del proyecto de Firebase (cada integrante tiene su copia, ver Servicios/ClavesFirebase.ejemplo.txt)
+**/Servicios/ClavesFirebase.cs

@@ -11,30 +11,8 @@ public partial class RegistroErroresPage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
-        MostrarRegistro();
-    }
 
-    private async void OnRestablecerClicked(object? sender, EventArgs e)
-    {
-        bool confirmar = await DisplayAlertAsync("Datos de ejemplo",
-            "Se van a borrar todos los viajes y se van a cargar los de ejemplo. ¿Seguir?", "Sí", "No");
-        if (!confirmar) return;
-
-        try
-        {
-            ServicioViajes.Instancia.RestablecerDatosDeEjemplo();
-            await DisplayAlertAsync("Listo", "Se cargaron los viajes de ejemplo.", "OK");
-        }
-        catch (PersistenciaException ex)
-        {
-            await DisplayAlertAsync("Atención", ex.Message, "OK");
-        }
-        MostrarRegistro();
-    }
-
-    private void MostrarRegistro()
-    {
-        lblRutas.Text = $"Registro: {RegistroErrores.RutaArchivo}\nViajes guardados en: {ServicioViajes.Instancia.RutaDatos}";
+        lblRutas.Text = $"Registro: {RegistroErrores.RutaArchivo}\nCopia local de los viajes: {ServicioViajes.Instancia.RutaDatos}";
 
         try
         {

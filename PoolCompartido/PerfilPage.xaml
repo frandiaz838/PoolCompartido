@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="PoolCompartido.PerfilPage"
+             Title="Mi perfil">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="10" MaximumWidthRequest="480">
+
+            <!-- Avatar con las iniciales -->
+            <Border WidthRequest="96"
+                    HeightRequest="96"
+                    HorizontalOptions="Center"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 48"
+                    BackgroundColor="#512BD4">
+                <Label x:Name="lblIniciales"
+                       FontSize="36"
+                       FontAttributes="Bold"
+                       TextColor="White"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center" />
+            </Border>
+
+            <Label x:Name="lblNombre" FontSize="22" FontAttributes="Bold" HorizontalOptions="Center" />
+            <Label x:Name="lblEmail" FontSize="14" HorizontalOptions="Center" />
+            <Label x:Name="lblVerificacion" FontSize="13" HorizontalOptions="Center" />
+            <Button x:Name="btnReenviar"
+                    Text="Reenviar mail de verificación"
+                    IsVisible="False"
+                    BackgroundColor="Transparent"
+                    TextColor="{AppThemeBinding Light=#512BD4, Dark=#AC99EA}"
+                    Clicked="OnReenviarClicked" />
+
+            <!-- Cambiar nombre -->
+            <Label Text="Nombre que ven los demás" FontAttributes="Bold" Margin="0,16,0,0" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <Entry x:Name="entryNombre" Placeholder="Tu nombre" />
+                <Button x:Name="btnGuardarNombre" Grid.Column="1" Text="Guardar" Clicked="OnGuardarNombreClicked" />
+            </Grid>
+            <Label Text="Los viajes que ya publicaste conservan el nombre anterior."
+                   FontSize="12"
+                   TextColor="Gray" />
+
+            <!-- Cuenta -->
+            <Label Text="Cuenta" FontAttributes="Bold" Margin="0,16,0,0" />
+            <Button x:Name="btnContrasena" Text="Cambiar contraseña" Clicked="OnCambiarContrasenaClicked" />
+            <Button Text="Registro de errores" Clicked="OnRegistroClicked" />
+            <Button Text="Cerrar sesión"
+                    BackgroundColor="Transparent"
+                    TextColor="#E5484D"
+                    BorderColor="#E5484D"
+                    BorderWidth="1"
+                    Margin="0,16,0,0"
+                    Clicked="OnCerrarSesionClicked" />
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

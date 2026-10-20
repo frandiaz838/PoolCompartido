@@ -1,0 +1,16 @@
+Cómo configurar Firebase en tu compu
+====================================
+
+El archivo Servicios/ClavesFirebase.cs no está en GitHub (tiene los datos del proyecto de Firebase).
+Para que la app compile:
+
+1. En Visual Studio, dentro de la carpeta Servicios, creá una clase nueva llamada ClavesFirebase.cs
+2. Reemplazá todo su contenido por esto, con los valores que te pasó tu compañero por privado:
+
+namespace PoolCompartido;
+
+internal static class ClavesFirebase
+{
+    public const string ApiKey = "PEGAR_ACA_LA_CLAVE_DE_API_WEB";
+    public const string UrlBase = "https://PEGAR_ACA_LA_DIRECCION_DE_LA_BASE.firebaseio.com";
+}

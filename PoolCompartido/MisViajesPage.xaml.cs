@@ -14,9 +14,10 @@ public partial class MisViajesPage : ContentPage
         listaMisViajes.ItemsSource = _misViajes;
 
         // Esta pantalla también se suscribe a la tabla de eventos:
-        // cada vez que publicás, te anotás o cancelás, la lista se redibuja sola.
+        // cada vez que se publica, alguien se anota o se cancela, la lista se redibuja sola.
         _servicio.Eventos.Registrar(ViajeEvento.VIAJE_PUBLICADO, _ => Redibujar());
         _servicio.Eventos.Registrar(ViajeEvento.ASIENTO_RESERVADO, _ => Redibujar());
+        _servicio.Eventos.Registrar(ViajeEvento.ASIENTO_LIBERADO, _ => Redibujar());
         _servicio.Eventos.Registrar(ViajeEvento.VIAJE_CANCELADO, _ => Redibujar());
 
         Redibujar();
@@ -26,18 +27,20 @@ public partial class MisViajesPage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
+        var usuario = ServicioAutenticacion.Instancia.UsuarioActual;
+        lblSaludo.Text = usuario is null ? "Mis viajes" : $"Hola, {usuario.Nombre}";
         Redibujar();
     }
 
-    private async void OnRegistroClicked(object? sender, EventArgs e)
+    private async void OnPerfilClicked(object? sender, EventArgs e)
     {
-        await Navigation.PushAsync(new RegistroErroresPage());
+        await Navigation.PushAsync(new PerfilPage());
     }
 
     /// <summary>HU5: el conductor cancela su viaje.</summary>
     private async void OnCancelarViajeClicked(object? sender, EventArgs e)
     {
-        if (sender is not Button { BindingContext: Viaje viaje }) return;
+        if (sender is not Button { BindingContext: Viaje viaje } boton) return;
 
         string detalle = viaje.Pasajeros.Count == 0
             ? "No hay pasajeros anotados."
@@ -48,20 +51,30 @@ public partial class MisViajesPage : ContentPage
             "Sí, cancelar", "No");
         if (!confirmar) return;
 
+        boton.IsEnabled = false;
         try
         {
-            _servicio.CancelarViaje(viaje);
-            await DisplayAlertAsync("Viaje cancelado", "Listo, el viaje quedó cancelado y se avisó a los pasajeros.", "OK");
+            await _servicio.CancelarViajeAsync(viaje);
+            await DisplayAlertAsync("Viaje cancelado", "Listo, el viaje quedó cancelado y los pasajeros van a recibir el aviso.", "OK");
         }
         catch (ViajeException ex)
         {
             RegistroErrores.RegistrarAviso(ex, "Cancelar viaje");
             await DisplayAlertAsync("No se pudo cancelar", ex.Message, "OK");
         }
-        catch (PersistenciaException ex)
+        catch (SesionVencidaException ex)
         {
-            // Ya quedó registrada como ERROR en el servicio
-            await DisplayAlertAsync("Atención", ex.Message, "OK");
+            // La app ya volvió a la pantalla de inicio de sesión
+            RegistroErrores.RegistrarAviso(ex, "Cancelar viaje");
+        }
+        catch (Exception ex) when (ex is SinConexionException or PermisoDenegadoException or ServidorException)
+        {
+            RegistroErrores.RegistrarError(ex, "Cancelar viaje");
+            await DisplayAlertAsync("No se pudo cancelar", ex.Message, "OK");
+        }
+        finally
+        {
+            boton.IsEnabled = true;
         }
     }
 

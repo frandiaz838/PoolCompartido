@@ -5,15 +5,17 @@
              x:Class="PoolCompartido.MisViajesPage"
              Title="Mis viajes">
 
+    <!-- Ícono de perfil arriba a la derecha -->
     <ContentPage.ToolbarItems>
-        <ToolbarItem Text="Registro de errores" Clicked="OnRegistroClicked" />
+        <ToolbarItem Text="Mi perfil" IconImageSource="perfil.png" Clicked="OnPerfilClicked" />
     </ContentPage.ToolbarItems>
 
     <Grid Padding="16" RowSpacing="12" RowDefinitions="Auto,*">
 
-        <Label Grid.Row="0"
-               Text="Viajes en los que participás, ordenados por fecha."
-               FontSize="14" />
+        <VerticalStackLayout Grid.Row="0" Spacing="2">
+            <Label x:Name="lblSaludo" FontSize="18" FontAttributes="Bold" />
+            <Label Text="Viajes en los que participás, ordenados por fecha." FontSize="14" />
+        </VerticalStackLayout>
 
         <!-- HU8: viajes del usuario como conductor y como pasajero -->
         <CollectionView x:Name="listaMisViajes" Grid.Row="1" SelectionMode="None">

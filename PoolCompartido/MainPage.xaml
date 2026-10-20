@@ -5,6 +5,11 @@
              x:Class="PoolCompartido.MainPage"
              Title="Viajes disponibles">
 
+    <!-- Ícono de perfil arriba a la derecha -->
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Mi perfil" IconImageSource="perfil.png" Clicked="OnPerfilClicked" />
+    </ContentPage.ToolbarItems>
+
     <Grid Padding="16" RowSpacing="12" RowDefinitions="Auto,*,Auto,Auto">
 
         <!-- HU2: filtros por destino y horario (se aplican solos al escribir o elegir) -->
@@ -55,10 +60,11 @@
                                        TextColor="#9C8CF0"
                                        IsVisible="{Binding EsDelUsuarioActual}" />
                             </VerticalStackLayout>
-                            <!-- HU3: anotarse -->
+                            <!-- HU3: anotarse (no aparece en tus viajes ni donde ya estás anotado) -->
                             <Button Grid.Column="1"
                                     Text="Anotarme"
                                     VerticalOptions="Center"
+                                    IsVisible="{Binding PuedeAnotarse}"
                                     Clicked="OnAnotarmeClicked" />
                         </Grid>
                     </Border>

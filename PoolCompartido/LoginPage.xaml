@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:PoolCompartido"
+             x:Class="PoolCompartido.LoginPage"
+             Title="Pool Compartido">
+
+    <Grid>
+        <ScrollView>
+            <VerticalStackLayout Padding="24"
+                                 Spacing="8"
+                                 MaximumWidthRequest="420"
+                                 VerticalOptions="Center">
+
+                <Label Text="Pool Compartido"
+                       FontSize="30"
+                       FontAttributes="Bold"
+                       HorizontalOptions="Center" />
+                <Label x:Name="lblSubtitulo"
+                       Text="Iniciá sesión para ver y compartir viajes"
+                       HorizontalOptions="Center"
+                       Margin="0,0,0,16" />
+
+                <!-- Solo se muestra al crear una cuenta -->
+                <Label x:Name="lblNombre" Text="Tu nombre" IsVisible="False" />
+                <Entry x:Name="entryNombre" Placeholder="Ej: Francisco" IsVisible="False" />
+
+                <Label Text="Mail" />
+                <Entry x:Name="entryEmail" Placeholder="tu@mail.com" Keyboard="Email" />
+
+                <Label Text="Contraseña" />
+                <!-- Contraseña con el ícono para mostrarla/ocultarla dentro del campo, al final -->
+                <Grid>
+                    <local:EntryConIcono x:Name="entryContrasena" Placeholder="Mínimo 6 caracteres" IsPassword="True" />
+                    <ImageButton x:Name="btnVerContrasena"
+                                 Source="ojo.png"
+                                 WidthRequest="30"
+                                 HeightRequest="30"
+                                 Padding="6"
+                                 Margin="0,0,8,0"
+                                 HorizontalOptions="End"
+                                 VerticalOptions="Center"
+                                 BackgroundColor="Transparent"
+                                 SemanticProperties.Description="Mostrar contraseña"
+                                 Clicked="OnVerContrasenaClicked" />
+                </Grid>
+
+                <Label x:Name="lblError" TextColor="Red" IsVisible="False" />
+
+                <Button x:Name="btnPrincipal"
+                        Text="Iniciar sesión"
+                        FontAttributes="Bold"
+                        Margin="0,12,0,0"
+                        Clicked="OnPrincipalClicked" />
+                <Button x:Name="btnOlvide"
+                        Text="¿Olvidaste tu contraseña?"
+                        BackgroundColor="Transparent"
+                        TextColor="Gray"
+                        Clicked="OnOlvideClicked" />
+                <Button x:Name="btnCambiarModo"
+                        Text="¿No tenés cuenta? Creá una"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light=#512BD4, Dark=#AC99EA}"
+                        Clicked="OnCambiarModoClicked" />
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <ActivityIndicator x:Name="indicador"
+                           IsRunning="False"
+                           IsVisible="False"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center" />
+    </Grid>
+
+</ContentPage>

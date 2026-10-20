@@ -4,7 +4,7 @@
              x:Class="PoolCompartido.RegistroErroresPage"
              Title="Registro de errores">
 
-    <Grid Padding="16" RowSpacing="10" RowDefinitions="Auto,*,Auto">
+    <Grid Padding="16" RowSpacing="10" RowDefinitions="Auto,*">
 
         <!-- Dónde están los archivos, útil para mostrarlos en la presentación -->
         <Label x:Name="lblRutas" Grid.Row="0" FontSize="12" />
@@ -12,11 +12,6 @@
         <ScrollView Grid.Row="1">
             <Label x:Name="lblContenido" FontSize="13" />
         </ScrollView>
-
-        <!-- Para preparar la demo: vuelve a los viajes de ejemplo -->
-        <Button Grid.Row="2"
-                Text="Volver a los datos de ejemplo"
-                Clicked="OnRestablecerClicked" />
     </Grid>
 
 </ContentPage>

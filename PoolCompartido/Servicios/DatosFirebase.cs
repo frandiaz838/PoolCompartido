@@ -1,0 +1,184 @@
+using System.Globalization;
+using System.Text.Json.Serialization;
+
+namespace PoolCompartido;
+
+// Clases que representan cómo viajan los datos en JSON (Firebase y archivos locales).
+// No tienen lógica: solo datos.
+
+/// <summary>Cómo se guarda un viaje en Firebase y en la caché local.</summary>
+internal class ViajeDatos
+{
+    public string Origen { get; set; } = "";
+    public string Destino { get; set; } = "";
+    /// <summary>Formato yyyy-MM-dd, para no depender de la zona horaria.</summary>
+    public string Fecha { get; set; } = "";
+    public string Hora { get; set; } = "";
+    public string ConductorUid { get; set; } = "";
+    public string ConductorNombre { get; set; } = "";
+    public string Comentario { get; set; } = "";
+    public int AsientosDisponibles { get; set; }
+    public bool Cancelado { get; set; }
+    /// <summary>uid → nombre de cada pasajero.</summary>
+    public Dictionary<string, string>? Pasajeros { get; set; }
+}
+
+/// <summary>Respuesta de Firebase al crear un viaje: el id que le asignó.</summary>
+internal class RespuestaCreacion
+{
+    public string Name { get; set; } = "";
+}
+
+/// <summary>Sesión guardada en el dispositivo (nunca se guarda la contraseña).</summary>
+internal class SesionGuardada
+{
+    public string Uid { get; set; } = "";
+    public string Nombre { get; set; } = "";
+    public string Email { get; set; } = "";
+    public string RefreshToken { get; set; } = "";
+}
+
+internal class PedidoAutenticacion
+{
+    public string Email { get; set; } = "";
+    public string Password { get; set; } = "";
+    public bool ReturnSecureToken { get; set; } = true;
+}
+
+internal class PedidoActualizarPerfil
+{
+    public string IdToken { get; set; } = "";
+    public string DisplayName { get; set; } = "";
+    public bool ReturnSecureToken { get; set; }
+}
+
+/// <summary>Pedido para que Firebase mande un mail (por ejemplo, el de verificar la cuenta).</summary>
+internal class PedidoCodigo
+{
+    public string RequestType { get; set; } = "";
+    /// <summary>Para VERIFY_EMAIL (mail del usuario con sesión iniciada).</summary>
+    public string? IdToken { get; set; }
+    /// <summary>Para PASSWORD_RESET (no hace falta haber iniciado sesión).</summary>
+    public string? Email { get; set; }
+}
+
+/// <summary>Pedido que solo lleva el token del usuario.</summary>
+internal class PedidoToken
+{
+    public string IdToken { get; set; } = "";
+}
+
+/// <summary>Datos de la cuenta que devuelve Firebase (accounts:lookup).</summary>
+internal class RespuestaConsultaCuenta
+{
+    public List<CuentaFirebase>? Users { get; set; }
+}
+
+internal class CuentaFirebase
+{
+    public string LocalId { get; set; } = "";
+    public string Email { get; set; } = "";
+    public string? DisplayName { get; set; }
+    public bool EmailVerified { get; set; }
+}
+
+internal class RespuestaAutenticacion
+{
+    public string IdToken { get; set; } = "";
+    public string RefreshToken { get; set; } = "";
+    public string LocalId { get; set; } = "";
+    public string Email { get; set; } = "";
+    public string? DisplayName { get; set; }
+    public string ExpiresIn { get; set; } = "3600";
+}
+
+/// <summary>El servicio de tokens responde con nombres en snake_case.</summary>
+internal class RespuestaRefresco
+{
+    [JsonPropertyName("id_token")] public string IdToken { get; set; } = "";
+    [JsonPropertyName("refresh_token")] public string RefreshToken { get; set; } = "";
+    [JsonPropertyName("expires_in")] public string ExpiresIn { get; set; } = "3600";
+    [JsonPropertyName("user_id")] public string UserId { get; set; } = "";
+}
+
+internal class RespuestaErrorAuth
+{
+    public DetalleErrorAuth? Error { get; set; }
+}
+
+internal class DetalleErrorAuth
+{
+    public int Code { get; set; }
+    public string Message { get; set; } = "";
+}
+
+/// <summary>
+/// Le indica a .NET cómo convertir estas clases a JSON y de vuelta.
+/// Se genera en tiempo de compilación, así funciona igual en Android.
+/// </summary>
+[JsonSourceGenerationOptions(
+    PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
+    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+    WriteIndented = true)]
+[JsonSerializable(typeof(ViajeDatos))]
+[JsonSerializable(typeof(Dictionary<string, ViajeDatos>))]
+[JsonSerializable(typeof(RespuestaCreacion))]
+[JsonSerializable(typeof(SesionGuardada))]
+[JsonSerializable(typeof(PedidoAutenticacion))]
+[JsonSerializable(typeof(PedidoActualizarPerfil))]
+[JsonSerializable(typeof(PedidoCodigo))]
+[JsonSerializable(typeof(PedidoToken))]
+[JsonSerializable(typeof(RespuestaConsultaCuenta))]
+[JsonSerializable(typeof(RespuestaAutenticacion))]
+[JsonSerializable(typeof(RespuestaRefresco))]
+[JsonSerializable(typeof(RespuestaErrorAuth))]
+internal partial class JsonPool : JsonSerializerContext
+{
+}
+
+/// <summary>Funciones de conversión entre el modelo de la app (Viaje) y los datos guardados (ViajeDatos).</summary>
+internal static class ConversorViajes
+{
+    private const string FormatoFecha = "yyyy-MM-dd";
+
+    public static string FechaATexto(DateTime fecha) =>
+        fecha.ToString(FormatoFecha, CultureInfo.InvariantCulture);
+
+    /// <exception cref="FormatException">La fecha guardada no tiene el formato esperado.</exception>
+    public static DateTime TextoAFecha(string texto) =>
+        DateTime.ParseExact(texto, FormatoFecha, CultureInfo.InvariantCulture);
+
+    /// <exception cref="FormatException">El viaje guardado tiene una fecha inválida.</exception>
+    public static Viaje AViaje(string id, ViajeDatos datos)
+    {
+        var viaje = new Viaje
+        {
+            Id = id,
+            Origen = datos.Origen,
+            Destino = datos.Destino,
+            Fecha = TextoAFecha(datos.Fecha),
+            Hora = datos.Hora,
+            ConductorUid = datos.ConductorUid,
+            Conductor = datos.ConductorNombre,
+            Comentario = datos.Comentario
+        };
+        viaje.ActualizarDesde(datos);
+        return viaje;
+    }
+
+    public static ViajeDatos ADatos(Viaje viaje) => new()
+    {
+        Origen = viaje.Origen,
+        Destino = viaje.Destino,
+        Fecha = FechaATexto(viaje.Fecha),
+        Hora = viaje.Hora,
+        ConductorUid = viaje.ConductorUid,
+        ConductorNombre = viaje.Conductor,
+        Comentario = viaje.Comentario,
+        AsientosDisponibles = viaje.AsientosDisponibles,
+        Cancelado = viaje.Cancelado,
+        Pasajeros = viaje.PasajerosPorUid.Count > 0
+            ? new Dictionary<string, string>(viaje.PasajerosPorUid)
+            : null
+    };
+}

@@ -16,6 +16,8 @@ public partial class PublicarViajePage : ContentPage
     private async void OnConfirmarClicked(object? sender, EventArgs e)
     {
         lblError.IsVisible = false;
+        var boton = (Button)sender!;
+        boton.IsEnabled = false;   // evita publicar dos veces mientras espera al servidor
 
         try
         {
@@ -26,10 +28,10 @@ public partial class PublicarViajePage : ContentPage
 
             DateTime fecha = ((DateTime?)dpFecha.Date) ?? DateTime.Today;
 
-            _servicio.Publicar(entryOrigen.Text, entryDestino.Text, fecha,
-                               pickerHora.SelectedItem as string, asientos, editorComentario.Text);
+            await _servicio.PublicarAsync(entryOrigen.Text, entryDestino.Text, fecha,
+                                          pickerHora.SelectedItem as string, asientos, editorComentario.Text);
 
-            await DisplayAlertAsync("Listo", "¡Viaje publicado con éxito!", "OK");
+            await DisplayAlertAsync("Listo", "¡Viaje publicado! Ya lo pueden ver los demás.", "OK");
             await Navigation.PopAsync();
         }
         // ArgumentOutOfRangeException hereda de ArgumentException: va primero la más específica
@@ -45,11 +47,20 @@ public partial class PublicarViajePage : ContentPage
         {
             MostrarError(ex, "La cantidad de asientos no es un número válido.");
         }
-        catch (PersistenciaException ex)
+        catch (SesionVencidaException ex)
         {
-            // El viaje se publicó igual; solo falló el guardado (ya registrado como ERROR)
-            await DisplayAlertAsync("Atención", ex.Message, "OK");
-            await Navigation.PopAsync();
+            // La app ya volvió a la pantalla de inicio de sesión
+            RegistroErrores.RegistrarAviso(ex, "Publicar viaje");
+        }
+        catch (Exception ex) when (ex is SinConexionException or PermisoDenegadoException or ServidorException)
+        {
+            RegistroErrores.RegistrarError(ex, "Publicar viaje");
+            lblError.Text = ex.Message;
+            lblError.IsVisible = true;
+        }
+        finally
+        {
+            boton.IsEnabled = true;
         }
     }
 
