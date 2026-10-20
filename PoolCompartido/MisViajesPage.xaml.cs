@@ -78,6 +78,43 @@ public partial class MisViajesPage : ContentPage
         }
     }
 
+    /// <summary>HU4: el pasajero se sale del viaje y libera su asiento.</summary>
+    private async void OnSalirmeClicked(object? sender, EventArgs e)
+    {
+        if (sender is not Button { BindingContext: Viaje viaje } boton) return;
+
+        bool confirmar = await DisplayAlertAsync("Salirme del viaje",
+            $"¿Seguro que querés salirte del viaje de {viaje.Conductor} {viaje.Ruta} del {viaje.Fecha:dd/MM}? Tu lugar va a quedar libre.",
+            "Sí, salirme", "No");
+        if (!confirmar) return;
+
+        boton.IsEnabled = false;   // evita que se toque dos veces mientras espera al servidor
+        try
+        {
+            await _servicio.SalirseAsync(viaje);
+            await DisplayAlertAsync("Listo", $"Ya no estás anotado en el viaje de {viaje.Conductor}.", "OK");
+        }
+        catch (ViajeException ex)
+        {
+            RegistroErrores.RegistrarAviso(ex, "Salirse de un viaje");
+            await DisplayAlertAsync("No se pudo salir del viaje", ex.Message, "OK");
+        }
+        catch (SesionVencidaException ex)
+        {
+            // La app ya volvió a la pantalla de inicio de sesión
+            RegistroErrores.RegistrarAviso(ex, "Salirse de un viaje");
+        }
+        catch (Exception ex) when (ex is SinConexionException or PermisoDenegadoException or ServidorException)
+        {
+            RegistroErrores.RegistrarError(ex, "Salirse de un viaje");
+            await DisplayAlertAsync("No se pudo salir del viaje", ex.Message, "OK");
+        }
+        finally
+        {
+            boton.IsEnabled = true;
+        }
+    }
+
     /// <summary>Equivalente al evento Paint: vuelve a armar la lista.</summary>
     private void Redibujar()
     {

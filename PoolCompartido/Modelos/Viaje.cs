@@ -28,6 +28,9 @@ public class Viaje : INotifyPropertyChanged
     /// <summary>Nombre del último pasajero que se anotó (para la notificación al conductor).</summary>
     public string? UltimoPasajeroAnotado { get; private set; }
 
+    /// <summary>HU4: nombre del último pasajero que se bajó del viaje (para el aviso al conductor de la HU7).</summary>
+    public string? UltimoPasajeroQueSalio { get; private set; }
+
     private int _asientosDisponibles;
     public int AsientosDisponibles
     {
@@ -52,6 +55,7 @@ public class Viaje : INotifyPropertyChanged
             OnPropertyChanged();
             OnPropertyChanged(nameof(PuedeCancelar));
             OnPropertyChanged(nameof(PuedeAnotarse));
+            OnPropertyChanged(nameof(PuedeSalirse));
         }
     }
 
@@ -65,6 +69,9 @@ public class Viaje : INotifyPropertyChanged
 
     /// <summary>Solo el conductor puede cancelar, y solo si todavía no lo canceló.</summary>
     public bool PuedeCancelar => EsDelUsuarioActual && !Cancelado;
+
+    /// <summary>HU4: el botón "Salirme" solo aparece en viajes activos donde estoy anotado como pasajero.</summary>
+    public bool PuedeSalirse => EstoyAnotado && !Cancelado;
 
     // Textos listos para mostrar en la lista
     public string Ruta => $"{Origen} → {Destino}";
@@ -85,6 +92,10 @@ public class Viaje : INotifyPropertyChanged
             if (agregado.Key != null)
                 UltimoPasajeroAnotado = agregado.Value;
 
+            var salio = _pasajeros.FirstOrDefault(p => !nuevos.ContainsKey(p.Key));
+            if (salio.Key != null)
+                UltimoPasajeroQueSalio = salio.Value;
+
             _pasajeros.Clear();
             foreach (var (uid, nombre) in nuevos)
                 _pasajeros[uid] = nombre;
@@ -94,6 +105,7 @@ public class Viaje : INotifyPropertyChanged
             OnPropertyChanged(nameof(EstoyAnotado));
             OnPropertyChanged(nameof(RolUsuarioActual));
             OnPropertyChanged(nameof(PuedeAnotarse));
+            OnPropertyChanged(nameof(PuedeSalirse));
         }
 
         AsientosDisponibles = datos.AsientosDisponibles;

@@ -23,6 +23,13 @@ public class YaAnotadoException : ViajeException
         : base("Ya estás anotado en este viaje.") { }
 }
 
+/// <summary>HU4: el pasajero intenta salirse de un viaje al que no está anotado.</summary>
+public class NoAnotadoException : ViajeException
+{
+    public NoAnotadoException()
+        : base("No estás anotado en este viaje.") { }
+}
+
 /// <summary>El viaje ya pasó.</summary>
 public class ViajeVencidoException : ViajeException
 {
