@@ -10,10 +10,10 @@ Completar el núcleo del proyecto: salir de un viaje, búsqueda automática de r
 
 | HU | Qué es | Quién | Orden |
 |---|---|---|---|
-| HU22 | Ver la ruta en Google Maps | Compañero 2 (Octavio) | 1 |
-| HU7 | Mensajes adaptados al rol (conversión de mensajes) | Compañero 2 (Octavio) | 2 |
-| HU4 | Salirse de un viaje | Compañero 1 (Francisco) | 1 |
-| HU21 | Borrar mi cuenta (depende de HU4) | Compañero 1 (Francisco) | 2 |
+| HU22 | Ver la ruta en Google Maps | Compañero 1 (Francisco) | 1 |
+| HU7 | Mensajes adaptados al rol (conversión de mensajes) | Compañero 1 (Francisco) | 2 |
+| HU4 | Salirse de un viaje | Compañero 2 (Octavio) | 1 |
+| HU21 | Borrar mi cuenta (depende de HU4) | Compañero 2 (Octavio) | 2 |
 | HU6 + HU11 | Búsqueda automática de reemplazo + encadenamiento de eventos | Los dos juntos | 3 (al final) |
 
 ---
@@ -81,7 +81,7 @@ PoolCompartido/
 
 ## 4. Historias del sprint
 
-### HU22 (US E1-22) – Ver la ruta en Google Maps · *Compañero 2 (Octavio)*
+### HU22 (US E1-22) – Ver la ruta en Google Maps · *Compañero 1 (Francisco)*
 **Como** pasajero, **quiero** ver el recorrido del viaje en Google Maps, **para** saber si me queda cómodo.
 
 Criterios de aceptación:
@@ -94,11 +94,11 @@ Pistas técnicas:
   `https://www.google.com/maps/dir/?api=1&origin={origen}&destination={destino}&travelmode=driving`
   Hay que escapar los textos con `Uri.EscapeDataString`. Conviene agregar ", Argentina" para que "Palermo" no termine en Italia.
 - Poner la lógica en una clase chica (por ejemplo `Servicios/ServicioMapas.cs`, con un método que arme la URL y otro que la abra), no en la pantalla.
-- El botón va en el `DataTemplate` de `MainPage.xaml` y de `MisViajesPage.xaml`. Ojo: el Compañero 1 (Francisco) también toca `MisViajesPage.xaml` en la HU4 (agrega un botón "Salirme"). Son líneas distintas, así que Git las combina solo, pero avisense.
+- El botón va en el `DataTemplate` de `MainPage.xaml` y de `MisViajesPage.xaml`. Ojo: el Compañero 2 (Octavio) también toca `MisViajesPage.xaml` en la HU4 (agrega un botón "Salirme"). Son líneas distintas, así que Git las combina solo, pero avisense.
 
 Prioridad: Could · Estimación: S
 
-### HU7 (US E4-07) – Mensajes adaptados al rol · *Compañero 2 (Octavio)*
+### HU7 (US E4-07) – Mensajes adaptados al rol · *Compañero 1 (Francisco)*
 **Como** usuario, **quiero** recibir un mensaje claro y adaptado a mi rol cada vez que cambia el estado de un viaje en el que participo, **para** estar al tanto sin revisar manualmente.
 
 Criterios de aceptación:
@@ -109,11 +109,12 @@ Criterios de aceptación:
 Pistas técnicas:
 - Es el tema **"conversión de mensajes"** de la materia: crear `Servicios/ConversorMensajes.cs` con un método tipo `string? Convertir(ViajeEvento evento, Viaje viaje)` que use un `switch` sobre el evento y el rol, y devuelva el texto o `null` si no corresponde avisar.
 - Hoy los mensajes están escritos directamente en las callbacks del constructor de `MainPage.xaml.cs`. La idea es reemplazarlos por una única forma: `MostrarAvisoSiCorresponde(ConversorMensajes.Convertir(evento, viaje))`.
-- `ASIENTO_LIBERADO` lo dispara la HU4 del Compañero 1 (Francisco). Se puede dejar el caso escrito aunque todavía no se dispare.
+- `ASIENTO_LIBERADO` lo dispara la HU4 del Compañero 2 (Octavio). Se puede dejar el caso escrito aunque todavía no se dispare.
+- Para armar los textos ya existen `viaje.UltimoPasajeroAnotado` (quién se anotó) y, con la HU4, va a existir `viaje.UltimoPasajeroQueSalio` (quién se bajó). El aviso al conductor cuando alguien se baja lo muestra esta HU7: la HU4 solo dispara el evento.
 
 Prioridad: Must · Estimación: M
 
-### HU4 (US E2-04) – Salirse de un viaje · *Compañero 1 (Francisco)*
+### HU4 (US E2-04) – Salirse de un viaje · *Compañero 2 (Octavio)*
 **Como** pasajero, **quiero** cancelar mi participación en un viaje, **para** liberar el lugar si no puedo ir.
 
 Criterios de aceptación:
@@ -124,7 +125,7 @@ Criterios de aceptación:
 
 Prioridad: Should · Estimación: S
 
-### HU21 (US E10-21) – Borrar mi cuenta · *Compañero 1 (Francisco)*
+### HU21 (US E10-21) – Borrar mi cuenta · *Compañero 2 (Octavio)*
 **Como** usuario, **quiero** borrar mi cuenta desde la app, **para** que no queden mis datos si dejo de usarla.
 
 Criterios de aceptación:
