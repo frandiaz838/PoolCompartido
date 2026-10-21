@@ -237,6 +237,51 @@ public class ServicioAutenticacion
         GuardarSesion();
     }
 
+    // ───────────────────────── Borrar cuenta (HU21) ─────────────────────────
+
+    /// <summary>
+    /// Vuelve a pedir la contraseña antes de algo que no se puede deshacer, como borrar la cuenta.
+    /// Además deja un token recién emitido: Firebase solo deja borrar la cuenta si el ingreso es reciente.
+    /// </summary>
+    /// <exception cref="ArgumentException">No escribió la contraseña.</exception>
+    /// <exception cref="CredencialesInvalidasException">La contraseña es incorrecta.</exception>
+    /// <exception cref="SinConexionException">No hay internet.</exception>
+    public async Task ConfirmarContrasenaAsync(string? contrasena)
+    {
+        var usuario = UsuarioActual ?? throw new SesionVencidaException();
+        if (string.IsNullOrEmpty(contrasena))
+            throw new ArgumentException("Escribí tu contraseña para confirmar.");
+
+        var cuenta = await EnviarAsync($"{UrlCuentas}signInWithPassword",
+            new PedidoAutenticacion { Email = usuario.Email, Password = contrasena },
+            JsonPool.Default.PedidoAutenticacion, JsonPool.Default.RespuestaAutenticacion);
+
+        // No se usa Ingresar(): no es un inicio de sesión nuevo, así que no se dispara SESION_INICIADA
+        _idToken = cuenta.IdToken;
+        _refreshToken = cuenta.RefreshToken;
+        _venceUtc = DateTime.UtcNow.AddSeconds(LeerSegundos(cuenta.ExpiresIn));
+        GuardarSesion();
+    }
+
+    /// <summary>
+    /// Borra la cuenta de Firebase Authentication para siempre y cierra la sesión (SESION_CERRADA).
+    /// Antes hay que llamar a ConfirmarContrasenaAsync y dejar los viajes activos.
+    /// </summary>
+    /// <exception cref="SinConexionException">No hay internet.</exception>
+    /// <exception cref="AutenticacionException">Firebase no lo permitió (por ejemplo, el ingreso no es reciente).</exception>
+    public async Task BorrarCuentaAsync()
+    {
+        var usuario = UsuarioActual ?? throw new SesionVencidaException();
+
+        await EnviarAsync($"{UrlCuentas}delete",
+            new PedidoToken { IdToken = await ObtenerTokenAsync() },
+            JsonPool.Default.PedidoToken, JsonPool.Default.RespuestaAutenticacion);
+
+        // La cuenta ya no existe: se borra la sesión guardada y la app vuelve al login
+        LimpiarSesion();
+        Eventos.Disparar(EventoSesion.SESION_CERRADA, usuario);
+    }
+
     /// <summary>Cierra la sesión y avisa con el evento SESION_CERRADA.</summary>
     public void CerrarSesion()
     {
@@ -343,6 +388,7 @@ public class ServicioAutenticacion
             "WEAK_PASSWORD" => new ArgumentException($"La contraseña tiene que tener al menos {LargoMinimoContrasena} caracteres."),
             "USER_DISABLED" => new AutenticacionException("Esta cuenta está deshabilitada."),
             "TOO_MANY_ATTEMPTS_TRY_LATER" => new AutenticacionException("Demasiados intentos. Esperá unos minutos y probá de nuevo."),
+            "CREDENTIAL_TOO_OLD_LOGIN_AGAIN" => new AutenticacionException("Por seguridad, volvé a escribir tu contraseña y probá de nuevo."),
             "OPERATION_NOT_ALLOWED" => new AutenticacionException("El ingreso con mail y contraseña no está activado en Firebase."),
             _ => new ServidorException(string.IsNullOrEmpty(codigo) ? $"código {(int)estado}" : codigo)
         };
