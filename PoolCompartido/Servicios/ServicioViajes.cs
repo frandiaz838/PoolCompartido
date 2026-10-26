@@ -58,7 +58,12 @@ public class ServicioViajes
         // Solo le interesa al pasajero: el conductor fue el que canceló
         if (cancelado.EsDelUsuarioActual || !cancelado.EstoyAnotado) return;
 
-        cancelado.Reemplazo = BuscadorDeReemplazo.Buscar(cancelado, _viajes, ServicioAutenticacion.UidActual);
+        // Si ya tiene otro viaje a esa hora, no necesita reemplazo
+        if (ViajeQueSeSuperpone(cancelado.Salida, exceptoId: cancelado.Id) is not null) return;
+
+        // El reemplazo tampoco puede chocar con otro viaje suyo
+        cancelado.Reemplazo = BuscadorDeReemplazo.Buscar(cancelado, _viajes, ServicioAutenticacion.UidActual,
+            ademas: v => ViajeQueSeSuperpone(v.Salida, exceptoId: cancelado.Id) is null);
 
         var siguiente = cancelado.Reemplazo is null ? ViajeEvento.SIN_REEMPLAZO : ViajeEvento.REEMPLAZO_ENCONTRADO;
         Eventos.Disparar(siguiente, cancelado);
@@ -209,6 +214,10 @@ public class ServicioViajes
         if (asientos < 1 || asientos > 4)
             throw new ArgumentOutOfRangeException("Elegí entre 1 y 4 asientos disponibles.", innerException: null);
 
+        // No puede manejar un viaje a la misma hora que otro donde ya participa
+        if (ViajeQueSeSuperpone(salida) is Viaje otro)
+            throw new HorarioOcupadoException(otro);
+
         var usuario = UsuarioRequerido;
         var datos = new ViajeDatos
         {
@@ -248,6 +257,10 @@ public class ServicioViajes
         // Validación temprana con lo que ya sabemos
         ValidarAnotarse(viaje.Cancelado, viaje.ConductorUid, viaje.PasajerosPorUid.ContainsKey(usuario.Uid),
                         viaje.Salida, viaje.AsientosDisponibles, usuario.Uid);
+
+        // No puede estar en dos viajes al mismo tiempo
+        if (ViajeQueSeSuperpone(viaje.Salida, exceptoId: viaje.Id) is Viaje otro)
+            throw new HorarioOcupadoException(otro);
 
         for (int intento = 1; intento <= ReintentosPorConflicto; intento++)
         {
@@ -418,6 +431,22 @@ public class ServicioViajes
             RegistroErrores.RegistrarError(ex, "Borrar caché de viajes");
         }
     }
+
+    /// <summary>
+    /// Separación mínima entre dos viajes de una misma persona.
+    /// No sabemos cuánto dura cada viaje, así que se pide al menos una hora entre salidas.
+    /// </summary>
+    public static readonly TimeSpan SeparacionMinima = TimeSpan.FromHours(1);
+
+    /// <summary>
+    /// Otro viaje activo del usuario (como conductor o pasajero) que sale a menos de una hora
+    /// de ese horario, o null si está libre. Usa la búsqueda genérica.
+    /// </summary>
+    public Viaje? ViajeQueSeSuperpone(DateTime salida, string? exceptoId = null) =>
+        Busqueda.MasCercano(MisViajes(),
+            sirve: v => v.Id != exceptoId && !v.Cancelado && !v.Terminado
+                        && (v.Salida - salida).Duration() < SeparacionMinima,
+            distancia: v => (v.Salida - salida).Duration());
 
     /// <summary>HU8: viajes en los que participa el usuario actual (como conductor o pasajero), por fecha.</summary>
     public IEnumerable<Viaje> MisViajes() =>

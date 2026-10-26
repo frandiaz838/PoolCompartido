@@ -155,6 +155,10 @@ public partial class MainPage : ContentPage
         {
             await MostrarProblemaAsync("Sin lugar", ex);
         }
+        catch (HorarioOcupadoException ex)
+        {
+            await MostrarProblemaAsync("Horario ocupado", ex);
+        }
         catch (ViajeException ex)
         {
             await MostrarProblemaAsync("No disponible", ex);

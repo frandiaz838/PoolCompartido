@@ -55,8 +55,9 @@ public static class BuscadorDeReemplazo
     /// <param name="cancelado">El viaje que se canceló.</param>
     /// <param name="viajes">Todos los viajes conocidos.</param>
     /// <param name="uid">Usuario que necesita el reemplazo (no se le ofrece su propio viaje).</param>
+    /// <param name="ademas">Condición extra opcional (por ejemplo, que no choque con otro viaje suyo).</param>
     /// <exception cref="ArgumentNullException">Falta el viaje cancelado o la lista.</exception>
-    public static Viaje? Buscar(Viaje cancelado, IEnumerable<Viaje> viajes, string? uid)
+    public static Viaje? Buscar(Viaje cancelado, IEnumerable<Viaje> viajes, string? uid, Func<Viaje, bool>? ademas = null)
     {
         ArgumentNullException.ThrowIfNull(cancelado);
         ArgumentNullException.ThrowIfNull(viajes);
@@ -68,7 +69,8 @@ public static class BuscadorDeReemplazo
                         && v.ConductorUid != uid        // no se le ofrece su propio viaje
                         && !v.EstoyAnotado
                         && MismoLugar(v.Destino, cancelado.Destino)
-                        && Diferencia(v, cancelado) <= Tolerancia,
+                        && Diferencia(v, cancelado) <= Tolerancia
+                        && (ademas is null || ademas(v)),
             distancia: v => Diferencia(v, cancelado));
     }
 
