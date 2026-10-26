@@ -359,8 +359,9 @@ public class ServicioViajes
     /// <exception cref="SinConexionException">No hay internet.</exception>
     public async Task DejarMisViajesAsync()
     {
+        // Solo los que todavía no salieron (los en curso o terminados no se pueden modificar).
         // Se copia la lista con ToList(): cancelar o salirse cambia los viajes mientras se recorren
-        var activos = MisViajes().Where(v => !v.Cancelado && v.Fecha.Date >= DateTime.Today).ToList();
+        var activos = MisViajes().Where(v => v.SePuedeModificar).ToList();
 
         foreach (var viaje in activos)
         {
@@ -371,9 +372,9 @@ public class ServicioViajes
                 else
                     await SalirseAsync(viaje);
             }
-            catch (Exception ex) when (ex is ViajeCanceladoException or NoAnotadoException)
+            catch (Exception ex) when (ex is ViajeCanceladoException or NoAnotadoException or ViajeVencidoException)
             {
-                // Otro ya lo canceló o ya no estaba anotado: el viaje ya quedó como queríamos
+                // Otro ya lo canceló, ya no estaba anotado o justo salió: no hay nada que dejar
                 RegistroErrores.RegistrarAviso(ex, "Dejar viaje al borrar la cuenta");
             }
         }
