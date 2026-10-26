@@ -32,7 +32,8 @@ public partial class PublicarViajePage : ContentPage
             TimeSpan hora = ((TimeSpan?)tpHora.Time) ?? TimeSpan.Zero;
 
             await _servicio.PublicarAsync(entryOrigen.Text, entryDestino.Text, fecha,
-                                          FranjasHorarias.HoraATexto(hora), asientos, editorComentario.Text);
+                                          FranjasHorarias.HoraATexto(hora), asientos, editorComentario.Text,
+                                          entryPuntoPartida.Text);
 
             await DisplayAlertAsync("Listo", "¡Viaje publicado! Ya lo pueden ver los demás.", "OK");
             await Navigation.PopAsync();

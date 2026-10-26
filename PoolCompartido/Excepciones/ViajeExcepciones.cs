@@ -56,6 +56,10 @@ public class NoEsConductorException : ViajeException
 {
     public NoEsConductorException()
         : base("Solo el conductor puede cancelar el viaje.") { }
+
+    /// <summary>Para otras acciones que solo puede hacer el conductor.</summary>
+    public NoEsConductorException(string mensaje)
+        : base(mensaje) { }
 }
 
 /// <summary>No quedan asientos libres.</summary>

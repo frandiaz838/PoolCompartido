@@ -90,6 +90,51 @@ internal class RepositorioFirebase
         return true;
     }
 
+    // ───── HU24: puntos de encuentro (/encuentros/{viajeId}/{uid}) ─────
+
+    /// <summary>Punto de encuentro de un pasajero, o null si no lo cargó.</summary>
+    public async Task<PuntoEncuentroDatos?> ObtenerEncuentroAsync(string viajeId, string uid)
+    {
+        using var pedido = new HttpRequestMessage(HttpMethod.Get, await UrlAsync($"encuentros/{viajeId}/{uid}"));
+        using var respuesta = await ClienteHttp.EnviarAsync(pedido);
+        Verificar(respuesta);
+
+        string cuerpo = await respuesta.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize(cuerpo, JsonPool.Default.PuntoEncuentroDatos);
+    }
+
+    /// <summary>Todos los puntos de un viaje (uid → punto). Las reglas solo se lo permiten al conductor.</summary>
+    public async Task<Dictionary<string, PuntoEncuentroDatos>> ObtenerEncuentrosAsync(string viajeId)
+    {
+        using var pedido = new HttpRequestMessage(HttpMethod.Get, await UrlAsync($"encuentros/{viajeId}"));
+        using var respuesta = await ClienteHttp.EnviarAsync(pedido);
+        Verificar(respuesta);
+
+        string cuerpo = await respuesta.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize(cuerpo, JsonPool.Default.DictionaryStringPuntoEncuentroDatos)
+               ?? new Dictionary<string, PuntoEncuentroDatos>();
+    }
+
+    /// <summary>Guarda (o reemplaza) el punto de encuentro de un pasajero.</summary>
+    public async Task GuardarEncuentroAsync(string viajeId, string uid, PuntoEncuentroDatos datos)
+    {
+        using var pedido = new HttpRequestMessage(HttpMethod.Put, await UrlAsync($"encuentros/{viajeId}/{uid}"))
+        {
+            Content = new StringContent(JsonSerializer.Serialize(datos, JsonPool.Default.PuntoEncuentroDatos),
+                                        Encoding.UTF8, "application/json")
+        };
+        using var respuesta = await ClienteHttp.EnviarAsync(pedido);
+        Verificar(respuesta);
+    }
+
+    /// <summary>Borra el punto de encuentro de un pasajero (si no existía, no pasa nada).</summary>
+    public async Task BorrarEncuentroAsync(string viajeId, string uid)
+    {
+        using var pedido = new HttpRequestMessage(HttpMethod.Delete, await UrlAsync($"encuentros/{viajeId}/{uid}"));
+        using var respuesta = await ClienteHttp.EnviarAsync(pedido);
+        Verificar(respuesta);
+    }
+
     private static StringContent Json(ViajeDatos datos) =>
         new(JsonSerializer.Serialize(datos, JsonPool.Default.ViajeDatos), Encoding.UTF8, "application/json");
 

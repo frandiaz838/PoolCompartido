@@ -32,8 +32,32 @@ public static class ServicioMapas
     public static async Task AbrirRutaAsync(Viaje viaje)
     {
         ArgumentNullException.ThrowIfNull(viaje);
-        Uri url = ArmarUrlRuta(viaje.Origen, viaje.Destino);
 
+        // HU24: si el conductor indicó un punto de partida, la ruta arranca ahí
+        string origen = viaje.TienePuntoPartida ? $"{viaje.PuntoPartida}, {viaje.Origen}" : viaje.Origen;
+        await AbrirAsync(ArmarUrlRuta(origen, viaje.Destino));
+    }
+
+    /// <summary>HU24: arma la dirección web de Google Maps que muestra un lugar.</summary>
+    /// <param name="lugar">El punto de encuentro, por ejemplo "Av. Colón y General Paz".</param>
+    /// <param name="zona">La localidad, para ubicarlo mejor (por ejemplo, el origen del viaje).</param>
+    /// <exception cref="ArgumentException">No se indicó el lugar.</exception>
+    public static Uri ArmarUrlLugar(string? lugar, string? zona)
+    {
+        if (string.IsNullOrWhiteSpace(lugar))
+            throw new ArgumentException("No hay un lugar para mostrar en el mapa.");
+
+        string texto = string.IsNullOrWhiteSpace(zona) ? lugar.Trim() : $"{lugar.Trim()}, {zona.Trim()}";
+        return new Uri($"https://www.google.com/maps/search/?api=1&query={Uri.EscapeDataString($"{texto}, {Pais}")}");
+    }
+
+    /// <summary>HU24: abre Google Maps en el punto de encuentro de un pasajero.</summary>
+    /// <exception cref="ArgumentException">No se indicó el lugar.</exception>
+    /// <exception cref="MapaNoDisponibleException">El dispositivo no pudo abrir el mapa.</exception>
+    public static Task AbrirLugarAsync(string? lugar, string? zona) => AbrirAsync(ArmarUrlLugar(lugar, zona));
+
+    private static async Task AbrirAsync(Uri url)
+    {
         bool seAbrio;
         try
         {

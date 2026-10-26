@@ -23,10 +23,16 @@
             <Label Text="Asientos disponibles" Margin="0,8,0,0" />
             <Picker x:Name="pickerAsientos" Title="Elegí la cantidad" />
 
+            <!-- HU24: un lugar público, nunca la casa del conductor -->
+            <Label Text="Punto de partida (opcional)" Margin="0,8,0,0" />
+            <Entry x:Name="entryPuntoPartida"
+                   Placeholder="Un lugar público. Ej: Plaza de Villa Allende"
+                   MaxLength="100" />
+
             <Label Text="Comentario (opcional)" Margin="0,8,0,0" />
             <Editor x:Name="editorComentario"
                     HeightRequest="80"
-                    Placeholder="Ej: salgo desde la esquina de la plaza" />
+                    Placeholder="Ej: llevo lugar para mochilas" />
 
             <Label x:Name="lblError"
                    TextColor="Red"

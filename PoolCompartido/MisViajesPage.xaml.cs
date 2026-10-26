@@ -116,6 +116,7 @@ public partial class MisViajesPage : ContentPage
         try
         {
             await _servicio.SalirseAsync(viaje);
+            await PuntoDeEncuentro.BorrarSinFallarAsync(viaje);   // HU24: el conductor ya no necesita su dirección
             await DisplayAlertAsync("Listo", $"Ya no estás anotado en el viaje de {viaje.Conductor}.", "OK");
         }
         catch (ViajeException ex)
@@ -132,6 +133,38 @@ public partial class MisViajesPage : ContentPage
         {
             RegistroErrores.RegistrarError(ex, "Salirse de un viaje");
             await DisplayAlertAsync("No se pudo salir del viaje", ex.Message, "OK");
+        }
+        finally
+        {
+            boton.IsEnabled = true;
+        }
+    }
+
+    /// <summary>HU24: el pasajero carga o cambia su punto de encuentro.</summary>
+    private async void OnMiPuntoClicked(object? sender, EventArgs e)
+    {
+        if (sender is not Button { BindingContext: Viaje viaje } boton) return;
+
+        boton.IsEnabled = false;
+        try
+        {
+            await PuntoDeEncuentro.PedirYGuardarAsync(this, viaje);
+        }
+        finally
+        {
+            boton.IsEnabled = true;
+        }
+    }
+
+    /// <summary>HU24: el conductor elige a qué pasajero va a buscar y lo abre en el mapa.</summary>
+    private async void OnPuntosDeEncuentroClicked(object? sender, EventArgs e)
+    {
+        if (sender is not Button { BindingContext: Viaje viaje } boton) return;
+
+        boton.IsEnabled = false;
+        try
+        {
+            await PuntoDeEncuentro.MostrarAlConductorAsync(this, viaje);
         }
         finally
         {
