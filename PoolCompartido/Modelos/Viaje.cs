@@ -51,6 +51,9 @@ public class Viaje : INotifyPropertyChanged
     public string? UltimoPasajeroAnotadoUid { get; private set; }
     public string? UltimoPasajeroQueSalioUid { get; private set; }
 
+    /// <summary>HU6: si este viaje se canceló, el viaje parecido que se encontró para el pasajero.</summary>
+    public Viaje? Reemplazo { get; internal set; }
+
     private int _asientosDisponibles;
     public int AsientosDisponibles
     {

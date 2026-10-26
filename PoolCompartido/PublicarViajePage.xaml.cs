@@ -50,6 +50,11 @@ public partial class PublicarViajePage : ContentPage
         {
             MostrarError(ex, "La cantidad de asientos no es un número válido.");
         }
+        catch (HorarioOcupadoException ex)
+        {
+            // Ya maneja o viaja en otro viaje a esa hora
+            MostrarError(ex, ex.Message);
+        }
         catch (SesionVencidaException ex)
         {
             // La app ya volvió a la pantalla de inicio de sesión

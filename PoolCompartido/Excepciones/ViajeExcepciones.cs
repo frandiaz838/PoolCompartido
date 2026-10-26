@@ -74,3 +74,19 @@ public class ConflictoException : ViajeException
     public ConflictoException()
         : base("El viaje cambió mientras hacías la operación. Probá de nuevo.") { }
 }
+
+/// <summary>
+/// El usuario ya está en otro viaje (como conductor o pasajero) cerca de ese horario:
+/// no puede estar en dos viajes al mismo tiempo.
+/// </summary>
+public class HorarioOcupadoException : ViajeException
+{
+    /// <summary>El viaje que ya tiene a esa hora.</summary>
+    public Viaje Otro { get; }
+
+    public HorarioOcupadoException(Viaje otro)
+        : base($"Ya tenés otro viaje a esa hora: {otro.Ruta} el {otro.Fecha:dd/MM} a las {otro.Hora}. No podés estar en dos viajes al mismo tiempo.")
+    {
+        Otro = otro;
+    }
+}
