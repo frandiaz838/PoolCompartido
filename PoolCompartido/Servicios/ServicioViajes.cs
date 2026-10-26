@@ -20,6 +20,9 @@ public class ServicioViajes
     /// <summary>Evento estándar de .NET: avisa cuando se pierde o se recupera la conexión.</summary>
     public event EventHandler<bool>? ConexionCambiada;
 
+    /// <summary>Evento estándar de .NET: algún viaje cambió de estado porque pasó el tiempo (cerró, salió o terminó).</summary>
+    public event EventHandler? EstadosCambiados;
+
     public bool HayConexion { get; private set; } = true;
 
     /// <summary>Mensaje para mostrar al entrar si hubo un problema al cargar.</summary>
@@ -128,8 +131,23 @@ public class ServicioViajes
         _viajes.Clear();
         Eventos = new Despachador<ViajeEvento, Viaje>();
         ConexionCambiada = null;
+        EstadosCambiados = null;
         HayConexion = true;
         AvisoAlIniciar = null;
+    }
+
+    /// <summary>
+    /// Se llama con el timer: revisa la hora de cada viaje y, si alguno cambió de estado
+    /// (cerró las anotaciones, salió o terminó), dispara EstadosCambiados para que las pantallas se redibujen.
+    /// </summary>
+    public void ActualizarEstados()
+    {
+        bool huboCambios = false;
+        foreach (var viaje in _viajes)
+            huboCambios |= viaje.RefrescarEstado();
+
+        if (huboCambios)
+            EstadosCambiados?.Invoke(this, EventArgs.Empty);
     }
 
     // ───────────────────────── Operaciones ─────────────────────────
@@ -154,8 +172,13 @@ public class ServicioViajes
         if (fecha.Date < DateTime.Today)
             throw new ArgumentOutOfRangeException("La fecha del viaje no puede ser anterior a hoy.", innerException: null);
 
-        if (fecha.Date == DateTime.Today && horaSalida < DateTime.Now.TimeOfDay)
+        DateTime salida = fecha.Date + horaSalida;
+        if (salida <= DateTime.Now)
             throw new ArgumentOutOfRangeException("Esa hora de hoy ya pasó. Elegí una hora más tarde.", innerException: null);
+
+        // Las anotaciones se cierran 5 minutos antes: con menos tiempo nadie llegaría a anotarse
+        if (salida - DateTime.Now < Viaje.CierreAnotaciones)
+            throw new ArgumentOutOfRangeException("El viaje tiene que salir dentro de más de 5 minutos, así los pasajeros llegan a anotarse.", innerException: null);
 
         if (asientos < 1 || asientos > 4)
             throw new ArgumentOutOfRangeException("Elegí entre 1 y 4 asientos disponibles.", innerException: null);
@@ -198,7 +221,7 @@ public class ServicioViajes
 
         // Validación temprana con lo que ya sabemos
         ValidarAnotarse(viaje.Cancelado, viaje.ConductorUid, viaje.PasajerosPorUid.ContainsKey(usuario.Uid),
-                        viaje.Fecha, viaje.AsientosDisponibles, usuario.Uid);
+                        viaje.Salida, viaje.AsientosDisponibles, usuario.Uid);
 
         for (int intento = 1; intento <= ReintentosPorConflicto; intento++)
         {
@@ -211,7 +234,7 @@ public class ServicioViajes
             {
                 // Se vuelve a validar con los datos frescos: otra persona pudo anotarse recién
                 ValidarAnotarse(datos.Cancelado, datos.ConductorUid, datos.Pasajeros.ContainsKey(usuario.Uid),
-                                viaje.Fecha, datos.AsientosDisponibles, usuario.Uid);
+                                viaje.Salida, datos.AsientosDisponibles, usuario.Uid);
             }
             catch (ViajeException)
             {
@@ -251,7 +274,7 @@ public class ServicioViajes
 
         if (viaje.ConductorUid != usuario.Uid) throw new NoEsConductorException();
         if (viaje.Cancelado) throw new ViajeCanceladoException();
-        if (viaje.Fecha.Date < DateTime.Today) throw new ViajeVencidoException();
+        if (DateTime.Now >= viaje.Salida) throw new ViajeVencidoException();
 
         for (int intento = 1; intento <= ReintentosPorConflicto; intento++)
         {
@@ -287,7 +310,7 @@ public class ServicioViajes
         var usuario = UsuarioRequerido;
 
         // Validación temprana con lo que ya sabemos
-        ValidarSalirse(viaje.Cancelado, viaje.PasajerosPorUid.ContainsKey(usuario.Uid), viaje.Fecha);
+        ValidarSalirse(viaje.Cancelado, viaje.PasajerosPorUid.ContainsKey(usuario.Uid), viaje.Salida);
 
         for (int intento = 1; intento <= ReintentosPorConflicto; intento++)
         {
@@ -299,7 +322,7 @@ public class ServicioViajes
             try
             {
                 // Se vuelve a validar con los datos frescos: el conductor pudo cancelar recién
-                ValidarSalirse(datos.Cancelado, datos.Pasajeros.ContainsKey(usuario.Uid), viaje.Fecha);
+                ValidarSalirse(datos.Cancelado, datos.Pasajeros.ContainsKey(usuario.Uid), viaje.Salida);
             }
             catch (ViajeException)
             {
@@ -336,20 +359,21 @@ public class ServicioViajes
     // ───────────────────────── Auxiliares ─────────────────────────
 
     private static void ValidarAnotarse(bool cancelado, string conductorUid, bool yaAnotado,
-                                        DateTime fecha, int asientos, string uid)
+                                        DateTime salida, int asientos, string uid)
     {
         if (cancelado) throw new ViajeCanceladoException();
         if (conductorUid == uid) throw new AutoReservaException();
         if (yaAnotado) throw new YaAnotadoException();
-        if (fecha.Date < DateTime.Today) throw new ViajeVencidoException();
+        if (DateTime.Now >= salida) throw new ViajeVencidoException();
+        if (DateTime.Now >= salida - Viaje.CierreAnotaciones) throw new AnotacionesCerradasException();
         if (asientos <= 0) throw new ViajeCompletoException();
     }
 
-    private static void ValidarSalirse(bool cancelado, bool anotado, DateTime fecha)
+    private static void ValidarSalirse(bool cancelado, bool anotado, DateTime salida)
     {
         if (cancelado) throw new ViajeCanceladoException();
         if (!anotado) throw new NoAnotadoException();
-        if (fecha.Date < DateTime.Today) throw new ViajeVencidoException();
+        if (DateTime.Now >= salida) throw new ViajeVencidoException();
     }
 
     private void CambiarConexion(bool hayConexion)

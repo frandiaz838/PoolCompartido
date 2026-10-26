@@ -70,7 +70,12 @@ namespace PoolCompartido
             _timerSincronizacion?.Stop();
             _timerSincronizacion = Dispatcher.CreateTimer();
             _timerSincronizacion.Interval = IntervaloSincronizacion;
-            _timerSincronizacion.Tick += async (sender, e) => await SincronizarAsync();
+            _timerSincronizacion.Tick += async (sender, e) =>
+            {
+                await SincronizarAsync();
+                // Aunque no haya internet, el tiempo pasa: los viajes cierran, salen y terminan
+                ServicioViajes.Instancia.ActualizarEstados();
+            };
             _timerSincronizacion.Start();
         }
 

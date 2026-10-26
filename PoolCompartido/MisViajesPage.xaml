@@ -14,7 +14,7 @@
 
         <VerticalStackLayout Grid.Row="0" Spacing="2">
             <Label x:Name="lblSaludo" FontSize="18" FontAttributes="Bold" />
-            <Label Text="Viajes en los que participás, ordenados por fecha." FontSize="14" />
+            <Label Text="Viajes en los que participás. Los que ya terminaron se ocultan solos." FontSize="14" />
         </VerticalStackLayout>
 
         <!-- HU8: viajes del usuario como conductor y como pasajero -->
@@ -33,17 +33,34 @@
                             StrokeShape="RoundRectangle 10"
                             StrokeThickness="1"
                             Stroke="{AppThemeBinding Light=#DDDDDD, Dark=#555555}">
+                        <!-- El viaje en curso se resalta con borde verde -->
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding Estado}" Value="{x:Static local:EstadoViaje.EnCurso}">
+                                <Setter Property="Stroke" Value="#2E9E5B" />
+                                <Setter Property="StrokeThickness" Value="2" />
+                            </DataTrigger>
+                        </Border.Triggers>
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                             <VerticalStackLayout Spacing="2">
                                 <Label Text="{Binding Ruta}" FontSize="17" FontAttributes="Bold" />
                                 <Label Text="{Binding Detalle}" FontSize="13" />
                                 <Label Text="{Binding AsientosDisponibles, StringFormat='Asientos libres: {0}'}" FontSize="13" />
                                 <Label Text="{Binding PasajerosTexto}" FontSize="13" IsVisible="{Binding EsDelUsuarioActual}" />
-                                <Label Text="Cancelado"
+                                <!-- Estado según la hora: sale en menos de 5 minutos, en curso o cancelado -->
+                                <Label Text="{Binding EstadoTexto}"
                                        FontSize="13"
                                        FontAttributes="Bold"
                                        TextColor="#E5484D"
-                                       IsVisible="{Binding Cancelado}" />
+                                       IsVisible="{Binding MostrarEstado}">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding Estado}" Value="{x:Static local:EstadoViaje.EnCurso}">
+                                            <Setter Property="TextColor" Value="#2E9E5B" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Label" Binding="{Binding Estado}" Value="{x:Static local:EstadoViaje.PorSalir}">
+                                            <Setter Property="TextColor" Value="#D9822B" />
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
                             </VerticalStackLayout>
                             <VerticalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="Center">
                                 <!-- Rol del usuario en este viaje -->

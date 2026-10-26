@@ -33,6 +33,9 @@ public partial class MainPage : ContentPage
                 ? "Volvió la conexión: los viajes están actualizados."
                 : "Sin conexión: se muestran los últimos viajes guardados.");
 
+        // Pasó el tiempo y algún viaje cerró las anotaciones: desaparece de la lista
+        _servicio.EstadosCambiados += (sender, e) => Redibujar();
+
         Redibujar();
 
         if (_servicio.AvisoAlIniciar is string aviso)
@@ -68,11 +71,10 @@ public partial class MainPage : ContentPage
         var franja = (FranjaHoraria)Math.Max(pickerHorario.SelectedIndex, 0);
 
         var filtrados = _servicio.Viajes
-            .Where(v => !v.Cancelado)
+            .Where(v => v.AceptaPasajeros)   // ni cancelados ni a menos de 5 minutos de salir
             .Where(v => destino == "" || v.Destino.Contains(destino, StringComparison.OrdinalIgnoreCase))
             .Where(v => FranjasHorarias.Incluye(franja, v.Hora))
-            .OrderBy(v => v.Fecha)
-            .ThenBy(v => v.Hora);
+            .OrderBy(v => v.Salida);
 
         _viajesVisibles.Clear();
         foreach (var viaje in filtrados)

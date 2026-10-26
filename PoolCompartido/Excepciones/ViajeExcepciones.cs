@@ -30,11 +30,18 @@ public class NoAnotadoException : ViajeException
         : base("No estás anotado en este viaje.") { }
 }
 
-/// <summary>El viaje ya pasó.</summary>
+/// <summary>El viaje ya salió: no se puede modificar.</summary>
 public class ViajeVencidoException : ViajeException
 {
     public ViajeVencidoException()
-        : base("Este viaje ya pasó su fecha de salida.") { }
+        : base("Este viaje ya salió.") { }
+}
+
+/// <summary>Faltan menos de 5 minutos para salir: ya no se aceptan pasajeros nuevos.</summary>
+public class AnotacionesCerradasException : ViajeException
+{
+    public AnotacionesCerradasException()
+        : base("Este viaje sale en menos de 5 minutos y ya no acepta pasajeros.") { }
 }
 
 /// <summary>El viaje fue cancelado por el conductor.</summary>
