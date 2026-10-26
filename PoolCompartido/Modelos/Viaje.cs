@@ -31,6 +31,11 @@ public class Viaje : INotifyPropertyChanged
     /// <summary>HU4: nombre del último pasajero que se bajó del viaje (para el aviso al conductor de la HU7).</summary>
     public string? UltimoPasajeroQueSalio { get; private set; }
 
+    // HU7: uid de esos mismos pasajeros, para saber si el que se anotó o se bajó soy yo
+    // (los nombres se pueden repetir, el uid no)
+    public string? UltimoPasajeroAnotadoUid { get; private set; }
+    public string? UltimoPasajeroQueSalioUid { get; private set; }
+
     private int _asientosDisponibles;
     public int AsientosDisponibles
     {
@@ -90,11 +95,17 @@ public class Viaje : INotifyPropertyChanged
         {
             var agregado = nuevos.FirstOrDefault(p => !_pasajeros.ContainsKey(p.Key));
             if (agregado.Key != null)
+            {
                 UltimoPasajeroAnotado = agregado.Value;
+                UltimoPasajeroAnotadoUid = agregado.Key;
+            }
 
             var salio = _pasajeros.FirstOrDefault(p => !nuevos.ContainsKey(p.Key));
             if (salio.Key != null)
+            {
                 UltimoPasajeroQueSalio = salio.Value;
+                UltimoPasajeroQueSalioUid = salio.Key;
+            }
 
             _pasajeros.Clear();
             foreach (var (uid, nombre) in nuevos)
