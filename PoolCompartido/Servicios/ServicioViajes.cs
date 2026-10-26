@@ -37,7 +37,32 @@ public class ServicioViajes
 
     private bool _sincronizando;
 
-    private ServicioViajes() { }
+    private ServicioViajes()
+    {
+        RegistrarBusquedaDeReemplazo();
+    }
+
+    /// <summary>
+    /// HU6 + HU11: el servicio también se suscribe a la tabla de eventos.
+    /// Cuando cancelan un viaje donde estoy anotado, se busca otro parecido y se dispara
+    /// un segundo evento encadenado: REEMPLAZO_ENCONTRADO o SIN_REEMPLAZO.
+    /// El despachador lo encola y lo procesa cuando terminan las callbacks de VIAJE_CANCELADO.
+    /// </summary>
+    private void RegistrarBusquedaDeReemplazo()
+    {
+        Eventos.Registrar(ViajeEvento.VIAJE_CANCELADO, BuscarReemplazo);
+    }
+
+    private void BuscarReemplazo(Viaje cancelado)
+    {
+        // Solo le interesa al pasajero: el conductor fue el que canceló
+        if (cancelado.EsDelUsuarioActual || !cancelado.EstoyAnotado) return;
+
+        cancelado.Reemplazo = BuscadorDeReemplazo.Buscar(cancelado, _viajes, ServicioAutenticacion.UidActual);
+
+        var siguiente = cancelado.Reemplazo is null ? ViajeEvento.SIN_REEMPLAZO : ViajeEvento.REEMPLAZO_ENCONTRADO;
+        Eventos.Disparar(siguiente, cancelado);
+    }
 
     private static Usuario UsuarioRequerido =>
         ServicioAutenticacion.Instancia.UsuarioActual ?? throw new SesionVencidaException();
@@ -130,6 +155,7 @@ public class ServicioViajes
     {
         _viajes.Clear();
         Eventos = new Despachador<ViajeEvento, Viaje>();
+        RegistrarBusquedaDeReemplazo();   // la tabla nueva arranca vacía
         ConexionCambiada = null;
         EstadosCambiados = null;
         HayConexion = true;

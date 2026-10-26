@@ -53,6 +53,25 @@ public partial class MainPage : ContentPage
 
         if (ConversorMensajes.Convertir(evento, viaje) is string mensaje)
             MostrarAviso(mensaje);
+
+        // HU6: se encontró un viaje parecido, se ofrece anotarse con un toque
+        if (evento == ViajeEvento.REEMPLAZO_ENCONTRADO && viaje.Reemplazo is Viaje otro)
+            OfrecerReemplazo(viaje, otro);
+    }
+
+    /// <summary>La pestaña que está abierta: los carteles se muestran ahí aunque sea "Mis viajes".</summary>
+    private Page PaginaVisible => Shell.Current?.CurrentPage ?? this;
+
+    private async void OfrecerReemplazo(Viaje cancelado, Viaje otro)
+    {
+        bool anotarme = await PaginaVisible.DisplayAlertAsync("Viaje cancelado",
+            $"{cancelado.Conductor} canceló el viaje {cancelado.Ruta}.\n\n" +
+            $"Encontramos otro parecido: {otro.Ruta}, sale a las {otro.Hora} con {otro.Conductor} " +
+            $"({otro.AsientosDisponibles} lugares). ¿Querés anotarte?",
+            "Sí, anotarme", "No");
+
+        if (anotarme)
+            await AnotarAsync(otro);
     }
 
     // Cada vez que se vuelve a esta pantalla, se redibuja (por si cambiaron los datos)
@@ -114,8 +133,21 @@ public partial class MainPage : ContentPage
         boton.IsEnabled = false;   // evita que se toque dos veces mientras espera al servidor
         try
         {
+            await AnotarAsync(viaje);
+        }
+        finally
+        {
+            boton.IsEnabled = true;
+        }
+    }
+
+    /// <summary>Anota al usuario y le muestra el resultado (lo usan el botón y la oferta de reemplazo).</summary>
+    private async Task AnotarAsync(Viaje viaje)
+    {
+        try
+        {
             await _servicio.AnotarseAsync(viaje);
-            await DisplayAlertAsync("Reserva confirmada",
+            await PaginaVisible.DisplayAlertAsync("Reserva confirmada",
                 $"¡Te anotaste al viaje de {viaje.Conductor}! Quedan {viaje.AsientosDisponibles} asientos.", "OK");
         }
         // Excepciones específicas primero, la más general al final
@@ -135,11 +167,7 @@ public partial class MainPage : ContentPage
         catch (Exception ex) when (ex is SinConexionException or PermisoDenegadoException or ServidorException)
         {
             RegistroErrores.RegistrarError(ex, "Anotarse a un viaje");
-            await DisplayAlertAsync("No se pudo anotar", ex.Message, "OK");
-        }
-        finally
-        {
-            boton.IsEnabled = true;
+            await PaginaVisible.DisplayAlertAsync("No se pudo anotar", ex.Message, "OK");
         }
     }
 
@@ -168,6 +196,6 @@ public partial class MainPage : ContentPage
     private async Task MostrarProblemaAsync(string titulo, Exception ex)
     {
         RegistroErrores.RegistrarAviso(ex, "Anotarse a un viaje");
-        await DisplayAlertAsync(titulo, ex.Message, "OK");
+        await PaginaVisible.DisplayAlertAsync(titulo, ex.Message, "OK");
     }
 }

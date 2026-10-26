@@ -60,10 +60,10 @@ public static class ConversorMensajes
                 $"{viaje.Conductor} canceló el viaje {viaje.Ruta} {cuando}.",
 
             // Búsqueda de reemplazo (HU6)
-            (ViajeEvento.REEMPLAZO_ENCONTRADO, RolEnViaje.Pasajero) =>
-                $"Encontramos otro viaje a {viaje.Destino} parecido al que se canceló. Buscalo en la lista.",
+            (ViajeEvento.REEMPLAZO_ENCONTRADO, RolEnViaje.Pasajero) when viaje.Reemplazo is Viaje otro =>
+                $"{viaje.Conductor} canceló, pero hay otro viaje a {otro.Destino}: {otro.Conductor} sale a las {otro.Hora} desde {otro.Origen}.",
             (ViajeEvento.SIN_REEMPLAZO, RolEnViaje.Pasajero) =>
-                $"No encontramos otro viaje parecido a {viaje.Ruta}. Vas a tener que buscar otra opción.",
+                $"{viaje.Conductor} canceló y no encontramos otro viaje a {viaje.Destino} cerca de las {viaje.Hora}. Vas a tener que buscar otra opción.",
 
             // Cualquier otra combinación no le interesa a este usuario
             _ => null
