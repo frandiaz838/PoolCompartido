@@ -29,6 +29,9 @@ internal class ViajeDatos
 internal class PuntoEncuentroDatos
 {
     public string Texto { get; set; } = "";
+    /// <summary>HU23: coordenadas exactas si el pasajero usó "Mi ubicación" (privadas, solo las ve el conductor).</summary>
+    public double? Lat { get; set; }
+    public double? Lon { get; set; }
 }
 
 /// <summary>Respuesta de Firebase al crear un viaje: el id que le asignó.</summary>

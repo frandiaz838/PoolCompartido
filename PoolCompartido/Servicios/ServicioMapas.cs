@@ -56,6 +56,19 @@ public static class ServicioMapas
     /// <exception cref="MapaNoDisponibleException">El dispositivo no pudo abrir el mapa.</exception>
     public static Task AbrirLugarAsync(string? lugar, string? zona) => AbrirAsync(ArmarUrlLugar(lugar, zona));
 
+    /// <summary>HU23: dirección web de Google Maps que muestra un punto exacto.</summary>
+    public static Uri ArmarUrlCoordenadas(double latitud, double longitud)
+    {
+        string lat = latitud.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture);
+        string lon = longitud.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture);
+        return new Uri($"https://www.google.com/maps/search/?api=1&query={lat},{lon}");
+    }
+
+    /// <summary>HU23: abre Google Maps en la ubicación exacta que compartió un pasajero.</summary>
+    /// <exception cref="MapaNoDisponibleException">El dispositivo no pudo abrir el mapa.</exception>
+    public static Task AbrirCoordenadasAsync(double latitud, double longitud) =>
+        AbrirAsync(ArmarUrlCoordenadas(latitud, longitud));
+
     private static async Task AbrirAsync(Uri url)
     {
         bool seAbrio;

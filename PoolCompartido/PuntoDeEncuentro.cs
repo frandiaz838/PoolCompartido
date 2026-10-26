@@ -9,8 +9,71 @@ internal static class PuntoDeEncuentro
 {
     private static ServicioEncuentros Servicio => ServicioEncuentros.Instancia;
 
-    /// <summary>Le pregunta al pasajero dónde lo pasan a buscar y lo guarda. "Después" no guarda nada.</summary>
+    private const string OpcionUbicacion = "Usar mi ubicación actual";
+    private const string OpcionEscribir = "Escribir una dirección";
+
+    /// <summary>
+    /// Le pregunta al pasajero cómo indicar dónde lo pasan a buscar: con su ubicación (HU23)
+    /// o escribiendo una dirección. "Después" no guarda nada.
+    /// </summary>
     public static async Task PedirYGuardarAsync(Page pagina, Viaje viaje)
+    {
+        string? opcion = await pagina.DisplayActionSheetAsync(
+            $"¿Dónde te pasa a buscar {viaje.Conductor}? Solo lo va a ver el conductor.",
+            "Después", null, OpcionUbicacion, OpcionEscribir);
+
+        if (opcion == OpcionUbicacion)
+        {
+            // Si la ubicación falla, se le ofrece escribirla a mano
+            if (await GuardarUbicacionAsync(pagina, viaje)) return;
+        }
+        else if (opcion != OpcionEscribir)
+        {
+            return;   // eligió "Después" o cerró el cartel
+        }
+
+        await EscribirYGuardarAsync(pagina, viaje);
+    }
+
+    /// <summary>HU23: guarda la ubicación actual como punto de encuentro. Devuelve false si no se pudo.</summary>
+    private static async Task<bool> GuardarUbicacionAsync(Page pagina, Viaje viaje)
+    {
+        try
+        {
+            UbicacionActual ubicacion = await ServicioUbicacion.ObtenerAsync();
+            await Servicio.GuardarMiUbicacionAsync(viaje, ubicacion);
+            await pagina.DisplayAlertAsync("Listo",
+                $"Guardamos tu ubicación (en {ubicacion.Barrio}). Solo la ve el conductor.", "OK");
+            return true;
+        }
+        catch (UbicacionNoDisponibleException ex)
+        {
+            // Errores esperables (sin permiso, GPS apagado...): aviso, no falla del sistema
+            RegistroErrores.RegistrarAviso(ex, "Usar mi ubicación");
+            await pagina.DisplayAlertAsync("No se pudo usar tu ubicación", $"{ex.Message}\n\nEscribí la dirección a mano.", "OK");
+            return false;
+        }
+        catch (ViajeException ex)
+        {
+            RegistroErrores.RegistrarAviso(ex, "Usar mi ubicación");
+            await pagina.DisplayAlertAsync("Punto de encuentro", ex.Message, "OK");
+            return true;   // no tiene sentido escribirla: no está anotado
+        }
+        catch (SesionVencidaException ex)
+        {
+            RegistroErrores.RegistrarAviso(ex, "Usar mi ubicación");
+            return true;
+        }
+        catch (Exception ex) when (ex is SinConexionException or PermisoDenegadoException or ServidorException)
+        {
+            RegistroErrores.RegistrarError(ex, "Usar mi ubicación");
+            await pagina.DisplayAlertAsync("No se pudo usar tu ubicación", ex.Message, "OK");
+            return false;
+        }
+    }
+
+    /// <summary>El pasajero escribe la dirección (si ya tenía una, se la muestra para corregirla).</summary>
+    private static async Task EscribirYGuardarAsync(Page pagina, Viaje viaje)
     {
         // Si ya lo había cargado, se muestra para que lo pueda corregir
         string? actual = null;
@@ -25,7 +88,7 @@ internal static class PuntoDeEncuentro
         }
 
         string? texto = await pagina.DisplayPromptAsync("Punto de encuentro",
-            $"¿Dónde te pasa a buscar {viaje.Conductor}? Solo lo va a ver el conductor.",
+            $"Escribí dónde te pasa a buscar {viaje.Conductor}. Solo lo va a ver el conductor.",
             accept: "Guardar", cancel: "Después",
             placeholder: "Ej: Av. Colón y General Paz",
             maxLength: ServicioEncuentros.LargoMaximo,
@@ -99,11 +162,15 @@ internal static class PuntoDeEncuentro
         string? elegido = await pagina.DisplayActionSheetAsync("¿A quién vas a buscar?", "Cerrar", null, opciones);
         int indice = Array.IndexOf(opciones, elegido);
         if (indice < 0 || puntos[indice].Texto is not string lugar) return;
+        var punto = puntos[indice];
 
         try
         {
-            // El origen del viaje ubica mejor la dirección (no es lo mismo "Colón 1200" en Córdoba que en otro lado)
-            await ServicioMapas.AbrirLugarAsync(lugar, viaje.Origen);
+            if (punto.Latitud is double lat && punto.Longitud is double lon)
+                await ServicioMapas.AbrirCoordenadasAsync(lat, lon);   // HU23: compartió su ubicación exacta
+            else
+                // El origen del viaje ubica mejor la dirección (no es lo mismo "Colón 1200" en Córdoba que en otro lado)
+                await ServicioMapas.AbrirLugarAsync(lugar, viaje.Origen);
         }
         catch (ArgumentException ex)
         {

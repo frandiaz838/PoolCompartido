@@ -174,7 +174,8 @@ public class Viaje : INotifyPropertyChanged
 
     /// <summary>HU24: el conductor ve los puntos de encuentro mientras el viaje no terminó (también en curso).</summary>
     public bool PuedeVerPuntosDeEncuentro =>
-        EsDelUsuarioActual && Estado is EstadoViaje.Abierto or EstadoViaje.PorSalir or EstadoViaje.EnCurso;
+        EsDelUsuarioActual && _pasajeros.Count > 0
+        && Estado is EstadoViaje.Abierto or EstadoViaje.PorSalir or EstadoViaje.EnCurso;
 
     // Textos listos para mostrar en la lista
     public string Ruta => $"{Origen} → {Destino}";
@@ -215,6 +216,7 @@ public class Viaje : INotifyPropertyChanged
             OnPropertyChanged(nameof(RolUsuarioActual));
             OnPropertyChanged(nameof(PuedeAnotarse));
             OnPropertyChanged(nameof(PuedeSalirse));
+            OnPropertyChanged(nameof(PuedeVerPuntosDeEncuentro));
         }
 
         AsientosDisponibles = datos.AsientosDisponibles;
