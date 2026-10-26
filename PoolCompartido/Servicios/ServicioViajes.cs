@@ -327,6 +327,48 @@ public class ServicioViajes
         throw new ConflictoException();
     }
 
+    /// <summary>
+    /// HU21: antes de borrar la cuenta, cancela los viajes activos que publicó y se sale
+    /// de los que está anotado, así nadie queda esperando a alguien que ya no existe.
+    /// Los viajes viejos o ya cancelados quedan en Firebase como historial.
+    /// </summary>
+    /// <exception cref="ViajeException">No se pudo cancelar o salir de algún viaje (por ejemplo, conflicto).</exception>
+    /// <exception cref="SinConexionException">No hay internet.</exception>
+    public async Task DejarMisViajesAsync()
+    {
+        // Se copia la lista con ToList(): cancelar o salirse cambia los viajes mientras se recorren
+        var activos = MisViajes().Where(v => !v.Cancelado && v.Fecha.Date >= DateTime.Today).ToList();
+
+        foreach (var viaje in activos)
+        {
+            try
+            {
+                if (viaje.EsDelUsuarioActual)
+                    await CancelarViajeAsync(viaje);
+                else
+                    await SalirseAsync(viaje);
+            }
+            catch (Exception ex) when (ex is ViajeCanceladoException or NoAnotadoException)
+            {
+                // Otro ya lo canceló o ya no estaba anotado: el viaje ya quedó como queríamos
+                RegistroErrores.RegistrarAviso(ex, "Dejar viaje al borrar la cuenta");
+            }
+        }
+    }
+
+    /// <summary>HU21: borra la copia local de los viajes del dispositivo.</summary>
+    public void BorrarDatosLocales()
+    {
+        try
+        {
+            File.Delete(_cache.Ruta);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            RegistroErrores.RegistrarError(ex, "Borrar caché de viajes");
+        }
+    }
+
     /// <summary>HU8: viajes en los que participa el usuario actual (como conductor o pasajero), por fecha.</summary>
     public IEnumerable<Viaje> MisViajes() =>
         _viajes.Where(v => v.EsDelUsuarioActual || v.EstoyAnotado)

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:PoolCompartido"
              x:Class="PoolCompartido.PerfilPage"
              Title="Mi perfil">
 
@@ -53,6 +54,39 @@
                     BorderWidth="1"
                     Margin="0,16,0,0"
                     Clicked="OnCerrarSesionClicked" />
+
+            <!-- HU21: borrar la cuenta. Primero se pide la contraseña -->
+            <Button x:Name="btnBorrarCuenta"
+                    Text="Borrar mi cuenta"
+                    BackgroundColor="#E5484D"
+                    TextColor="White"
+                    Clicked="OnBorrarCuentaClicked" />
+            <VerticalStackLayout x:Name="panelBorrar" IsVisible="False" Spacing="8">
+                <Label Text="Escribí tu contraseña para confirmar. Se cancelan los viajes que publicaste y te salís de los que estás anotado."
+                       FontSize="12"
+                       TextColor="Gray" />
+                <Grid>
+                    <local:EntryConIcono x:Name="entryContrasenaBorrar" Placeholder="Tu contraseña" IsPassword="True" />
+                    <ImageButton x:Name="btnVerContrasena"
+                                 Source="ojo.png"
+                                 WidthRequest="30"
+                                 HeightRequest="30"
+                                 Padding="6"
+                                 Margin="0,0,8,0"
+                                 HorizontalOptions="End"
+                                 VerticalOptions="Center"
+                                 BackgroundColor="Transparent"
+                                 SemanticProperties.Description="Mostrar contraseña"
+                                 Clicked="OnVerContrasenaClicked" />
+                </Grid>
+                <Button x:Name="btnConfirmarBorrado"
+                        Text="Confirmar borrado"
+                        BackgroundColor="Transparent"
+                        TextColor="#E5484D"
+                        BorderColor="#E5484D"
+                        BorderWidth="1"
+                        Clicked="OnConfirmarBorradoClicked" />
+            </VerticalStackLayout>
         </VerticalStackLayout>
     </ScrollView>
 

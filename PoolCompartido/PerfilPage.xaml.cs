@@ -144,6 +144,72 @@ public partial class PerfilPage : ContentPage
             _auth.CerrarSesion();   // dispara SESION_CERRADA y la app vuelve al login
     }
 
+    // ───────────────────────── Borrar cuenta (HU21) ─────────────────────────
+
+    private void OnBorrarCuentaClicked(object? sender, EventArgs e)
+    {
+        panelBorrar.IsVisible = !panelBorrar.IsVisible;
+        entryContrasenaBorrar.Text = "";
+    }
+
+    private void OnVerContrasenaClicked(object? sender, EventArgs e)
+    {
+        entryContrasenaBorrar.IsPassword = !entryContrasenaBorrar.IsPassword;
+        bool visible = !entryContrasenaBorrar.IsPassword;
+        btnVerContrasena.Source = visible ? "ojo_tachado.png" : "ojo.png";
+        SemanticProperties.SetDescription(btnVerContrasena, visible ? "Ocultar contraseña" : "Mostrar contraseña");
+    }
+
+    /// <summary>
+    /// Orden: confirmar la contraseña, dejar los viajes activos y recién ahí borrar la cuenta.
+    /// Si algo falla en el medio, la cuenta NO se borra y se avisa.
+    /// </summary>
+    private async void OnConfirmarBorradoClicked(object? sender, EventArgs e)
+    {
+        bool confirmar = await DisplayAlertAsync("Borrar cuenta",
+            "Tu cuenta se borra para siempre y no se puede recuperar. ¿Querés seguir?", "Borrar", "No");
+        if (!confirmar) return;
+
+        btnBorrarCuenta.IsEnabled = false;
+        btnConfirmarBorrado.IsEnabled = false;
+        try
+        {
+            await _auth.ConfirmarContrasenaAsync(entryContrasenaBorrar.Text);
+            await ServicioViajes.Instancia.DejarMisViajesAsync();
+            await _auth.BorrarCuentaAsync();   // dispara SESION_CERRADA y la app vuelve al login
+            ServicioViajes.Instancia.BorrarDatosLocales();
+        }
+        catch (ArgumentException ex)
+        {
+            await MostrarAvisoAsync("Falta la contraseña", ex);
+        }
+        // Hereda de AutenticacionException: va antes que el catch general
+        catch (CredencialesInvalidasException ex)
+        {
+            RegistroErrores.RegistrarAviso(ex, "Borrar cuenta");
+            await DisplayAlertAsync("Contraseña incorrecta", "La contraseña no es correcta. Tu cuenta no se borró.", "OK");
+        }
+        catch (SesionVencidaException ex)
+        {
+            RegistroErrores.RegistrarAviso(ex, "Borrar cuenta");
+        }
+        catch (ViajeException ex)
+        {
+            RegistroErrores.RegistrarAviso(ex, "Borrar cuenta (dejar viajes)");
+            await DisplayAlertAsync("No se pudo borrar la cuenta", $"{ex.Message} Tu cuenta no se borró.", "OK");
+        }
+        catch (Exception ex) when (ex is SinConexionException or PermisoDenegadoException or ServidorException or AutenticacionException)
+        {
+            RegistroErrores.RegistrarError(ex, "Borrar cuenta");
+            await DisplayAlertAsync("No se pudo borrar la cuenta", $"{ex.Message} Tu cuenta no se borró.", "OK");
+        }
+        finally
+        {
+            btnBorrarCuenta.IsEnabled = true;
+            btnConfirmarBorrado.IsEnabled = true;
+        }
+    }
+
     private async Task MostrarAvisoAsync(string titulo, Exception ex)
     {
         RegistroErrores.RegistrarAviso(ex, "Perfil");
