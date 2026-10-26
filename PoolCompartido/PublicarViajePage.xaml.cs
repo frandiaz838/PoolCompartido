@@ -31,9 +31,12 @@ public partial class PublicarViajePage : ContentPage
             DateTime fecha = ((DateTime?)dpFecha.Date) ?? DateTime.Today;
             TimeSpan hora = ((TimeSpan?)tpHora.Time) ?? TimeSpan.Zero;
 
+            // HU14: vacío = sin costo. Puede lanzar FormatException o ArgumentOutOfRangeException
+            decimal? costo = ServicioViajes.LeerCosto(entryCosto.Text);
+
             await _servicio.PublicarAsync(entryOrigen.Text, entryDestino.Text, fecha,
                                           FranjasHorarias.HoraATexto(hora), asientos, editorComentario.Text,
-                                          entryPuntoPartida.Text);
+                                          entryPuntoPartida.Text, costo);
 
             await DisplayAlertAsync("Listo", "¡Viaje publicado! Ya lo pueden ver los demás.", "OK");
             await Navigation.PopAsync();
@@ -49,7 +52,8 @@ public partial class PublicarViajePage : ContentPage
         }
         catch (FormatException ex)
         {
-            MostrarError(ex, "La cantidad de asientos no es un número válido.");
+            // Viene del costo (HU14), que trae su propio mensaje; los asientos salen de una lista fija
+            MostrarError(ex, ex.Message);
         }
         catch (HorarioOcupadoException ex)
         {

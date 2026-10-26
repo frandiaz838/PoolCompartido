@@ -23,6 +23,8 @@ internal class ViajeDatos
     public Dictionary<string, string>? Pasajeros { get; set; }
     /// <summary>HU24: lugar público desde donde sale el conductor (opcional).</summary>
     public string? PuntoPartida { get; set; }
+    /// <summary>HU14: costo total del viaje en pesos, o null si es sin costo (así no se guarda en Firebase).</summary>
+    public decimal? CostoTotal { get; set; }
 }
 
 /// <summary>HU24: punto de encuentro privado de un pasajero (/encuentros/{viajeId}/{uid}).</summary>
@@ -174,7 +176,8 @@ internal static class ConversorViajes
             ConductorUid = datos.ConductorUid,
             Conductor = datos.ConductorNombre,
             Comentario = datos.Comentario,
-            PuntoPartida = datos.PuntoPartida ?? ""
+            PuntoPartida = datos.PuntoPartida ?? "",
+            CostoTotal = datos.CostoTotal
         };
         viaje.ActualizarDesde(datos);
         return viaje;
@@ -194,6 +197,7 @@ internal static class ConversorViajes
         Pasajeros = viaje.PasajerosPorUid.Count > 0
             ? new Dictionary<string, string>(viaje.PasajerosPorUid)
             : null,
-        PuntoPartida = viaje.TienePuntoPartida ? viaje.PuntoPartida : null
+        PuntoPartida = viaje.TienePuntoPartida ? viaje.PuntoPartida : null,
+        CostoTotal = viaje.CostoTotal
     };
 }

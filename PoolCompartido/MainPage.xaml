@@ -51,6 +51,8 @@
                                 <!-- HU24: punto de partida público del conductor -->
                                 <Label Text="{Binding PuntoPartidaTexto}" FontSize="13" IsVisible="{Binding TienePuntoPartida}" />
                                 <Label Text="{Binding AsientosDisponibles, StringFormat='Asientos libres: {0}'}" FontSize="13" />
+                                <!-- HU14: cuánto paga cada pasajero (solo en viajes con costo) -->
+                                <Label Text="{Binding CostoTexto}" FontSize="13" IsVisible="{Binding TieneCosto}" />
                                 <Label Text="✓ Estás anotado"
                                        FontSize="13"
                                        FontAttributes="Bold"

@@ -11,5 +11,6 @@ public enum ViajeEvento
     ASIENTO_LIBERADO,      // HU4
     VIAJE_CANCELADO,       // HU5
     REEMPLAZO_ENCONTRADO,  // HU6
-    SIN_REEMPLAZO          // HU6
+    SIN_REEMPLAZO,         // HU6
+    COSTO_RECALCULADO      // HU14
 }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 
 namespace PoolCompartido;
@@ -40,6 +41,7 @@ public class ServicioViajes
     private ServicioViajes()
     {
         RegistrarBusquedaDeReemplazo();
+        RegistrarRecalculoDeCosto();
     }
 
     /// <summary>
@@ -67,6 +69,25 @@ public class ServicioViajes
 
         var siguiente = cancelado.Reemplazo is null ? ViajeEvento.SIN_REEMPLAZO : ViajeEvento.REEMPLAZO_ENCONTRADO;
         Eventos.Disparar(siguiente, cancelado);
+    }
+
+    /// <summary>
+    /// HU14 + HU11: cada vez que alguien se anota o se baja de un viaje con costo, cambia entre cuántos
+    /// se divide. El servicio dispara un evento encadenado, COSTO_RECALCULADO, que el despachador
+    /// procesa cuando terminan las callbacks de ASIENTO_RESERVADO o ASIENTO_LIBERADO.
+    /// </summary>
+    private void RegistrarRecalculoDeCosto()
+    {
+        Eventos.Registrar(ViajeEvento.ASIENTO_RESERVADO, RecalcularCosto);
+        Eventos.Registrar(ViajeEvento.ASIENTO_LIBERADO, RecalcularCosto);
+    }
+
+    private void RecalcularCosto(Viaje viaje)
+    {
+        // Los viajes sin costo no tienen nada que recalcular.
+        // A quién le importa el aviso (conductor o pasajeros) lo decide ConversorMensajes
+        if (viaje.TieneCosto)
+            Eventos.Disparar(ViajeEvento.COSTO_RECALCULADO, viaje);
     }
 
     private static Usuario UsuarioRequerido =>
@@ -161,6 +182,7 @@ public class ServicioViajes
         _viajes.Clear();
         Eventos = new Despachador<ViajeEvento, Viaje>();
         RegistrarBusquedaDeReemplazo();   // la tabla nueva arranca vacía
+        RegistrarRecalculoDeCosto();
         ConexionCambiada = null;
         EstadosCambiados = null;
         HayConexion = true;
@@ -188,7 +210,7 @@ public class ServicioViajes
     /// <exception cref="ArgumentOutOfRangeException">Fecha pasada o asientos fuera de rango.</exception>
     /// <exception cref="SinConexionException">No hay internet.</exception>
     public async Task<Viaje> PublicarAsync(string? origen, string? destino, DateTime fecha, string? hora, int asientos, string? comentario,
-                                           string? puntoPartida = null)
+                                           string? puntoPartida = null, decimal? costoTotal = null)
     {
         // Validación temprana de la entrada
         if (string.IsNullOrWhiteSpace(origen) || string.IsNullOrWhiteSpace(destino))
@@ -220,6 +242,9 @@ public class ServicioViajes
             ? null
             : ServicioEncuentros.ValidarTexto(puntoPartida, "");
 
+        // HU14: el costo es opcional, pero si viene tiene que ser razonable
+        ValidarCosto(costoTotal);
+
         // No puede manejar un viaje a la misma hora que otro donde ya participa
         if (ViajeQueSeSuperpone(salida) is Viaje otro)
             throw new HorarioOcupadoException(otro);
@@ -236,7 +261,8 @@ public class ServicioViajes
             Comentario = comentario?.Trim() ?? "",
             AsientosDisponibles = asientos,
             Cancelado = false,
-            PuntoPartida = partida
+            PuntoPartida = partida,
+            CostoTotal = costoTotal is > 0 ? costoTotal : null   // $0 es lo mismo que sin costo
         };
 
         string id = await _remoto.CrearAsync(datos);
@@ -460,6 +486,43 @@ public class ServicioViajes
         _viajes.Where(v => v.EsDelUsuarioActual || v.EstoyAnotado)
                .OrderBy(v => v.Fecha)
                .ThenBy(v => v.Hora);
+
+    // ───────────────────────── HU14: costo ─────────────────────────
+
+    /// <summary>Tope del costo total: más que esto seguro es un error de tipeo.</summary>
+    public const decimal CostoMaximo = 1_000_000;
+
+    // Se escribe en pesos enteros, con o sin punto de miles: "6000" o "6.000"
+    private static readonly NumberFormatInfo FormatoCosto = new() { NumberGroupSeparator = "." };
+
+    /// <summary>
+    /// HU14: convierte lo que escribió el conductor en el costo total. Vacío = viaje sin costo (null).
+    /// </summary>
+    /// <exception cref="FormatException">No es un número entero de pesos.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Es negativo o supera el máximo.</exception>
+    public static decimal? LeerCosto(string? texto)
+    {
+        if (string.IsNullOrWhiteSpace(texto)) return null;
+
+        // Se acepta que escriba el signo $ y espacios
+        string limpio = texto.Replace("$", "").Trim();
+
+        if (!decimal.TryParse(limpio, NumberStyles.AllowThousands | NumberStyles.AllowLeadingSign,
+                              FormatoCosto, out decimal costo))
+            throw new FormatException("El costo tiene que ser un número de pesos, sin centavos. Ej: 6000");
+
+        ValidarCosto(costo);
+        return costo;
+    }
+
+    /// <exception cref="ArgumentOutOfRangeException">El costo es negativo o supera el máximo.</exception>
+    private static void ValidarCosto(decimal? costo)
+    {
+        if (costo < 0)
+            throw new ArgumentOutOfRangeException("El costo no puede ser negativo.", innerException: null);
+        if (costo > CostoMaximo)
+            throw new ArgumentOutOfRangeException($"El costo no puede superar {Viaje.Pesos(CostoMaximo)}.", innerException: null);
+    }
 
     // ───────────────────────── Auxiliares ─────────────────────────
 

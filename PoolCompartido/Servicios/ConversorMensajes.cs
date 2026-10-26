@@ -65,6 +65,14 @@ public static class ConversorMensajes
             (ViajeEvento.SIN_REEMPLAZO, RolEnViaje.Pasajero) =>
                 $"{viaje.Conductor} canceló y no encontramos otro viaje a {viaje.Destino} cerca de las {viaje.Hora}. Vas a tener que buscar otra opción.",
 
+            // Cambió entre cuántos se divide el costo (HU14, encadenado a ASIENTO_RESERVADO / ASIENTO_LIBERADO)
+            (ViajeEvento.COSTO_RECALCULADO, RolEnViaje.Conductor) when viaje.Pasajeros.Count == 0 =>
+                $"Ya no quedan pasajeros en tu viaje a {viaje.Destino}: el próximo que se anote paga {Viaje.Pesos(viaje.CostoPorPasajero)}.",
+            (ViajeEvento.COSTO_RECALCULADO, RolEnViaje.Conductor) =>
+                $"Ahora cada pasajero de tu viaje a {viaje.Destino} paga {Viaje.Pesos(viaje.CostoPorPasajero)}.",
+            (ViajeEvento.COSTO_RECALCULADO, RolEnViaje.Pasajero) =>
+                $"Ahora pagás {Viaje.Pesos(viaje.CostoPorPasajero)} ({SonPasajeros(viaje.Pasajeros.Count)}).",
+
             // Cualquier otra combinación no le interesa a este usuario
             _ => null
         };
@@ -76,6 +84,10 @@ public static class ConversorMensajes
         1 => "Queda 1 asiento libre.",
         int n => $"Quedan {n} asientos libres."
     };
+
+    private static string SonPasajeros(int cantidad) => cantidad == 1
+        ? "sos el único pasajero"
+        : $"son {cantidad} pasajeros";
 
     private static string Pasajeros(int cantidad) => cantidad switch
     {
