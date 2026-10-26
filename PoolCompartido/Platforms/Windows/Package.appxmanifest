@@ -41,6 +41,8 @@
 
   <Capabilities>
     <rescap:Capability Name="runFullTrust" />
+    <!-- HU23: usar mi ubicación -->
+    <DeviceCapability Name="location" />
   </Capabilities>
 
 </Package>

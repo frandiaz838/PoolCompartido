@@ -48,6 +48,8 @@
                             <VerticalStackLayout Spacing="2">
                                 <Label Text="{Binding Ruta}" FontSize="17" FontAttributes="Bold" />
                                 <Label Text="{Binding Detalle}" FontSize="13" />
+                                <!-- HU24: punto de partida público del conductor -->
+                                <Label Text="{Binding PuntoPartidaTexto}" FontSize="13" IsVisible="{Binding TienePuntoPartida}" />
                                 <Label Text="{Binding AsientosDisponibles, StringFormat='Asientos libres: {0}'}" FontSize="13" />
                                 <!-- HU14: cuánto paga cada pasajero (solo en viajes con costo) -->
                                 <Label Text="{Binding CostoTexto}" FontSize="13" IsVisible="{Binding TieneCosto}" />

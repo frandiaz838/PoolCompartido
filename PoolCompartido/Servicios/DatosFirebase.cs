@@ -21,8 +21,19 @@ internal class ViajeDatos
     public bool Cancelado { get; set; }
     /// <summary>uid → nombre de cada pasajero.</summary>
     public Dictionary<string, string>? Pasajeros { get; set; }
+    /// <summary>HU24: lugar público desde donde sale el conductor (opcional).</summary>
+    public string? PuntoPartida { get; set; }
     /// <summary>HU14: costo total del viaje en pesos, o null si es sin costo (así no se guarda en Firebase).</summary>
     public decimal? CostoTotal { get; set; }
+}
+
+/// <summary>HU24: punto de encuentro privado de un pasajero (/encuentros/{viajeId}/{uid}).</summary>
+internal class PuntoEncuentroDatos
+{
+    public string Texto { get; set; } = "";
+    /// <summary>HU23: coordenadas exactas si el pasajero usó "Mi ubicación" (privadas, solo las ve el conductor).</summary>
+    public double? Lat { get; set; }
+    public double? Lon { get; set; }
 }
 
 /// <summary>Respuesta de Firebase al crear un viaje: el id que le asignó.</summary>
@@ -125,6 +136,8 @@ internal class DetalleErrorAuth
 [JsonSerializable(typeof(ViajeDatos))]
 [JsonSerializable(typeof(Dictionary<string, ViajeDatos>))]
 [JsonSerializable(typeof(RespuestaCreacion))]
+[JsonSerializable(typeof(PuntoEncuentroDatos))]
+[JsonSerializable(typeof(Dictionary<string, PuntoEncuentroDatos>))]
 [JsonSerializable(typeof(SesionGuardada))]
 [JsonSerializable(typeof(PedidoAutenticacion))]
 [JsonSerializable(typeof(PedidoActualizarPerfil))]
@@ -163,6 +176,7 @@ internal static class ConversorViajes
             ConductorUid = datos.ConductorUid,
             Conductor = datos.ConductorNombre,
             Comentario = datos.Comentario,
+            PuntoPartida = datos.PuntoPartida ?? "",
             CostoTotal = datos.CostoTotal
         };
         viaje.ActualizarDesde(datos);
@@ -183,6 +197,7 @@ internal static class ConversorViajes
         Pasajeros = viaje.PasajerosPorUid.Count > 0
             ? new Dictionary<string, string>(viaje.PasajerosPorUid)
             : null,
+        PuntoPartida = viaje.TienePuntoPartida ? viaje.PuntoPartida : null,
         CostoTotal = viaje.CostoTotal
     };
 }

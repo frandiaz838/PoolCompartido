@@ -38,6 +38,11 @@ public class Viaje : INotifyPropertyChanged
     /// <summary>HU14: costo total del viaje (nafta + peajes), o null si es sin costo. Se divide solo entre los pasajeros.</summary>
     public decimal? CostoTotal { get; init; }
 
+    /// <summary>HU24: lugar público desde donde sale el conductor (puede estar vacío).</summary>
+    public string PuntoPartida { get; init; } = "";
+    public bool TienePuntoPartida => !string.IsNullOrWhiteSpace(PuntoPartida);
+    public string PuntoPartidaTexto => $"Sale desde: {PuntoPartida}";
+
     // Pasajeros anotados: uid → nombre
     private readonly Dictionary<string, string> _pasajeros = new();
     public IReadOnlyDictionary<string, string> PasajerosPorUid => _pasajeros;
@@ -153,6 +158,7 @@ public class Viaje : INotifyPropertyChanged
         OnPropertyChanged(nameof(PuedeAnotarse));
         OnPropertyChanged(nameof(PuedeCancelar));
         OnPropertyChanged(nameof(PuedeSalirse));
+        OnPropertyChanged(nameof(PuedeVerPuntosDeEncuentro));
     }
 
     // Relación del viaje con el usuario que inició sesión
@@ -168,6 +174,11 @@ public class Viaje : INotifyPropertyChanged
 
     /// <summary>HU4: el botón "Salirme" solo aparece donde estoy anotado y el viaje todavía no salió.</summary>
     public bool PuedeSalirse => EstoyAnotado && SePuedeModificar;
+
+    /// <summary>HU24: el conductor ve los puntos de encuentro mientras el viaje no terminó (también en curso).</summary>
+    public bool PuedeVerPuntosDeEncuentro =>
+        EsDelUsuarioActual && _pasajeros.Count > 0
+        && Estado is EstadoViaje.Abierto or EstadoViaje.PorSalir or EstadoViaje.EnCurso;
 
     // Textos listos para mostrar en la lista
     public string Ruta => $"{Origen} → {Destino}";
@@ -248,6 +259,7 @@ public class Viaje : INotifyPropertyChanged
             OnPropertyChanged(nameof(RolUsuarioActual));
             OnPropertyChanged(nameof(PuedeAnotarse));
             OnPropertyChanged(nameof(PuedeSalirse));
+            OnPropertyChanged(nameof(PuedeVerPuntosDeEncuentro));
             OnPropertyChanged(nameof(CostoPorPasajero));   // HU14: cambió entre cuántos se divide
             OnPropertyChanged(nameof(CostoTexto));
         }

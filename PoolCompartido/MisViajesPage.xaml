@@ -44,6 +44,8 @@
                             <VerticalStackLayout Spacing="2">
                                 <Label Text="{Binding Ruta}" FontSize="17" FontAttributes="Bold" />
                                 <Label Text="{Binding Detalle}" FontSize="13" />
+                                <!-- HU24: punto de partida público del conductor -->
+                                <Label Text="{Binding PuntoPartidaTexto}" FontSize="13" IsVisible="{Binding TienePuntoPartida}" />
                                 <Label Text="{Binding AsientosDisponibles, StringFormat='Asientos libres: {0}'}" FontSize="13" />
                                 <!-- HU14: cuánto paga cada pasajero (solo en viajes con costo) -->
                                 <Label Text="{Binding CostoTexto}" FontSize="13" IsVisible="{Binding TieneCosto}" />
@@ -84,6 +86,14 @@
                                 <Button Text="Cancelar viaje"
                                         IsVisible="{Binding PuedeCancelar}"
                                         Clicked="OnCancelarViajeClicked" />
+                                <!-- HU24: el pasajero carga o cambia dónde lo pasan a buscar -->
+                                <Button Text="Mi punto de encuentro"
+                                        IsVisible="{Binding PuedeSalirse}"
+                                        Clicked="OnMiPuntoClicked" />
+                                <!-- HU24: el conductor ve dónde buscar a cada pasajero -->
+                                <Button Text="Puntos de encuentro"
+                                        IsVisible="{Binding PuedeVerPuntosDeEncuentro}"
+                                        Clicked="OnPuntosDeEncuentroClicked" />
                                 <!-- HU4: solo aparece en los viajes activos donde estás anotado como pasajero -->
                                 <Button Text="Salirme"
                                         IsVisible="{Binding PuedeSalirse}"

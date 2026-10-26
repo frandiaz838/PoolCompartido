@@ -210,7 +210,7 @@ public class ServicioViajes
     /// <exception cref="ArgumentOutOfRangeException">Fecha pasada o asientos fuera de rango.</exception>
     /// <exception cref="SinConexionException">No hay internet.</exception>
     public async Task<Viaje> PublicarAsync(string? origen, string? destino, DateTime fecha, string? hora, int asientos, string? comentario,
-                                           decimal? costoTotal = null)
+                                           string? puntoPartida = null, decimal? costoTotal = null)
     {
         // Validación temprana de la entrada
         if (string.IsNullOrWhiteSpace(origen) || string.IsNullOrWhiteSpace(destino))
@@ -237,6 +237,11 @@ public class ServicioViajes
         if (asientos < 1 || asientos > 4)
             throw new ArgumentOutOfRangeException("Elegí entre 1 y 4 asientos disponibles.", innerException: null);
 
+        // HU24: el punto de partida es opcional, pero si se escribe tiene que ser razonable
+        string? partida = string.IsNullOrWhiteSpace(puntoPartida)
+            ? null
+            : ServicioEncuentros.ValidarTexto(puntoPartida, "");
+
         // HU14: el costo es opcional, pero si viene tiene que ser razonable
         ValidarCosto(costoTotal);
 
@@ -256,6 +261,7 @@ public class ServicioViajes
             Comentario = comentario?.Trim() ?? "",
             AsientosDisponibles = asientos,
             Cancelado = false,
+            PuntoPartida = partida,
             CostoTotal = costoTotal is > 0 ? costoTotal : null   // $0 es lo mismo que sin costo
         };
 
