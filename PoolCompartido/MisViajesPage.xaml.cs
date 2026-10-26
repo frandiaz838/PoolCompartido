@@ -20,6 +20,9 @@ public partial class MisViajesPage : ContentPage
         _servicio.Eventos.Registrar(ViajeEvento.ASIENTO_LIBERADO, _ => Redibujar());
         _servicio.Eventos.Registrar(ViajeEvento.VIAJE_CANCELADO, _ => Redibujar());
 
+        // Pasó el tiempo: un viaje salió (pasa arriba, "En curso") o terminó (se oculta)
+        _servicio.EstadosCambiados += (sender, e) => Redibujar();
+
         Redibujar();
     }
 
@@ -136,11 +139,19 @@ public partial class MisViajesPage : ContentPage
         }
     }
 
-    /// <summary>Equivalente al evento Paint: vuelve a armar la lista.</summary>
+    /// <summary>
+    /// Equivalente al evento Paint: vuelve a armar la lista.
+    /// Los terminados no se muestran y el viaje en curso va primero.
+    /// </summary>
     private void Redibujar()
     {
+        var visibles = _servicio.MisViajes()
+            .Where(v => !v.Terminado)
+            .OrderBy(v => v.Estado == EstadoViaje.EnCurso ? 0 : 1)
+            .ThenBy(v => v.Salida);
+
         _misViajes.Clear();
-        foreach (var viaje in _servicio.MisViajes())
+        foreach (var viaje in visibles)
             _misViajes.Add(viaje);
     }
 }

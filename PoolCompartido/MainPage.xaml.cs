@@ -17,32 +17,15 @@ public partial class MainPage : ContentPage
         pickerHorario.ItemsSource = FranjasHorarias.Nombres;
         pickerHorario.SelectedIndex = 0;
 
-        // Tabla de eventos: qué hace esta pantalla cuando ocurre cada evento (callbacks).
+        // Tabla de eventos: esta pantalla registra la misma callback para todos los eventos de viajes.
         // Los eventos llegan tanto por acciones en este dispositivo como por la sincronización con Firebase.
-        _servicio.Eventos.Registrar(ViajeEvento.VIAJE_PUBLICADO, viaje =>
+        ViajeEvento[] eventos =
         {
-            Redibujar();
-            MostrarAviso(viaje.EsDelUsuarioActual
-                ? $"Publicaste tu viaje {viaje.Ruta} del {viaje.Fecha:dd/MM}."
-                : $"Nuevo viaje de {viaje.Conductor}: {viaje.Ruta}, el {viaje.Fecha:dd/MM} a las {viaje.Hora}.");
-        });
-
-        // HU3: el conductor recibe una notificación cuando alguien se anota
-        _servicio.Eventos.Registrar(ViajeEvento.ASIENTO_RESERVADO, viaje =>
-        {
-            if (viaje.EsDelUsuarioActual)
-                MostrarAviso($"{viaje.UltimoPasajeroAnotado} se anotó a tu viaje a {viaje.Destino}. Quedan {viaje.AsientosDisponibles} asientos.");
-        });
-
-        // HU5: los pasajeros anotados reciben el aviso de la cancelación
-        _servicio.Eventos.Registrar(ViajeEvento.VIAJE_CANCELADO, viaje =>
-        {
-            Redibujar();
-            if (viaje.EstoyAnotado)
-                MostrarAviso($"{viaje.Conductor} canceló el viaje {viaje.Ruta} del {viaje.Fecha:dd/MM} a las {viaje.Hora}.");
-            else if (viaje.EsDelUsuarioActual)
-                MostrarAviso($"Cancelaste tu viaje {viaje.Ruta}. Se avisó a {viaje.Pasajeros.Count} pasajero(s).");
-        });
+            ViajeEvento.VIAJE_PUBLICADO, ViajeEvento.ASIENTO_RESERVADO, ViajeEvento.ASIENTO_LIBERADO,
+            ViajeEvento.VIAJE_CANCELADO, ViajeEvento.REEMPLAZO_ENCONTRADO, ViajeEvento.SIN_REEMPLAZO
+        };
+        foreach (var evento in eventos)
+            _servicio.Eventos.Registrar(evento, viaje => AlOcurrirEvento(evento, viaje));
 
         // Evento estándar de .NET: se cortó o volvió internet
         _servicio.ConexionCambiada += (sender, hayConexion) =>
@@ -50,10 +33,26 @@ public partial class MainPage : ContentPage
                 ? "Volvió la conexión: los viajes están actualizados."
                 : "Sin conexión: se muestran los últimos viajes guardados.");
 
+        // Pasó el tiempo y algún viaje cerró las anotaciones: desaparece de la lista
+        _servicio.EstadosCambiados += (sender, e) => Redibujar();
+
         Redibujar();
 
         if (_servicio.AvisoAlIniciar is string aviso)
             MostrarAviso(aviso);
+    }
+
+    /// <summary>
+    /// Callback de los eventos de viajes: redibuja si cambió la lista (evento Paint) y
+    /// muestra el mensaje que corresponde según mi rol (HU7, conversión de mensajes).
+    /// </summary>
+    private void AlOcurrirEvento(ViajeEvento evento, Viaje viaje)
+    {
+        if (evento is ViajeEvento.VIAJE_PUBLICADO or ViajeEvento.VIAJE_CANCELADO or ViajeEvento.ASIENTO_LIBERADO)
+            Redibujar();
+
+        if (ConversorMensajes.Convertir(evento, viaje) is string mensaje)
+            MostrarAviso(mensaje);
     }
 
     // Cada vez que se vuelve a esta pantalla, se redibuja (por si cambiaron los datos)
@@ -72,11 +71,10 @@ public partial class MainPage : ContentPage
         var franja = (FranjaHoraria)Math.Max(pickerHorario.SelectedIndex, 0);
 
         var filtrados = _servicio.Viajes
-            .Where(v => !v.Cancelado)
+            .Where(v => v.AceptaPasajeros)   // ni cancelados ni a menos de 5 minutos de salir
             .Where(v => destino == "" || v.Destino.Contains(destino, StringComparison.OrdinalIgnoreCase))
             .Where(v => FranjasHorarias.Incluye(franja, v.Hora))
-            .OrderBy(v => v.Fecha)
-            .ThenBy(v => v.Hora);
+            .OrderBy(v => v.Salida);
 
         _viajesVisibles.Clear();
         foreach (var viaje in filtrados)
