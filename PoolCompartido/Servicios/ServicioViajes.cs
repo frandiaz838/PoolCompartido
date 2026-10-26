@@ -187,7 +187,8 @@ public class ServicioViajes
     /// <exception cref="ArgumentException">Faltan datos obligatorios.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Fecha pasada o asientos fuera de rango.</exception>
     /// <exception cref="SinConexionException">No hay internet.</exception>
-    public async Task<Viaje> PublicarAsync(string? origen, string? destino, DateTime fecha, string? hora, int asientos, string? comentario)
+    public async Task<Viaje> PublicarAsync(string? origen, string? destino, DateTime fecha, string? hora, int asientos, string? comentario,
+                                           string? puntoPartida = null)
     {
         // Validación temprana de la entrada
         if (string.IsNullOrWhiteSpace(origen) || string.IsNullOrWhiteSpace(destino))
@@ -214,6 +215,11 @@ public class ServicioViajes
         if (asientos < 1 || asientos > 4)
             throw new ArgumentOutOfRangeException("Elegí entre 1 y 4 asientos disponibles.", innerException: null);
 
+        // HU24: el punto de partida es opcional, pero si se escribe tiene que ser razonable
+        string? partida = string.IsNullOrWhiteSpace(puntoPartida)
+            ? null
+            : ServicioEncuentros.ValidarTexto(puntoPartida, "");
+
         // No puede manejar un viaje a la misma hora que otro donde ya participa
         if (ViajeQueSeSuperpone(salida) is Viaje otro)
             throw new HorarioOcupadoException(otro);
@@ -229,7 +235,8 @@ public class ServicioViajes
             ConductorNombre = usuario.Nombre,
             Comentario = comentario?.Trim() ?? "",
             AsientosDisponibles = asientos,
-            Cancelado = false
+            Cancelado = false,
+            PuntoPartida = partida
         };
 
         string id = await _remoto.CrearAsync(datos);

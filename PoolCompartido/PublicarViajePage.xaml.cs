@@ -32,7 +32,8 @@ public partial class PublicarViajePage : ContentPage
             TimeSpan hora = ((TimeSpan?)tpHora.Time) ?? TimeSpan.Zero;
 
             await _servicio.PublicarAsync(entryOrigen.Text, entryDestino.Text, fecha,
-                                          FranjasHorarias.HoraATexto(hora), asientos, editorComentario.Text);
+                                          FranjasHorarias.HoraATexto(hora), asientos, editorComentario.Text,
+                                          entryPuntoPartida.Text);
 
             await DisplayAlertAsync("Listo", "¡Viaje publicado! Ya lo pueden ver los demás.", "OK");
             await Navigation.PopAsync();
@@ -69,6 +70,36 @@ public partial class PublicarViajePage : ContentPage
         finally
         {
             boton.IsEnabled = true;
+        }
+    }
+
+    /// <summary>HU23: completa el origen con el barrio donde está el conductor (no con la dirección exacta).</summary>
+    private async void OnUsarUbicacionClicked(object? sender, EventArgs e)
+    {
+        lblError.IsVisible = false;
+        btnUbicacion.IsEnabled = false;
+        string textoBoton = btnUbicacion.Text;
+        btnUbicacion.Text = "Buscando...";
+
+        try
+        {
+            UbicacionActual ubicacion = await ServicioUbicacion.ObtenerAsync();
+            entryOrigen.Text = ubicacion.Barrio;
+        }
+        catch (UbicacionNoDisponibleException ex)
+        {
+            MostrarError(ex, ex.Message);
+        }
+        catch (Exception ex) when (ex is SinConexionException or ServidorException)
+        {
+            RegistroErrores.RegistrarError(ex, "Usar mi ubicación al publicar");
+            lblError.Text = "No pudimos buscar tu barrio: " + ex.Message;
+            lblError.IsVisible = true;
+        }
+        finally
+        {
+            btnUbicacion.Text = textoBoton;
+            btnUbicacion.IsEnabled = true;
         }
     }
 

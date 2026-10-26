@@ -149,6 +149,9 @@ public partial class MainPage : ContentPage
             await _servicio.AnotarseAsync(viaje);
             await PaginaVisible.DisplayAlertAsync("Reserva confirmada",
                 $"¡Te anotaste al viaje de {viaje.Conductor}! Quedan {viaje.AsientosDisponibles} asientos.", "OK");
+
+            // HU24: enseguida se pregunta dónde lo pasan a buscar (se puede dejar para después)
+            await PuntoDeEncuentro.PedirYGuardarAsync(PaginaVisible, viaje);
         }
         // Excepciones específicas primero, la más general al final
         catch (ViajeCompletoException ex)
