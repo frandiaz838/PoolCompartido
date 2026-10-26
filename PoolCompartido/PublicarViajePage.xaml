@@ -23,6 +23,12 @@
             <Label Text="Asientos disponibles" Margin="0,8,0,0" />
             <Picker x:Name="pickerAsientos" Title="Elegí la cantidad" />
 
+            <!-- HU14: el total se divide solo entre los pasajeros -->
+            <Label Text="Costo total del viaje (opcional)" Margin="0,8,0,0" />
+            <Entry x:Name="entryCosto"
+                   Keyboard="Numeric"
+                   Placeholder="Ej: 6000 (nafta + peajes). Se divide entre los pasajeros" />
+
             <Label Text="Comentario (opcional)" Margin="0,8,0,0" />
             <Editor x:Name="editorComentario"
                     HeightRequest="80"

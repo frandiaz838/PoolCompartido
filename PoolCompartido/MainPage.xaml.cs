@@ -22,7 +22,8 @@ public partial class MainPage : ContentPage
         ViajeEvento[] eventos =
         {
             ViajeEvento.VIAJE_PUBLICADO, ViajeEvento.ASIENTO_RESERVADO, ViajeEvento.ASIENTO_LIBERADO,
-            ViajeEvento.VIAJE_CANCELADO, ViajeEvento.REEMPLAZO_ENCONTRADO, ViajeEvento.SIN_REEMPLAZO
+            ViajeEvento.VIAJE_CANCELADO, ViajeEvento.REEMPLAZO_ENCONTRADO, ViajeEvento.SIN_REEMPLAZO,
+            ViajeEvento.COSTO_RECALCULADO
         };
         foreach (var evento in eventos)
             _servicio.Eventos.Registrar(evento, viaje => AlOcurrirEvento(evento, viaje));
@@ -51,8 +52,16 @@ public partial class MainPage : ContentPage
         if (evento is ViajeEvento.VIAJE_PUBLICADO or ViajeEvento.VIAJE_CANCELADO or ViajeEvento.ASIENTO_LIBERADO)
             Redibujar();
 
-        if (ConversorMensajes.Convertir(evento, viaje) is string mensaje)
+        string? mensaje = ConversorMensajes.Convertir(evento, viaje);
+
+        // HU14: el nuevo costo llega encadenado justo después de "X se anotó" o "X se bajó":
+        // se agrega abajo de ese aviso en lugar de taparlo
+        if (evento == ViajeEvento.COSTO_RECALCULADO && mensaje is not null && _viajeDelAviso == viaje)
+            lblAviso.Text += "\n" + mensaje;
+        else if (mensaje is not null)
             MostrarAviso(mensaje);
+
+        _viajeDelAviso = mensaje is null ? null : viaje;
 
         // HU6: se encontró un viaje parecido, se ofrece anotarse con un toque
         if (evento == ViajeEvento.REEMPLAZO_ENCONTRADO && viaje.Reemplazo is Viaje otro)
@@ -100,8 +109,12 @@ public partial class MainPage : ContentPage
             _viajesVisibles.Add(viaje);
     }
 
+    /// <summary>Viaje del último aviso de un evento (para sumarle el del costo, HU14).</summary>
+    private Viaje? _viajeDelAviso;
+
     private void MostrarAviso(string mensaje)
     {
+        _viajeDelAviso = null;
         lblAviso.Text = mensaje;
         panelAviso.IsVisible = true;
     }

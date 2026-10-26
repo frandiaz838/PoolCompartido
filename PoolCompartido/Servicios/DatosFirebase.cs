@@ -21,6 +21,8 @@ internal class ViajeDatos
     public bool Cancelado { get; set; }
     /// <summary>uid → nombre de cada pasajero.</summary>
     public Dictionary<string, string>? Pasajeros { get; set; }
+    /// <summary>HU14: costo total del viaje en pesos, o null si es sin costo (así no se guarda en Firebase).</summary>
+    public decimal? CostoTotal { get; set; }
 }
 
 /// <summary>Respuesta de Firebase al crear un viaje: el id que le asignó.</summary>
@@ -160,7 +162,8 @@ internal static class ConversorViajes
             Hora = datos.Hora,
             ConductorUid = datos.ConductorUid,
             Conductor = datos.ConductorNombre,
-            Comentario = datos.Comentario
+            Comentario = datos.Comentario,
+            CostoTotal = datos.CostoTotal
         };
         viaje.ActualizarDesde(datos);
         return viaje;
@@ -179,6 +182,7 @@ internal static class ConversorViajes
         Cancelado = viaje.Cancelado,
         Pasajeros = viaje.PasajerosPorUid.Count > 0
             ? new Dictionary<string, string>(viaje.PasajerosPorUid)
-            : null
+            : null,
+        CostoTotal = viaje.CostoTotal
     };
 }

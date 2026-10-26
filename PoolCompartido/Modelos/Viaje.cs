@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 
 namespace PoolCompartido;
@@ -34,6 +35,8 @@ public class Viaje : INotifyPropertyChanged
     /// <summary>Nombre del conductor (el que se muestra).</summary>
     public string Conductor { get; init; } = "";
     public string Comentario { get; init; } = "";
+    /// <summary>HU14: costo total del viaje (nafta + peajes), o null si es sin costo. Se divide solo entre los pasajeros.</summary>
+    public decimal? CostoTotal { get; init; }
 
     // Pasajeros anotados: uid → nombre
     private readonly Dictionary<string, string> _pasajeros = new();
@@ -173,6 +176,46 @@ public class Viaje : INotifyPropertyChanged
         ? "Sin pasajeros anotados"
         : $"Pasajeros: {string.Join(", ", _pasajeros.Values)}";
 
+    // ───── HU14: reparto del costo ─────
+
+    /// <summary>El conductor cargó un costo: solo en esos viajes se muestra y se recalcula.</summary>
+    public bool TieneCosto => CostoTotal is > 0;
+
+    /// <summary>Cuánto paga cada pasajero con los anotados de ahora (el conductor no paga su parte).</summary>
+    public decimal CostoPorPasajero => CostoPara(_pasajeros.Count);
+
+    /// <summary>
+    /// Divide el total entre esa cantidad de pasajeros. Se redondea a pesos enteros hacia arriba,
+    /// así entre todos nunca juntan menos que el total. Con 0 pasajeros, el que se anote paga todo.
+    /// </summary>
+    public decimal CostoPara(int pasajeros) =>
+        TieneCosto ? Math.Ceiling(CostoTotal!.Value / Math.Max(pasajeros, 1)) : 0;
+
+    /// <summary>Texto de la lista: cuánto paga cada uno y, si todavía me puedo anotar, cuánto pagaría yo.</summary>
+    public string CostoTexto
+    {
+        get
+        {
+            if (!TieneCosto) return "";
+
+            if (_pasajeros.Count == 0)
+                return EsDelUsuarioActual
+                    ? $"{Pesos(CostoTotal!.Value)} en total · todavía sin pasajeros"
+                    : $"{Pesos(CostoTotal!.Value)} en total · Si te anotás: {Pesos(CostoPara(1))}";
+
+            string porPasajero = $"{Pesos(CostoPorPasajero)} por pasajero";
+            return EsDelUsuarioActual || EstoyAnotado
+                ? porPasajero
+                : $"{porPasajero} · Si te anotás: {Pesos(CostoPara(_pasajeros.Count + 1))}";
+        }
+    }
+
+    // Formato argentino fijo ($6.000): no depende del idioma del dispositivo
+    private static readonly NumberFormatInfo FormatoPesos = new() { NumberGroupSeparator = ".", NumberDecimalSeparator = "," };
+
+    /// <summary>Muestra un importe como "$6.000".</summary>
+    public static string Pesos(decimal monto) => "$" + monto.ToString("#,##0", FormatoPesos);
+
     /// <summary>Actualiza el viaje con los datos que llegaron del servidor.</summary>
     internal void ActualizarDesde(ViajeDatos datos)
     {
@@ -205,6 +248,8 @@ public class Viaje : INotifyPropertyChanged
             OnPropertyChanged(nameof(RolUsuarioActual));
             OnPropertyChanged(nameof(PuedeAnotarse));
             OnPropertyChanged(nameof(PuedeSalirse));
+            OnPropertyChanged(nameof(CostoPorPasajero));   // HU14: cambió entre cuántos se divide
+            OnPropertyChanged(nameof(CostoTexto));
         }
 
         AsientosDisponibles = datos.AsientosDisponibles;
