@@ -115,6 +115,39 @@ internal class RepositorioFirebase
                ?? new Dictionary<string, PuntoEncuentroDatos>();
     }
 
+    // ───── HU25: chat grupal del viaje (/chats/{viajeId}/{clave}) ─────
+
+    /// <summary>Agrega un mensaje al chat del viaje (Firebase le asigna una clave ordenada por fecha).</summary>
+    public async Task CrearMensajeAsync(string viajeId, MensajeNuevoDatos datos)
+    {
+        using var pedido = new HttpRequestMessage(HttpMethod.Post, await UrlAsync($"chats/{viajeId}"))
+        {
+            Content = new StringContent(JsonSerializer.Serialize(datos, JsonPool.Default.MensajeNuevoDatos),
+                                        Encoding.UTF8, "application/json")
+        };
+        using var respuesta = await ClienteHttp.EnviarAsync(pedido);
+        Verificar(respuesta);
+    }
+
+    /// <summary>
+    /// Los mensajes del chat del viaje (clave → mensaje). Si se indica <paramref name="desdeClave"/>,
+    /// solo los que tienen una clave igual o posterior, así no se vuelve a bajar todo cada vez.
+    /// </summary>
+    public async Task<Dictionary<string, MensajeDatos>> ObtenerMensajesAsync(string viajeId, string? desdeClave)
+    {
+        string url = await UrlAsync($"chats/{viajeId}");
+        if (desdeClave is not null)
+            url += "&orderBy=" + Uri.EscapeDataString("\"$key\"") + "&startAt=" + Uri.EscapeDataString($"\"{desdeClave}\"");
+
+        using var pedido = new HttpRequestMessage(HttpMethod.Get, url);
+        using var respuesta = await ClienteHttp.EnviarAsync(pedido);
+        Verificar(respuesta);
+
+        string cuerpo = await respuesta.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize(cuerpo, JsonPool.Default.DictionaryStringMensajeDatos)
+               ?? new Dictionary<string, MensajeDatos>();
+    }
+
     /// <summary>Guarda (o reemplaza) el punto de encuentro de un pasajero.</summary>
     public async Task GuardarEncuentroAsync(string viajeId, string uid, PuntoEncuentroDatos datos)
     {

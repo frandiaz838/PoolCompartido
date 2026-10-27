@@ -42,6 +42,13 @@ public partial class MisViajesPage : ContentPage
         await Navigation.PushAsync(new PerfilPage());
     }
 
+    /// <summary>HU25: abre el chat grupal del viaje.</summary>
+    private async void OnChatClicked(object? sender, EventArgs e)
+    {
+        if (sender is not Button { BindingContext: Viaje viaje }) return;
+        await Navigation.PushAsync(new ChatPage(viaje));
+    }
+
     /// <summary>HU22: abre la ruta del viaje en Google Maps.</summary>
     private async void OnVerRutaClicked(object? sender, EventArgs e)
     {
@@ -69,6 +76,7 @@ public partial class MisViajesPage : ContentPage
         try
         {
             await _servicio.CancelarViajeAsync(viaje);
+            await ServicioChat.Instancia.AvisarAlGrupoAsync(viaje, "canceló el viaje");   // HU25
             await DisplayAlertAsync("Viaje cancelado", "Listo, el viaje quedó cancelado y los pasajeros van a recibir el aviso.", "OK");
         }
         catch (ViajeException ex)
@@ -105,6 +113,8 @@ public partial class MisViajesPage : ContentPage
         boton.IsEnabled = false;   // evita que se toque dos veces mientras espera al servidor
         try
         {
+            // HU25: el aviso al grupo va antes, porque después de salirse ya no puede escribir en el chat
+            await ServicioChat.Instancia.AvisarAlGrupoAsync(viaje, "se bajó del viaje");
             await _servicio.SalirseAsync(viaje);
             await PuntoDeEncuentro.BorrarSinFallarAsync(viaje);   // HU24: el conductor ya no necesita su dirección
             await DisplayAlertAsync("Listo", $"Ya no estás anotado en el viaje de {viaje.Conductor}.", "OK");

@@ -52,6 +52,7 @@ namespace PoolCompartido
             _timerSincronizacion?.Stop();
             _timerSincronizacion = null;
             ServicioViajes.Instancia.Reiniciar();
+            ServicioChat.Instancia.Reiniciar();   // HU25
             CambiarPagina(new LoginPage());
         }
 
@@ -75,6 +76,8 @@ namespace PoolCompartido
                 await SincronizarAsync();
                 // Aunque no haya internet, el tiempo pasa: los viajes cierran, salen y terminan
                 ServicioViajes.Instancia.ActualizarEstados();
+                // HU25: mensajes nuevos en los chats de mis viajes
+                await ServicioChat.Instancia.RevisarNuevosAsync();
             };
             _timerSincronizacion.Start();
         }
