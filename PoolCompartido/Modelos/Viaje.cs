@@ -262,14 +262,17 @@ public class Viaje : INotifyPropertyChanged
         EsDelUsuarioActual && !Iniciado && DateTime.Now >= InicioPermitido
         && (Estado is EstadoViaje.Abierto or EstadoViaje.PorSalir or EstadoViaje.EnCurso);
 
-    /// <summary>HU15: "Finalizar viaje" (conductor, después de iniciarlo).</summary>
-    public bool PuedeFinalizar => EsDelUsuarioActual && Iniciado && Estado == EstadoViaje.EnCurso;
+    /// <summary>
+    /// HU15: "Finalizar viaje" (conductor, con el viaje en curso). Aunque no haya tocado "Iniciar viaje",
+    /// después de la hora de salida lo puede marcar como completado sin esperar las 2 horas.
+    /// </summary>
+    public bool PuedeFinalizar => EsDelUsuarioActual && Estado == EstadoViaje.EnCurso;
 
     /// <summary>HU15: pasajeros que todavía no confirmaron su PIN.</summary>
     public int FaltanSubir => _pasajeros.Keys.Count(uid => !_aBordo.Contains(uid));
 
     /// <summary>HU15: "Confirmar PIN" (conductor, con el viaje iniciado y alguien que falte subir).</summary>
-    public bool PuedeConfirmarPin => PuedeFinalizar && FaltanSubir > 0;
+    public bool PuedeConfirmarPin => PuedeFinalizar && Iniciado && FaltanSubir > 0;
 
     /// <summary>HU15: el conductor ve cuántos subieron desde que inicia el viaje.</summary>
     public bool MostrarABordo => EsDelUsuarioActual && Iniciado && _pasajeros.Count > 0;

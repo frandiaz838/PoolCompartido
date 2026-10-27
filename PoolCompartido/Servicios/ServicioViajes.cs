@@ -544,9 +544,12 @@ public class ServicioViajes
         Eventos.Disparar(ViajeEvento.VIAJE_INICIADO, viaje);
     }
 
-    /// <summary>HU15: el conductor marca que llegaron. El viaje pasa al historial.</summary>
+    /// <summary>
+    /// HU15: el conductor marca que llegaron. El viaje pasa al historial.
+    /// Se puede después de "Iniciar viaje" o, si no lo tocó, desde la hora de salida.
+    /// </summary>
     /// <exception cref="ArgumentNullException">No se indicó el viaje.</exception>
-    /// <exception cref="ViajeNoIniciadoException">Todavía no tocó "Iniciar viaje".</exception>
+    /// <exception cref="ViajeNoIniciadoException">No tocó "Iniciar viaje" y todavía no es la hora de salida.</exception>
     /// <exception cref="ViajeException">No es el conductor, o el viaje ya terminó.</exception>
     /// <exception cref="SinConexionException">No hay internet.</exception>
     public async Task FinalizarViajeAsync(Viaje viaje)
@@ -555,7 +558,7 @@ public class ServicioViajes
         ValidarConductor(viaje);
 
         if (viaje.Terminado) throw new ViajeException("Este viaje ya terminó.");
-        if (!viaje.Iniciado) throw new ViajeNoIniciadoException();
+        if (!viaje.Iniciado && DateTime.Now < viaje.Salida) throw new ViajeNoIniciadoException();
 
         await ModificarComoConductorAsync(viaje, datos => datos.Finalizado = true);
         Eventos.Disparar(ViajeEvento.VIAJE_FINALIZADO, viaje);
