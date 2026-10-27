@@ -21,6 +21,9 @@ public partial class ChatPage : ContentPage
         ArgumentNullException.ThrowIfNull(viaje);
         InitializeComponent();
 
+        // HU26: cartel de avisos y campanita (los mensajes de este chat no avisan: ya se ven acá)
+        Notificaciones.Preparar(this);
+
         _viaje = viaje;
         listaMensajes.ItemsSource = _mensajes;
         lblRuta.Text = viaje.Ruta;

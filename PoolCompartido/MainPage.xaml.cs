@@ -13,12 +13,16 @@ public partial class MainPage : ContentPage
     {
         InitializeComponent();
 
+        // HU26: cartel de avisos y campanita
+        Notificaciones.Preparar(this);
+
         listaViajes.ItemsSource = _viajesVisibles;
         pickerHorario.ItemsSource = FranjasHorarias.Nombres;
         pickerHorario.SelectedIndex = 0;
 
         // Tabla de eventos: esta pantalla registra la misma callback para todos los eventos de viajes.
         // Los eventos llegan tanto por acciones en este dispositivo como por la sincronización con Firebase.
+        // HU26: el texto del aviso lo muestra ServicioNotificaciones (en cualquier pantalla); acá solo se redibuja.
         ViajeEvento[] eventos =
         {
             ViajeEvento.VIAJE_PUBLICADO, ViajeEvento.ASIENTO_RESERVADO, ViajeEvento.ASIENTO_LIBERADO,
@@ -29,9 +33,9 @@ public partial class MainPage : ContentPage
         foreach (var evento in eventos)
             _servicio.Eventos.Registrar(evento, viaje => AlOcurrirEvento(evento, viaje));
 
-        // Evento estándar de .NET: se cortó o volvió internet
+        // Evento estándar de .NET: se cortó o volvió internet (aviso en el cartel, no se guarda)
         _servicio.ConexionCambiada += (sender, hayConexion) =>
-            MostrarAviso(hayConexion
+            ServicioNotificaciones.Instancia.Avisar(hayConexion
                 ? "Volvió la conexión: los viajes están actualizados."
                 : "Sin conexión: se muestran los últimos viajes guardados.");
 
@@ -44,12 +48,12 @@ public partial class MainPage : ContentPage
         Redibujar();
 
         if (_servicio.AvisoAlIniciar is string aviso)
-            MostrarAviso(aviso);
+            ServicioNotificaciones.Instancia.Avisar(aviso);
     }
 
     /// <summary>
-    /// Callback de los eventos de viajes: redibuja si cambió la lista (evento Paint) y
-    /// muestra el mensaje que corresponde según mi rol (HU7, conversión de mensajes).
+    /// Callback de los eventos de viajes: redibuja si cambió la lista (evento Paint).
+    /// El mensaje según mi rol (HU7) lo muestra ServicioNotificaciones en la pantalla que esté abierta (HU26).
     /// </summary>
     private void AlOcurrirEvento(ViajeEvento evento, Viaje viaje)
     {
@@ -57,20 +61,6 @@ public partial class MainPage : ContentPage
         if (evento is ViajeEvento.VIAJE_PUBLICADO or ViajeEvento.VIAJE_CANCELADO or ViajeEvento.ASIENTO_LIBERADO
                    or ViajeEvento.VIAJE_INICIADO or ViajeEvento.VIAJE_FINALIZADO)
             Redibujar();
-
-        string? mensaje = ConversorMensajes.Convertir(evento, viaje);
-
-        // HU14: el nuevo costo llega encadenado justo después de "X se anotó" o "X se bajó":
-        // se agrega abajo de ese aviso en lugar de taparlo.
-        // HU16: lo mismo con el lugar liberado, que llega encadenado al no-show (viaje iniciado)
-        bool encadenado = evento == ViajeEvento.COSTO_RECALCULADO
-                          || (evento == ViajeEvento.ASIENTO_LIBERADO && viaje.Iniciado);
-        if (encadenado && mensaje is not null && _viajeDelAviso == viaje)
-            lblAviso.Text += "\n" + mensaje;
-        else if (mensaje is not null)
-            MostrarAviso(mensaje);
-
-        _viajeDelAviso = mensaje is null ? null : viaje;
 
         // HU6: se encontró un viaje parecido, se ofrece anotarse con un toque
         if (evento == ViajeEvento.REEMPLAZO_ENCONTRADO && viaje.Reemplazo is Viaje otro)
@@ -97,6 +87,8 @@ public partial class MainPage : ContentPage
     {
         base.OnAppearing();
         Redibujar();
+        // HU26: se llegó tocando un aviso: se muestra ese viaje
+        Notificaciones.MostrarViajePendiente(listaViajes, _viajesVisibles);
     }
 
     /// <summary>
@@ -116,16 +108,6 @@ public partial class MainPage : ContentPage
         _viajesVisibles.Clear();
         foreach (var viaje in filtrados)
             _viajesVisibles.Add(viaje);
-    }
-
-    /// <summary>Viaje del último aviso de un evento (para sumarle el del costo, HU14).</summary>
-    private Viaje? _viajeDelAviso;
-
-    private void MostrarAviso(string mensaje)
-    {
-        _viajeDelAviso = null;
-        lblAviso.Text = mensaje;
-        panelAviso.IsVisible = true;
     }
 
     private void OnDestinoCambiado(object? sender, TextChangedEventArgs e) => Redibujar();

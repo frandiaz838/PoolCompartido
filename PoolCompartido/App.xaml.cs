@@ -46,6 +46,11 @@ namespace PoolCompartido
         public async Task EntrarAsync()
         {
             await ServicioViajes.Instancia.CargarAsync();
+
+            // HU26: el centro de notificaciones escucha todos los eventos de viajes de este usuario
+            if (ServicioAutenticacion.UidActual is string uid)
+                ServicioNotificaciones.Instancia.Conectar(ServicioViajes.Instancia.Eventos, uid);
+
             CambiarPagina(new AppShell());
             IniciarSincronizacion();
         }
@@ -57,6 +62,7 @@ namespace PoolCompartido
             ServicioViajes.Instancia.Reiniciar();
             ServicioChat.Instancia.Reiniciar();   // HU25
             ServicioApariencia.Reiniciar();       // HU19
+            ServicioNotificaciones.Instancia.Reiniciar();   // HU26
             CambiarPagina(new LoginPage());
         }
 

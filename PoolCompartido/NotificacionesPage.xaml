@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:PoolCompartido"
+             x:Class="PoolCompartido.NotificacionesPage"
+             Title="Notificaciones"
+             Shell.TabBarIsVisible="False">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem x:Name="btnMarcarTodo" Text="Marcar todo como leído" Clicked="OnMarcarTodoClicked" />
+    </ContentPage.ToolbarItems>
+
+    <!-- HU26: centro de notificaciones. En la compu, una columna central -->
+    <Grid Padding="16" RowSpacing="10" RowDefinitions="Auto,*" MaximumWidthRequest="720">
+
+        <Label x:Name="lblResumen" Grid.Row="0" Style="{StaticResource TextoSecundario}" FontSize="14" />
+
+        <CollectionView x:Name="listaNotificaciones" Grid.Row="1" SelectionMode="None">
+            <CollectionView.EmptyView>
+                <VerticalStackLayout HorizontalOptions="Center" Margin="0,40" Spacing="6">
+                    <Label Text="🔔" FontSize="36" HorizontalOptions="Center" />
+                    <Label Text="Todavía no tenés notificaciones." HorizontalOptions="Center" FontAttributes="Bold" />
+                    <Label Text="Acá van a aparecer los avisos de tus viajes." Style="{StaticResource TextoSecundario}" HorizontalOptions="Center" />
+                </VerticalStackLayout>
+            </CollectionView.EmptyView>
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+            </CollectionView.ItemsLayout>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="local:Notificacion">
+                    <Border Padding="12,10"
+                            StrokeShape="RoundRectangle 12"
+                            StrokeThickness="1"
+                            Stroke="{AppThemeBinding Light=#EEEAF6, Dark=#333333}"
+                            BackgroundColor="{AppThemeBinding Light=White, Dark=#262626}">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnNotificacionTocada" />
+                        </Border.GestureRecognizers>
+
+                        <!-- Las no leídas: barrita violeta a la izquierda, texto en negrita y un punto (no depende solo del color) -->
+                        <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="12">
+                            <BoxView WidthRequest="4" CornerRadius="2" VerticalOptions="Fill"
+                                     Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                                     Opacity="0"
+                                     IsVisible="True">
+                                <BoxView.Triggers>
+                                    <DataTrigger TargetType="BoxView" Binding="{Binding NoLeida}" Value="True">
+                                        <Setter Property="Opacity" Value="1" />
+                                    </DataTrigger>
+                                </BoxView.Triggers>
+                            </BoxView>
+                            <Label Grid.Column="1" Text="{Binding Icono}" FontSize="20" VerticalOptions="Start" />
+                            <VerticalStackLayout Grid.Column="2" Spacing="2">
+                                <Label Text="{Binding Texto}" FontSize="14" LineBreakMode="WordWrap">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding NoLeida}" Value="True">
+                                            <Setter Property="FontAttributes" Value="Bold" />
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
+                                <Label Text="{Binding HoraTexto}" Style="{StaticResource TextoSecundario}" FontSize="12" />
+                            </VerticalStackLayout>
+                            <!-- Punto de "nuevo" -->
+                            <BoxView Grid.Column="3" WidthRequest="10" HeightRequest="10" CornerRadius="5" VerticalOptions="Center"
+                                     Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                                     IsVisible="{Binding NoLeida}" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+
+</ContentPage>

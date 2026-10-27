@@ -8,6 +8,9 @@ public partial class PublicarViajePage : ContentPage
     {
         InitializeComponent();
 
+        // HU26: cartel de avisos y campanita
+        Notificaciones.Preparar(this);
+
         dpFecha.MinimumDate = DateTime.Today;
         // Por defecto, la próxima hora en punto
         int proximaHora = Math.Min(DateTime.Now.Hour + 1, 23);
