@@ -11,7 +11,7 @@
     </ContentPage.ToolbarItems>
 
     <!-- En pantallas anchas (compu) el contenido no se estira de punta a punta -->
-    <Grid Padding="16" RowSpacing="12" RowDefinitions="Auto,*,Auto,Auto" MaximumWidthRequest="980">
+    <Grid Padding="16" RowSpacing="12" RowDefinitions="Auto,*,Auto" MaximumWidthRequest="980">
 
         <!-- HU2: filtros por destino y franja horaria (se aplican solos al escribir o elegir) -->
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
@@ -83,19 +83,11 @@
             </CollectionView.ItemTemplate>
         </CollectionView>
 
-        <!-- Aviso que muestran los eventos (por ejemplo, la notificación al conductor) -->
-        <Border x:Name="panelAviso"
-                Grid.Row="2"
-                IsVisible="False"
-                Padding="10"
-                StrokeShape="RoundRectangle 8"
-                Stroke="#512BD4"
-                BackgroundColor="{AppThemeBinding Light=#EFEAFB, Dark=#2A2340}">
-            <Label x:Name="lblAviso" FontSize="13" />
-        </Border>
+        <!-- HU26: los avisos de los eventos ya no van acá abajo: los muestra el cartel de notificaciones
+             en cualquier pantalla, y quedan guardados en el centro de notificaciones (campanita) -->
 
         <!-- HU1: publicar -->
-        <Button Grid.Row="3"
+        <Button Grid.Row="2"
                 Text="Publicar un viaje"
                 FontAttributes="Bold"
                 Clicked="OnPublicarClicked" />

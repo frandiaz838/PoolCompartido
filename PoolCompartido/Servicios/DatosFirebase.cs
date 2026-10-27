@@ -81,6 +81,39 @@ internal class LugarGuardadoDatos
     };
 }
 
+/// <summary>HU26: un aviso del centro de notificaciones, guardado en el dispositivo (no va a Firebase).</summary>
+internal class NotificacionDatos
+{
+    public string Id { get; set; } = "";
+    public string? ViajeId { get; set; }
+    /// <summary>Se guarda con el nombre ("ASIENTO_RESERVADO"), así no se rompe si se agregan eventos en el medio.</summary>
+    [JsonConverter(typeof(JsonStringEnumConverter<ViajeEvento>))]
+    public ViajeEvento? Evento { get; set; }
+    public string Texto { get; set; } = "";
+    public DateTime Hora { get; set; }
+    public bool Leida { get; set; }
+
+    public Notificacion ANotificacion() => new()
+    {
+        Id = string.IsNullOrEmpty(Id) ? Guid.NewGuid().ToString("N") : Id,
+        ViajeId = ViajeId,
+        Evento = Evento,
+        Texto = Texto,
+        Hora = Hora,
+        Leida = Leida
+    };
+
+    public static NotificacionDatos De(Notificacion n) => new()
+    {
+        Id = n.Id,
+        ViajeId = n.ViajeId,
+        Evento = n.Evento,
+        Texto = n.Texto,
+        Hora = n.Hora,
+        Leida = n.Leida
+    };
+}
+
 /// <summary>HU25: un mensaje del chat tal como se lee de Firebase (/chats/{viajeId}/{clave}).</summary>
 internal class MensajeDatos
 {
@@ -211,7 +244,8 @@ internal class DetalleErrorAuth
 [JsonSerializable(typeof(string))]   // HU15: el PIN en /pines
 [JsonSerializable(typeof(PuntoEncuentroDatos))]
 [JsonSerializable(typeof(Dictionary<string, PuntoEncuentroDatos>))]
-[JsonSerializable(typeof(Dictionary<string, LugarGuardadoDatos>))]   // lugares ya encontrados en el mapa
+[JsonSerializable(typeof(Dictionary<string, LugarGuardadoDatos>))]
+[JsonSerializable(typeof(List<NotificacionDatos>))]                // HU26: notificaciones guardadas   // lugares ya encontrados en el mapa
 [JsonSerializable(typeof(SesionGuardada))]
 [JsonSerializable(typeof(PedidoAutenticacion))]
 [JsonSerializable(typeof(PedidoActualizarPerfil))]

@@ -5,6 +5,9 @@ public partial class RegistroErroresPage : ContentPage
     public RegistroErroresPage()
     {
         InitializeComponent();
+
+        // HU26: cartel de avisos y campanita
+        Notificaciones.Preparar(this);
     }
 
     // Se ejecuta cada vez que se muestra la pantalla (evento del ciclo de vida)

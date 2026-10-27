@@ -30,6 +30,14 @@ public class Despachador<TEvento, TDatos> where TEvento : struct, Enum
     }
 
     /// <summary>
+    /// Saca una callback de la tabla (por ejemplo, cuando se cierra la pantalla que la registró,
+    /// así el despachador no sigue avisándole a una pantalla que ya no existe).
+    /// </summary>
+    /// <returns>true si la callback estaba registrada.</returns>
+    public bool Quitar(TEvento evento, Action<TDatos> callback) =>
+        _tabla.TryGetValue(evento, out var callbacks) && callbacks.Remove(callback);
+
+    /// <summary>
     /// Dispara un evento. Si una callback dispara otro evento (encadenamiento, HU11),
     /// ese segundo evento se encola y se procesa después, en orden.
     /// </summary>

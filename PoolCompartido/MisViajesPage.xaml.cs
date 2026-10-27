@@ -11,6 +11,9 @@ public partial class MisViajesPage : ContentPage
     {
         InitializeComponent();
 
+        // HU26: cartel de avisos y campanita
+        Notificaciones.Preparar(this);
+
         listaMisViajes.ItemsSource = _misViajes;
 
         // Esta pantalla también se suscribe a la tabla de eventos:
@@ -38,6 +41,8 @@ public partial class MisViajesPage : ContentPage
         var usuario = ServicioAutenticacion.Instancia.UsuarioActual;
         lblSaludo.Text = usuario is null ? "Mis viajes" : $"Hola, {usuario.Nombre}";
         Redibujar();
+        // HU26: se llegó tocando un aviso: se muestra ese viaje
+        Notificaciones.MostrarViajePendiente(listaMisViajes, _misViajes);
     }
 
     private async void OnPerfilClicked(object? sender, EventArgs e)

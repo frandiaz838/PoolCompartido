@@ -12,6 +12,9 @@ public partial class PerfilPage : ContentPage
     {
         InitializeComponent();
 
+        // HU26: cartel de avisos y campanita
+        Notificaciones.Preparar(this);
+
         // HU18 + HU19: lo que eligió el usuario la última vez
         _cargandoApariencia = true;
         pickerTema.ItemsSource = new[] { "Según el sistema", "Claro", "Oscuro" };   // mismo orden que el enum Tema
