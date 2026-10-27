@@ -42,7 +42,7 @@
                         <!-- El viaje en curso se resalta con borde verde -->
                         <Border.Triggers>
                             <DataTrigger TargetType="Border" Binding="{Binding Estado}" Value="{x:Static local:EstadoViaje.EnCurso}">
-                                <Setter Property="Stroke" Value="#2E9E5B" />
+                                <Setter Property="Stroke" Value="{DynamicResource ColorExito}" />
                                 <Setter Property="StrokeThickness" Value="2" />
                             </DataTrigger>
                         </Border.Triggers>
@@ -72,21 +72,21 @@
                                 <Label Text="{Binding EstadoTexto}"
                                        FontSize="13"
                                        FontAttributes="Bold"
-                                       TextColor="#E5484D"
+                                       TextColor="{DynamicResource ColorPeligro}"
                                        IsVisible="{Binding MostrarEstado}">
                                     <Label.Triggers>
                                         <DataTrigger TargetType="Label" Binding="{Binding Estado}" Value="{x:Static local:EstadoViaje.EnCurso}">
-                                            <Setter Property="TextColor" Value="#2E9E5B" />
+                                            <Setter Property="TextColor" Value="{DynamicResource ColorExito}" />
                                         </DataTrigger>
                                         <DataTrigger TargetType="Label" Binding="{Binding Estado}" Value="{x:Static local:EstadoViaje.PorSalir}">
-                                            <Setter Property="TextColor" Value="#D9822B" />
+                                            <Setter Property="TextColor" Value="{DynamicResource ColorAviso}" />
                                         </DataTrigger>
                                     </Label.Triggers>
                                 </Label>
                                 <!-- HU15: cuántos pasajeros ya subieron (el conductor, con el viaje iniciado) -->
                                 <Label Text="{Binding ABordoTexto}" FontSize="13" IsVisible="{Binding MostrarABordo}" />
                                 <!-- HU15: el conductor ya confirmó mi PIN -->
-                                <Label Text="✓ Estás a bordo" FontSize="13" FontAttributes="Bold" TextColor="#2E9E5B" IsVisible="{Binding EstoyABordo}" />
+                                <Label Text="✓ Estás a bordo" FontSize="13" FontAttributes="Bold" TextColor="{DynamicResource ColorExito}" IsVisible="{Binding EstoyABordo}" />
                             </VerticalStackLayout>
 
                             <BoxView HeightRequest="1" Color="{AppThemeBinding Light=#EEEAF6, Dark=#333333}" />

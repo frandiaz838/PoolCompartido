@@ -4,8 +4,9 @@ namespace PoolCompartido;
 /// <param name="Texto">null si el pasajero todavía no lo cargó.</param>
 /// <param name="Latitud">HU23: coordenadas del punto (exactas si usó su ubicación).</param>
 /// <param name="Aproximado">true si las coordenadas se calcularon a partir de la dirección escrita.</param>
+/// <param name="Zona">Localidad y provincia de la dirección escrita ("Villa Allende, Córdoba"), para Google Maps.</param>
 public record PuntoPasajero(string Uid, string Nombre, string? Texto, double? Latitud = null, double? Longitud = null,
-                            bool Aproximado = false)
+                            bool Aproximado = false, string? Zona = null)
 {
     public Coordenada? Lugar => Latitud is double lat && Longitud is double lon ? new Coordenada(lat, lon) : null;
 
@@ -33,12 +34,15 @@ public class ServicioEncuentros
     private static Usuario UsuarioRequerido =>
         ServicioAutenticacion.Instancia.UsuarioActual ?? throw new SesionVencidaException();
 
-    /// <summary>El pasajero guarda (o cambia) dónde lo pasan a buscar.</summary>
+    /// <summary>
+    /// El pasajero guarda (o cambia) dónde lo pasan a buscar.
+    /// Devuelve dónde se ubicó la dirección en el mapa, o null si no se encontró (se guarda igual).
+    /// </summary>
     /// <exception cref="ArgumentNullException">No se indicó el viaje.</exception>
     /// <exception cref="ArgumentException">El texto está vacío o es demasiado largo.</exception>
     /// <exception cref="NoAnotadoException">No está anotado en ese viaje.</exception>
     /// <exception cref="SinConexionException">No hay internet.</exception>
-    public async Task GuardarMiPuntoAsync(Viaje viaje, string? texto)
+    public async Task<LugarEncontrado?> GuardarMiPuntoAsync(Viaje viaje, string? texto)
     {
         ArgumentNullException.ThrowIfNull(viaje);
         string limpio = ValidarTexto(texto, "Escribí dónde te pasan a buscar.");
@@ -48,11 +52,14 @@ public class ServicioEncuentros
             throw new NoAnotadoException();
 
         // Ruta óptima: se ubica la dirección ahora, así después la ruta se arma rápido.
+        // Se busca cerca del viaje, pero NO solo en la localidad de origen: el pasajero puede vivir
+        // en otra localidad del camino (antes se le agregaba el barrio de origen y Maps no la encontraba).
         // Si no se encuentra, se guarda igual (esa parada va al final de la ruta).
-        Coordenada? lugar = null;
+        LugarEncontrado? zonaViaje = null, lugar = null;
         try
         {
-            lugar = await Geocodificador.BuscarAsync(limpio, viaje.Origen);
+            zonaViaje = await UbicarViajeAsync(viaje);
+            lugar = await Geocodificador.BuscarLugarAsync(limpio, zonaViaje?.Punto, zonaViaje?.Provincia);
         }
         catch (Exception ex) when (ex is SinConexionException or ServidorException)
         {
@@ -62,10 +69,28 @@ public class ServicioEncuentros
         await _remoto.GuardarEncuentroAsync(viaje.Id, usuario.Uid, new PuntoEncuentroDatos
         {
             Texto = limpio,
-            Lat = lugar?.Latitud,
-            Lon = lugar?.Longitud,
-            Aproximado = lugar is null ? null : true
+            Lat = lugar?.Punto.Latitud,
+            Lon = lugar?.Punto.Longitud,
+            Aproximado = lugar is null ? null : true,
+            // Si no se encontró, al menos la provincia del viaje, para que Maps no la busque en todo el país
+            Zona = lugar?.Zona ?? zonaViaje?.Provincia
         });
+        return lugar;
+    }
+
+    /// <summary>
+    /// Dónde queda el viaje en el mapa (localidad y provincia), para buscar las direcciones cerca.
+    /// Se prueba con el origen, después con el punto de partida y por último con el destino.
+    /// Las búsquedas quedan guardadas, así que solo la primera vez hace pedidos a internet.
+    /// </summary>
+    /// <exception cref="SinConexionException">No hay internet.</exception>
+    /// <exception cref="ServidorException">OpenStreetMap respondió con un error.</exception>
+    public static async Task<LugarEncontrado?> UbicarViajeAsync(Viaje viaje)
+    {
+        ArgumentNullException.ThrowIfNull(viaje);
+        return await Geocodificador.BuscarLugarAsync(viaje.Origen)
+               ?? (viaje.TienePuntoPartida ? await Geocodificador.BuscarLugarAsync(viaje.PuntoPartida) : null)
+               ?? await Geocodificador.BuscarLugarAsync(viaje.Destino);
     }
 
     /// <summary>
@@ -119,7 +144,7 @@ public class ServicioEncuentros
 
         return viaje.PasajerosPorUid
             .Select(p => puntos.TryGetValue(p.Key, out var datos)
-                ? new PuntoPasajero(p.Key, p.Value, datos.Texto, datos.Lat, datos.Lon, datos.Aproximado == true)
+                ? new PuntoPasajero(p.Key, p.Value, datos.Texto, datos.Lat, datos.Lon, datos.Aproximado == true, datos.Zona)
                 : new PuntoPasajero(p.Key, p.Value, null))
             .OrderBy(p => p.Nombre)
             .ToList();
@@ -144,7 +169,7 @@ public class ServicioEncuentros
         return viaje.PasajerosPorUid
             .Where(p => puntos.ContainsKey(p.Key))
             .Select(p => new PuntoPasajero(p.Key, p.Value, puntos[p.Key].Texto, puntos[p.Key].Lat, puntos[p.Key].Lon,
-                                           puntos[p.Key].Aproximado == true))
+                                           puntos[p.Key].Aproximado == true, puntos[p.Key].Zona))
             .ToList();
     }
 
@@ -165,17 +190,29 @@ public class ServicioEncuentros
     public async Task<IReadOnlyList<PuntoPasajero>> ObtenerParadasOrdenadasAsync(Viaje viaje)
     {
         var paradas = (await ObtenerParadasAsync(viaje)).ToList();
-        if (paradas.Count < 2)
-            return paradas;
 
         try
         {
-            // Puntos escritos antes de que existiera la ruta óptima: se ubican ahora
-            for (int i = 0; i < paradas.Count; i++)
+            // Puntos escritos antes de este cambio (sin coordenadas o sin zona): se ubican ahora
+            if (paradas.Any(FaltaUbicar))
             {
-                if (paradas[i].Lugar is null && await Geocodificador.BuscarAsync(paradas[i].Texto, viaje.Origen) is Coordenada c)
-                    paradas[i] = paradas[i] with { Latitud = c.Latitud, Longitud = c.Longitud, Aproximado = true };
+                var zonaViaje = await UbicarViajeAsync(viaje);
+                for (int i = 0; i < paradas.Count; i++)
+                {
+                    if (!FaltaUbicar(paradas[i])) continue;
+                    var lugar = await Geocodificador.BuscarLugarAsync(paradas[i].Texto, zonaViaje?.Punto, zonaViaje?.Provincia);
+                    paradas[i] = paradas[i] with
+                    {
+                        Latitud = paradas[i].Latitud ?? lugar?.Punto.Latitud,
+                        Longitud = paradas[i].Longitud ?? lugar?.Punto.Longitud,
+                        Aproximado = paradas[i].Lugar is null ? lugar is not null : paradas[i].Aproximado,
+                        Zona = lugar?.Zona ?? zonaViaje?.Provincia
+                    };
+                }
             }
+
+            if (paradas.Count < 2)
+                return paradas;
 
             var conLugar = paradas.Where(p => p.Lugar is not null).ToList();
             var sinLugar = paradas.Where(p => p.Lugar is null).ToList();
@@ -198,6 +235,10 @@ public class ServicioEncuentros
             return paradas;
         }
     }
+
+    /// <summary>Una dirección escrita que todavía no tiene coordenadas o zona.</summary>
+    private static bool FaltaUbicar(PuntoPasajero p) =>
+        p.Texto is not null && (p.Lugar is null || (p.Aproximado && p.Zona is null));
 
     private static Coordenada? Creible(Coordenada? lugar, Coordenada referencia) =>
         lugar is Coordenada c && OptimizadorDeRuta.DistanciaRecta(c, referencia) <= DistanciaMaximaCreible ? c : null;

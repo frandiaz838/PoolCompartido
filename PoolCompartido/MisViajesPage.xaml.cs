@@ -25,6 +25,9 @@ public partial class MisViajesPage : ContentPage
         // Pasó el tiempo: un viaje salió (pasa arriba, "En curso") o terminó (se oculta)
         _servicio.EstadosCambiados += (sender, e) => Redibujar();
 
+        // HU19: cambió el tema o la paleta: las tarjetas se vuelven a dibujar con los colores nuevos
+        ServicioApariencia.Eventos.Registrar(EventoApariencia.APARIENCIA_CAMBIADA, _ => Redibujar());
+
         Redibujar();
     }
 

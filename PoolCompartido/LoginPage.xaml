@@ -45,7 +45,7 @@
                                  Clicked="OnVerContrasenaClicked" />
                 </Grid>
 
-                <Label x:Name="lblError" TextColor="Red" IsVisible="False" />
+                <Label x:Name="lblError" TextColor="{DynamicResource ColorPeligro}" IsVisible="False" />
 
                 <Button x:Name="btnPrincipal"
                         Text="Iniciar sesión"

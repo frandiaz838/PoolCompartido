@@ -50,8 +50,8 @@
                                     <Label Text="{Binding Detalle}" Style="{StaticResource TextoSecundario}" />
                                 </VerticalStackLayout>
                                 <Border Grid.Column="1" Style="{StaticResource Etiqueta}" IsVisible="{Binding EstoyAnotado}"
-                                        BackgroundColor="{AppThemeBinding Light=#E3F4EA, Dark=#1F3A2B}">
-                                    <Label Text="✓ Anotado" FontSize="12" FontAttributes="Bold" TextColor="#2E9E5B" />
+                                        BackgroundColor="{DynamicResource ColorExitoFondo}">
+                                    <Label Text="✓ Anotado" FontSize="12" FontAttributes="Bold" TextColor="{DynamicResource ColorExito}" />
                                 </Border>
                                 <Border Grid.Column="1" Style="{StaticResource Etiqueta}" IsVisible="{Binding EsDelUsuarioActual}">
                                     <Label Text="Tu viaje" FontSize="12" FontAttributes="Bold"
