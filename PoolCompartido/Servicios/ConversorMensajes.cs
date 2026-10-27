@@ -49,6 +49,10 @@ public static class ConversorMensajes
             (ViajeEvento.ASIENTO_RESERVADO, RolEnViaje.Pasajero) when viaje.UltimoPasajeroAnotadoUid != yo =>
                 $"{viaje.UltimoPasajeroAnotado} también viaja con {viaje.Conductor} a {viaje.Destino}.",
 
+            // HU16: con el viaje iniciado, el lugar se libera porque alguien no subió (llega encadenado a NO_SHOW_DETECTADO)
+            (ViajeEvento.ASIENTO_LIBERADO, RolEnViaje.Conductor) when viaje.Iniciado =>
+                $"{(viaje.UltimosNoShow.Count > 1 ? "Se liberaron sus lugares" : "Se liberó su lugar")}. {Asientos(viaje)}",
+
             // Alguien se bajó (HU4)
             (ViajeEvento.ASIENTO_LIBERADO, RolEnViaje.Conductor) =>
                 $"{viaje.UltimoPasajeroQueSalio} se bajó de tu viaje a {viaje.Destino}. {Asientos(viaje)}",
@@ -86,6 +90,14 @@ public static class ConversorMensajes
                 $"Finalizaste el viaje a {viaje.Destino}. Quedó en tu historial.",
             (ViajeEvento.VIAJE_FINALIZADO, RolEnViaje.Pasajero) =>
                 $"Llegaron a {viaje.Destino}: {viaje.Conductor} finalizó el viaje.",
+
+            // No-show (HU16). Al pasajero que sacaron ya no le figura el viaje (rol Ninguno): se lo reconoce por su uid
+            (ViajeEvento.NO_SHOW_DETECTADO, _) when yo is not null && viaje.UltimosNoShow.ContainsKey(yo) =>
+                $"No llegaste a subir al viaje de {viaje.Conductor} y se liberó tu lugar.",
+            (ViajeEvento.NO_SHOW_DETECTADO, RolEnViaje.Conductor) when viaje.UltimosNoShow.Count == 1 =>
+                $"{viaje.NoShowTexto} no hizo check-in a tiempo y se lo sacó de tu viaje a {viaje.Destino}.",
+            (ViajeEvento.NO_SHOW_DETECTADO, RolEnViaje.Conductor) =>
+                $"{viaje.NoShowTexto} no hicieron check-in a tiempo y se los sacó de tu viaje a {viaje.Destino}.",
 
             // Cualquier otra combinación no le interesa a este usuario
             _ => null
