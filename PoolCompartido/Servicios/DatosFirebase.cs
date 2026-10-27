@@ -49,6 +49,30 @@ internal class PuntoEncuentroDatos
     public bool? Aproximado { get; set; }
 }
 
+/// <summary>HU25: un mensaje del chat tal como se lee de Firebase (/chats/{viajeId}/{clave}).</summary>
+internal class MensajeDatos
+{
+    public string AutorUid { get; set; } = "";
+    public string AutorNombre { get; set; } = "";
+    public string Texto { get; set; } = "";
+    /// <summary>Milisegundos desde 1970 (hora del servidor de Firebase).</summary>
+    public long Hora { get; set; }
+    public bool? Sistema { get; set; }
+}
+
+/// <summary>
+/// HU25: un mensaje nuevo para enviar. La hora la pone el servidor de Firebase ({".sv": "timestamp"}),
+/// así todos ven el mismo orden aunque el reloj de algún celular esté mal.
+/// </summary>
+internal class MensajeNuevoDatos
+{
+    public string AutorUid { get; set; } = "";
+    public string AutorNombre { get; set; } = "";
+    public string Texto { get; set; } = "";
+    public Dictionary<string, string> Hora { get; set; } = new() { [".sv"] = "timestamp" };
+    public bool? Sistema { get; set; }
+}
+
 /// <summary>Respuesta de Firebase al crear un viaje: el id que le asignó.</summary>
 internal class RespuestaCreacion
 {
@@ -149,6 +173,9 @@ internal class DetalleErrorAuth
 [JsonSerializable(typeof(ViajeDatos))]
 [JsonSerializable(typeof(Dictionary<string, ViajeDatos>))]
 [JsonSerializable(typeof(RespuestaCreacion))]
+[JsonSerializable(typeof(MensajeNuevoDatos))]                      // HU25: chat
+[JsonSerializable(typeof(Dictionary<string, MensajeDatos>))]
+[JsonSerializable(typeof(Dictionary<string, string>))]             // HU25: chats leídos en el dispositivo
 [JsonSerializable(typeof(string))]   // HU15: el PIN en /pines
 [JsonSerializable(typeof(PuntoEncuentroDatos))]
 [JsonSerializable(typeof(Dictionary<string, PuntoEncuentroDatos>))]

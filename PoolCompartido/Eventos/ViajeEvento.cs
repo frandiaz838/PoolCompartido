@@ -16,5 +16,6 @@ public enum ViajeEvento
     VIAJE_INICIADO,        // HU15
     VIAJE_FINALIZADO,      // HU15
     PASAJERO_A_BORDO,      // HU15
+    MENSAJE_RECIBIDO,      // HU25
     NO_SHOW_DETECTADO      // HU16
 }

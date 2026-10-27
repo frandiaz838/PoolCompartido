@@ -10,7 +10,8 @@
         <ToolbarItem Text="Mi perfil" IconImageSource="perfil.png" Clicked="OnPerfilClicked" />
     </ContentPage.ToolbarItems>
 
-    <Grid Padding="16" RowSpacing="12" RowDefinitions="Auto,*,Auto,Auto">
+    <!-- En pantallas anchas (compu) el contenido no se estira de punta a punta -->
+    <Grid Padding="16" RowSpacing="12" RowDefinitions="Auto,*,Auto,Auto" MaximumWidthRequest="980">
 
         <!-- HU2: filtros por destino y franja horaria (se aplican solos al escribir o elegir) -->
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
@@ -36,48 +37,47 @@
                        Margin="0,30" />
             </CollectionView.EmptyView>
             <CollectionView.ItemsLayout>
-                <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+                <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
             </CollectionView.ItemsLayout>
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="local:Viaje">
-                    <Border Padding="12"
-                            StrokeShape="RoundRectangle 10"
-                            StrokeThickness="1"
-                            Stroke="{AppThemeBinding Light=#DDDDDD, Dark=#555555}">
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                            <VerticalStackLayout Spacing="2">
-                                <Label Text="{Binding Ruta}" FontSize="17" FontAttributes="Bold" />
-                                <Label Text="{Binding Detalle}" FontSize="13" />
+                    <Border Style="{StaticResource TarjetaViaje}">
+                        <VerticalStackLayout Spacing="10">
+                            <!-- Encabezado: ruta, y si el viaje es mío o ya estoy anotado -->
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <VerticalStackLayout Spacing="2">
+                                    <Label Text="{Binding Ruta}" FontSize="18" FontAttributes="Bold" />
+                                    <Label Text="{Binding Detalle}" Style="{StaticResource TextoSecundario}" />
+                                </VerticalStackLayout>
+                                <Border Grid.Column="1" Style="{StaticResource Etiqueta}" IsVisible="{Binding EstoyAnotado}"
+                                        BackgroundColor="{AppThemeBinding Light=#E3F4EA, Dark=#1F3A2B}">
+                                    <Label Text="✓ Anotado" FontSize="12" FontAttributes="Bold" TextColor="#2E9E5B" />
+                                </Border>
+                                <Border Grid.Column="1" Style="{StaticResource Etiqueta}" IsVisible="{Binding EsDelUsuarioActual}">
+                                    <Label Text="Tu viaje" FontSize="12" FontAttributes="Bold"
+                                           TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                </Border>
+                            </Grid>
+
+                            <!-- Datos del viaje -->
+                            <VerticalStackLayout Spacing="3">
                                 <!-- HU24: punto de partida público del conductor -->
-                                <Label Text="{Binding PuntoPartidaTexto}" FontSize="13" IsVisible="{Binding TienePuntoPartida}" />
-                                <Label Text="{Binding AsientosDisponibles, StringFormat='Asientos libres: {0}'}" FontSize="13" />
+                                <Label Text="{Binding PuntoPartidaTexto}" Style="{StaticResource TextoSecundario}" IsVisible="{Binding TienePuntoPartida}" />
+                                <Label Text="{Binding AsientosDisponibles, StringFormat='Asientos libres: {0}'}" Style="{StaticResource TextoSecundario}" />
                                 <!-- HU14: cuánto paga cada pasajero (solo en viajes con costo) -->
-                                <Label Text="{Binding CostoTexto}" FontSize="13" IsVisible="{Binding TieneCosto}" />
-                                <Label Text="✓ Estás anotado"
-                                       FontSize="13"
-                                       FontAttributes="Bold"
-                                       TextColor="#4CAF50"
-                                       IsVisible="{Binding EstoyAnotado}" />
-                                <Label Text="Publicado por vos"
-                                       FontSize="13"
-                                       FontAttributes="Bold"
-                                       TextColor="#9C8CF0"
-                                       IsVisible="{Binding EsDelUsuarioActual}" />
+                                <Label Text="{Binding CostoTexto}" FontSize="14" FontAttributes="Bold" IsVisible="{Binding TieneCosto}" />
                             </VerticalStackLayout>
-                            <VerticalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
+
+                            <!-- Acciones -->
+                            <FlexLayout Wrap="Wrap" Direction="Row" JustifyContent="Start" AlignItems="Start" Margin="0,0,0,-8">
                                 <!-- HU3: anotarse (no aparece en tus viajes ni donde ya estás anotado) -->
-                                <Button Text="Anotarme"
-                                        IsVisible="{Binding PuedeAnotarse}"
-                                        Clicked="OnAnotarmeClicked" />
+                                <Button Text="Anotarme" Style="{StaticResource BotonPrincipal}"
+                                        IsVisible="{Binding PuedeAnotarse}" Clicked="OnAnotarmeClicked" />
                                 <!-- HU22: ver el recorrido en Google Maps -->
-                                <Button Text="Ver ruta"
-                                        BackgroundColor="Transparent"
-                                        TextColor="{AppThemeBinding Light=#512BD4, Dark=#AC99EA}"
-                                        BorderColor="{AppThemeBinding Light=#512BD4, Dark=#AC99EA}"
-                                        BorderWidth="1"
+                                <Button Text="Ver ruta" Style="{StaticResource BotonSecundario}"
                                         Clicked="OnVerRutaClicked" />
-                            </VerticalStackLayout>
-                        </Grid>
+                            </FlexLayout>
+                        </VerticalStackLayout>
                     </Border>
                 </DataTemplate>
             </CollectionView.ItemTemplate>

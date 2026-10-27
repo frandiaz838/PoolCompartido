@@ -91,6 +91,11 @@ public static class ConversorMensajes
             (ViajeEvento.VIAJE_FINALIZADO, RolEnViaje.Pasajero) =>
                 $"Llegaron a {viaje.Destino}: {viaje.Conductor} finalizó el viaje.",
 
+            // HU25: llegó un mensaje al chat del viaje (los automáticos no generan aviso)
+            (ViajeEvento.MENSAJE_RECIBIDO, RolEnViaje.Conductor or RolEnViaje.Pasajero)
+                when viaje.UltimoMensaje is MensajeChat m && !m.Sistema && !m.EsMio =>
+                $"{m.AutorNombre} en el chat de {viaje.Ruta}: {Recortar(m.Texto, 80)}",
+
             // No-show (HU16). Al pasajero que sacaron ya no le figura el viaje (rol Ninguno): se lo reconoce por su uid
             (ViajeEvento.NO_SHOW_DETECTADO, _) when yo is not null && viaje.UltimosNoShow.ContainsKey(yo) =>
                 $"No llegaste a subir al viaje de {viaje.Conductor} y se liberó tu lugar.",
@@ -103,6 +108,9 @@ public static class ConversorMensajes
             _ => null
         };
     }
+
+    private static string Recortar(string texto, int largo) =>
+        texto.Length <= largo ? texto : texto[..(largo - 1)].TrimEnd() + "…";
 
     private static string Asientos(Viaje viaje) => viaje.AsientosDisponibles switch
     {
