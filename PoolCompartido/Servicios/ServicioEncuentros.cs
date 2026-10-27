@@ -2,8 +2,16 @@ namespace PoolCompartido;
 
 /// <summary>Punto de encuentro de un pasajero, listo para mostrarle al conductor.</summary>
 /// <param name="Texto">null si el pasajero todavía no lo cargó.</param>
-/// <param name="Latitud">HU23: coordenadas exactas, si el pasajero usó su ubicación.</param>
-public record PuntoPasajero(string Uid, string Nombre, string? Texto, double? Latitud = null, double? Longitud = null);
+/// <param name="Latitud">HU23: coordenadas del punto (exactas si usó su ubicación).</param>
+/// <param name="Aproximado">true si las coordenadas se calcularon a partir de la dirección escrita.</param>
+public record PuntoPasajero(string Uid, string Nombre, string? Texto, double? Latitud = null, double? Longitud = null,
+                            bool Aproximado = false)
+{
+    public Coordenada? Lugar => Latitud is double lat && Longitud is double lon ? new Coordenada(lat, lon) : null;
+
+    /// <summary>Si en el mapa conviene usar las coordenadas (solo si son exactas, de "Usar mi ubicación").</summary>
+    public bool MostrarCoordenadas => Lugar is not null && !Aproximado;
+}
 
 /// <summary>
 /// HU24: punto de encuentro. Cada pasajero indica dónde lo pasan a buscar.
@@ -39,7 +47,25 @@ public class ServicioEncuentros
         if (!viaje.PasajerosPorUid.ContainsKey(usuario.Uid))
             throw new NoAnotadoException();
 
-        await _remoto.GuardarEncuentroAsync(viaje.Id, usuario.Uid, new PuntoEncuentroDatos { Texto = limpio });
+        // Ruta óptima: se ubica la dirección ahora, así después la ruta se arma rápido.
+        // Si no se encuentra, se guarda igual (esa parada va al final de la ruta).
+        Coordenada? lugar = null;
+        try
+        {
+            lugar = await Geocodificador.BuscarAsync(limpio, viaje.Origen);
+        }
+        catch (Exception ex) when (ex is SinConexionException or ServidorException)
+        {
+            RegistroErrores.RegistrarAviso(ex, "Ubicar punto de encuentro en el mapa");
+        }
+
+        await _remoto.GuardarEncuentroAsync(viaje.Id, usuario.Uid, new PuntoEncuentroDatos
+        {
+            Texto = limpio,
+            Lat = lugar?.Latitud,
+            Lon = lugar?.Longitud,
+            Aproximado = lugar is null ? null : true
+        });
     }
 
     /// <summary>
@@ -93,7 +119,7 @@ public class ServicioEncuentros
 
         return viaje.PasajerosPorUid
             .Select(p => puntos.TryGetValue(p.Key, out var datos)
-                ? new PuntoPasajero(p.Key, p.Value, datos.Texto, datos.Lat, datos.Lon)
+                ? new PuntoPasajero(p.Key, p.Value, datos.Texto, datos.Lat, datos.Lon, datos.Aproximado == true)
                 : new PuntoPasajero(p.Key, p.Value, null))
             .OrderBy(p => p.Nombre)
             .ToList();
@@ -117,9 +143,64 @@ public class ServicioEncuentros
         // Solo los que siguen anotados y cargaron su punto, en el orden en que se anotaron
         return viaje.PasajerosPorUid
             .Where(p => puntos.ContainsKey(p.Key))
-            .Select(p => new PuntoPasajero(p.Key, p.Value, puntos[p.Key].Texto, puntos[p.Key].Lat, puntos[p.Key].Lon))
+            .Select(p => new PuntoPasajero(p.Key, p.Value, puntos[p.Key].Texto, puntos[p.Key].Lat, puntos[p.Key].Lon,
+                                           puntos[p.Key].Aproximado == true))
             .ToList();
     }
+
+    /// <summary>
+    /// Si el origen o el destino se ubican a más de esta distancia de las paradas,
+    /// seguramente OpenStreetMap encontró otro lugar con el mismo nombre: no se usa.
+    /// </summary>
+    private const double DistanciaMaximaCreible = 100_000;   // 100 km
+
+    /// <summary>
+    /// HU24 (ruta óptima): las paradas ordenadas para hacer el camino más corto,
+    /// desde el punto de partida hasta el destino, sin ir y volver.
+    /// Las paradas que no se pudieron ubicar en el mapa van al final.
+    /// Nunca falla por el orden: si algo no anda, devuelve las paradas en el orden en que se anotaron.
+    /// </summary>
+    /// <exception cref="ArgumentNullException">No se indicó el viaje.</exception>
+    /// <exception cref="SinConexionException">No hay internet para leer las paradas.</exception>
+    public async Task<IReadOnlyList<PuntoPasajero>> ObtenerParadasOrdenadasAsync(Viaje viaje)
+    {
+        var paradas = (await ObtenerParadasAsync(viaje)).ToList();
+        if (paradas.Count < 2)
+            return paradas;
+
+        try
+        {
+            // Puntos escritos antes de que existiera la ruta óptima: se ubican ahora
+            for (int i = 0; i < paradas.Count; i++)
+            {
+                if (paradas[i].Lugar is null && await Geocodificador.BuscarAsync(paradas[i].Texto, viaje.Origen) is Coordenada c)
+                    paradas[i] = paradas[i] with { Latitud = c.Latitud, Longitud = c.Longitud, Aproximado = true };
+            }
+
+            var conLugar = paradas.Where(p => p.Lugar is not null).ToList();
+            var sinLugar = paradas.Where(p => p.Lugar is null).ToList();
+            if (conLugar.Count < 2)
+                return conLugar.Concat(sinLugar).ToList();
+
+            // Origen y destino, preferentemente cerca de las paradas
+            Coordenada referencia = conLugar[0].Lugar!.Value;
+            Coordenada? inicio = Creible(await Geocodificador.BuscarAsync(
+                viaje.TienePuntoPartida ? viaje.PuntoPartida : viaje.Origen,
+                viaje.TienePuntoPartida ? viaje.Origen : null, referencia), referencia);
+            Coordenada? fin = Creible(await Geocodificador.BuscarAsync(viaje.Destino, null, referencia), referencia);
+
+            var orden = await OptimizadorDeRuta.OrdenarAsync(inicio, fin, conLugar.Select(p => p.Lugar!.Value).ToList());
+            return orden.Select(i => conLugar[i]).Concat(sinLugar).ToList();
+        }
+        catch (Exception ex) when (ex is SinConexionException or ServidorException)
+        {
+            RegistroErrores.RegistrarAviso(ex, "Ruta óptima: se usa el orden en que se anotaron");
+            return paradas;
+        }
+    }
+
+    private static Coordenada? Creible(Coordenada? lugar, Coordenada referencia) =>
+        lugar is Coordenada c && OptimizadorDeRuta.DistanciaRecta(c, referencia) <= DistanciaMaximaCreible ? c : null;
 
     /// <summary>
     /// Al salirse del viaje se borra el punto de encuentro, así el conductor no ve

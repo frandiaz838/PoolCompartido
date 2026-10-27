@@ -67,8 +67,9 @@ public static class ServicioMapas
     public static string? ParadaParaMaps(PuntoPasajero punto, string? zona)
     {
         ArgumentNullException.ThrowIfNull(punto);
-        if (punto.Latitud is double lat && punto.Longitud is double lon)
-            return string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{lat:0.######},{lon:0.######}");
+        // Coordenadas solo si son exactas ("Usar mi ubicación"); si no, la dirección tal cual la escribió
+        if (punto.MostrarCoordenadas && punto.Lugar is Coordenada lugar)
+            return lugar.ATexto();
         if (string.IsNullOrWhiteSpace(punto.Texto))
             return null;
         return string.IsNullOrWhiteSpace(zona)

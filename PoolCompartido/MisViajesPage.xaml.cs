@@ -45,10 +45,10 @@ public partial class MisViajesPage : ContentPage
     /// <summary>HU22: abre la ruta del viaje en Google Maps.</summary>
     private async void OnVerRutaClicked(object? sender, EventArgs e)
     {
-        if (sender is not Button { BindingContext: Viaje viaje }) return;
+        if (sender is not Button { BindingContext: Viaje viaje } boton) return;
 
-        // HU24: si participás del viaje, la ruta pasa por los puntos de encuentro de los pasajeros
-        await PuntoDeEncuentro.AbrirRutaAsync(this, viaje);
+        // HU24: si participás del viaje, la ruta pasa por los puntos de encuentro, en el orden más corto
+        await PuntoDeEncuentro.AbrirRutaAsync(this, viaje, boton);
     }
 
     /// <summary>HU5: el conductor cancela su viaje.</summary>
