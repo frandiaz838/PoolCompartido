@@ -34,6 +34,10 @@ public partial class PublicarViajePage : ContentPage
             // HU14: vacío = sin costo. Puede lanzar FormatException o ArgumentOutOfRangeException
             decimal? costo = ServicioViajes.LeerCosto(entryCosto.Text);
 
+            // Ruta óptima: si el punto de partida o el destino no aparecen en el mapa, se avisa antes de publicar
+            if (!await LugaresOkAsync(boton))
+                return;
+
             await _servicio.PublicarAsync(entryOrigen.Text, entryDestino.Text, fecha,
                                           FranjasHorarias.HoraATexto(hora), asientos, editorComentario.Text,
                                           entryPuntoPartida.Text, costo);
@@ -75,6 +79,35 @@ public partial class PublicarViajePage : ContentPage
         {
             boton.IsEnabled = true;
         }
+    }
+
+    /// <summary>
+    /// Revisa que los lugares del viaje se encuentren en el mapa. Si alguno no aparece
+    /// (por ejemplo "la facu"), le pregunta al conductor si lo quiere corregir.
+    /// Devuelve true si se puede publicar.
+    /// </summary>
+    private async Task<bool> LugaresOkAsync(Button boton)
+    {
+        string textoBoton = boton.Text;
+        boton.Text = "Revisando el mapa...";
+        IReadOnlyList<string> faltan;
+        try
+        {
+            faltan = await ServicioEncuentros.LugaresNoEncontradosAsync(entryOrigen.Text, entryPuntoPartida.Text, entryDestino.Text);
+        }
+        finally
+        {
+            boton.Text = textoBoton;
+        }
+
+        if (faltan.Count == 0)
+            return true;
+
+        string lista = string.Join("\n", faltan.Select(l => $"• {l}"));
+        return await DisplayAlertAsync("No encontramos esto en el mapa",
+            $"{lista}\n\nSi lo publicás así, la ruta con los pasajeros puede quedar en un orden raro. " +
+            "Escribí el nombre completo del lugar o una dirección (por ejemplo: \"Universidad Blas Pascal\" o \"Av. Colón 1200, Córdoba\").",
+            "Publicar igual", "Corregir");
     }
 
     /// <summary>HU23: completa el origen con el barrio donde está el conductor (no con la dirección exacta).</summary>

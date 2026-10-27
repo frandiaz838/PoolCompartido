@@ -52,6 +52,25 @@ public static class Geocodificador
     // Pedidos ya hechos (también los que no encontraron nada, como null)
     private static readonly Dictionary<string, LugarEncontrado?> _memoria = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Siglas de lugares que la gente escribe abreviados ("facu ubp") y que en el mapa
+    /// figuran con el nombre completo. Se agregan acá a medida que aparezcan.
+    /// </summary>
+    private static readonly Dictionary<string, string> Siglas = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["ubp"] = "Universidad Blas Pascal",
+        ["ucc"] = "Universidad Católica de Córdoba",
+        ["utn"] = "Universidad Tecnológica Nacional",
+        ["unc"] = "Ciudad Universitaria",
+        ["ues21"] = "Universidad Siglo 21"
+    };
+
+    /// <summary>Palabras que no ayudan a encontrar el lugar ("la facu ubp" = "ubp").</summary>
+    private static readonly HashSet<string> Relleno = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "la", "el", "facu", "uni", "mi"
+    };
+
     // Campos de la respuesta que sirven como localidad, del más común al menos común
     private static readonly string[] CamposLocalidad = { "city", "town", "village", "municipality" };
 
@@ -100,6 +119,24 @@ public static class Geocodificador
     /// <exception cref="JsonException">La respuesta no es un JSON válido.</exception>
     public static Coordenada? LeerRespuesta(string json) => LeerLugar(json)?.Punto;
 
+    /// <summary>
+    /// Versión "para el mapa" de un texto con siglas: "facu ubp" → "Universidad Blas Pascal".
+    /// Devuelve null si no tiene ninguna sigla conocida (no hay nada que cambiar).
+    /// </summary>
+    public static string? ExpandirSiglas(string? texto)
+    {
+        if (string.IsNullOrWhiteSpace(texto))
+            return null;
+
+        var palabras = texto.Split(new[] { ' ', ',', '.', '(', ')' }, StringSplitOptions.RemoveEmptyEntries);
+        if (!palabras.Any(Siglas.ContainsKey))
+            return null;
+
+        return string.Join(" ", palabras
+            .Where(p => !Relleno.Contains(p))
+            .Select(p => Siglas.TryGetValue(p, out var completo) ? completo : p));
+    }
+
     private static string? Texto(JsonElement elemento, string propiedad) =>
         elemento.TryGetProperty(propiedad, out var valor)
         && valor.ValueKind == JsonValueKind.String
@@ -128,9 +165,15 @@ public static class Geocodificador
             : $"{solo}, {zonaRespaldo.Trim()}";
         bool acotado = cerca is not null;
 
+        // "facu ubp" no existe en el mapa, "Universidad Blas Pascal" sí
+        string? expandido = ExpandirSiglas(solo);
+        string? expandidoConZona = expandido is null || conZona is null ? null : $"{expandido}, {zonaRespaldo!.Trim()}";
+
         // Sin un punto de referencia, el texto solo podría aparecer en cualquier lugar del país:
         // en ese caso conviene probar primero con la zona
-        var intentos = acotado ? new[] { solo, conZona } : new[] { conZona, solo };
+        var intentos = acotado
+            ? new[] { solo, expandido, conZona, expandidoConZona }
+            : new[] { conZona, expandidoConZona, solo, expandido };
         foreach (string? consulta in intentos)
         {
             if (consulta is not null && await PedirAsync(consulta, cerca, acotado) is LugarEncontrado lugar)

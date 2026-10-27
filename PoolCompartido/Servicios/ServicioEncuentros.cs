@@ -236,6 +236,40 @@ public class ServicioEncuentros
         }
     }
 
+    /// <summary>
+    /// Al publicar: qué lugares del viaje no se encuentran en el mapa. Sin el punto de partida
+    /// y el destino ubicados, la ruta óptima no sabe dónde empieza o termina y puede quedar desordenada.
+    /// Si no hay internet no se puede revisar: devuelve la lista vacía (no frena la publicación).
+    /// </summary>
+    public static async Task<IReadOnlyList<string>> LugaresNoEncontradosAsync(string? origen, string? puntoPartida, string? destino)
+    {
+        var faltan = new List<string>();
+        try
+        {
+            LugarEncontrado? zona = await Geocodificador.BuscarLugarAsync(origen);
+            if (!string.IsNullOrWhiteSpace(puntoPartida))
+            {
+                var partida = await Geocodificador.BuscarLugarAsync(puntoPartida, zona?.Punto, zona is null ? origen : zona.Provincia);
+                if (partida is null) faltan.Add(puntoPartida.Trim());
+                zona ??= partida;
+            }
+            else if (zona is null && !string.IsNullOrWhiteSpace(origen))
+            {
+                faltan.Add(origen.Trim());
+            }
+
+            if (!string.IsNullOrWhiteSpace(destino)
+                && await Geocodificador.BuscarLugarAsync(destino, zona?.Punto, zona?.Provincia) is null)
+                faltan.Add(destino.Trim());
+        }
+        catch (Exception ex) when (ex is SinConexionException or ServidorException)
+        {
+            RegistroErrores.RegistrarAviso(ex, "Revisar lugares del viaje en el mapa");
+            return Array.Empty<string>();
+        }
+        return faltan;
+    }
+
     /// <summary>Una dirección escrita que todavía no tiene coordenadas o zona.</summary>
     private static bool FaltaUbicar(PuntoPasajero p) =>
         p.Texto is not null && (p.Lugar is null || (p.Aproximado && p.Zona is null));

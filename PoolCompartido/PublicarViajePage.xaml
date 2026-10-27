@@ -7,7 +7,7 @@
     <ScrollView>
         <VerticalStackLayout Padding="16" Spacing="6">
 
-            <Label Text="Origen" />
+            <Label Text="Origen (barrio o localidad)" />
             <!-- HU23: el origen se puede completar con la ubicación (solo el barrio, nunca la dirección) -->
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                 <Entry x:Name="entryOrigen" Placeholder="Ej: Villa Allende" />
@@ -21,8 +21,9 @@
                         Clicked="OnUsarUbicacionClicked" />
             </Grid>
 
+            <!-- Ruta óptima: el destino tiene que aparecer en el mapa ("la facu" no aparece) -->
             <Label Text="Destino" Margin="0,8,0,0" />
-            <Entry x:Name="entryDestino" Placeholder="Ej: Facultad" />
+            <Entry x:Name="entryDestino" Placeholder="Nombre del lugar o dirección. Ej: Universidad Blas Pascal" />
 
             <Label Text="Fecha" Margin="0,8,0,0" />
             <DatePicker x:Name="dpFecha" Format="dd/MM/yyyy" />
@@ -35,10 +36,13 @@
             <Picker x:Name="pickerAsientos" Title="Elegí la cantidad" />
 
             <!-- HU24: un lugar público, nunca la casa del conductor -->
-            <Label Text="Punto de partida (opcional)" Margin="0,8,0,0" />
+            <Label Text="Desde dónde salís (opcional)" Margin="0,8,0,0" />
             <Entry x:Name="entryPuntoPartida"
                    Placeholder="Un lugar público. Ej: Plaza de Villa Allende"
                    MaxLength="100" />
+            <Label Text="La ruta arranca acá, pasa a buscar a cada pasajero en el mejor orden y termina en el destino. Si lo dejás vacío, arranca en el origen."
+                   Style="{StaticResource TextoSecundario}"
+                   FontSize="12" />
 
             <!-- HU14: el total se divide solo entre los pasajeros -->
             <Label Text="Costo total del viaje (opcional)" Margin="0,8,0,0" />
