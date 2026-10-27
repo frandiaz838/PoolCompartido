@@ -189,6 +189,7 @@ public class Viaje : INotifyPropertyChanged
         OnPropertyChanged(nameof(PuedeCancelar));
         OnPropertyChanged(nameof(PuedeSalirse));
         OnPropertyChanged(nameof(PuedeVerPuntosDeEncuentro));
+        OnPropertyChanged(nameof(PuedeChatear));   // HU25
         AvisarCambioDeCheckIn();
     }
 
@@ -337,6 +338,7 @@ public class Viaje : INotifyPropertyChanged
             OnPropertyChanged(nameof(PuedeAnotarse));
             OnPropertyChanged(nameof(PuedeSalirse));
             OnPropertyChanged(nameof(PuedeVerPuntosDeEncuentro));
+            OnPropertyChanged(nameof(PuedeChatear));       // HU25
             OnPropertyChanged(nameof(CostoPorPasajero));   // HU14: cambió entre cuántos se divide
             OnPropertyChanged(nameof(CostoTexto));
             AvisarCambioDeCheckIn();                       // HU15: cambia cuántos faltan subir
@@ -382,6 +384,31 @@ public class Viaje : INotifyPropertyChanged
         else if (cambioABordo)
             AvisarCambioDeCheckIn();
     }
+
+    // ───── HU25: chat grupal del viaje ─────
+
+    private int _mensajesSinLeer;
+
+    /// <summary>Mensajes de otros que llegaron con el chat cerrado.</summary>
+    public int MensajesSinLeer
+    {
+        get => _mensajesSinLeer;
+        internal set
+        {
+            if (_mensajesSinLeer == value) return;
+            _mensajesSinLeer = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(TextoBotonChat));
+        }
+    }
+
+    /// <summary>El último mensaje que llegó (para el aviso de MENSAJE_RECIBIDO).</summary>
+    public MensajeChat? UltimoMensaje { get; internal set; }
+
+    public string TextoBotonChat => MensajesSinLeer > 0 ? $"Chat ({MensajesSinLeer})" : "Chat";
+
+    /// <summary>El chat existe para el conductor y los pasajeros, hasta que el viaje termina.</summary>
+    public bool PuedeChatear => (EsDelUsuarioActual || EstoyAnotado) && !Terminado;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 

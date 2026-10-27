@@ -17,6 +17,7 @@ Terminar las funciones que hacen a la app usable de verdad: dónde te pasan a bu
 | HU14 | Reparto del costo entre los pasajeros | Compañero 2 (Octavio) | 1 |
 | HU15 | Check-in y ciclo de vida del viaje | Compañero 2 (Octavio) | 2 |
 | HU16 | Detección de no-show (depende de HU14 y HU15) | Compañero 2 (Octavio) | 3 |
+| HU25 | Chat grupal del viaje (agregada durante el sprint) | Compañero 1 (Francisco) | 5 |
 
 Backlog futuro, si sobra tiempo: HU9 (confianza entre usuarios) y HU20 (ingreso con Google).
 
@@ -219,7 +220,28 @@ Prioridad: Could · Estimación: M · Depende de: HU14 y HU15
 
 ---
 
-## 6. Definición de "Hecho"
+## 6. Agregados durante el sprint
+
+### Ruta con paradas y ruta óptima (mejora de la HU24) · *Francisco* · HECHO
+- "Ver ruta" pasa por los puntos de encuentro de los pasajeros. La ven el conductor y los pasajeros del viaje; las reglas dejan leer `/encuentros/{viajeId}` solo a quienes participan.
+- El orden de las paradas es el más corto: los puntos escritos se ubican en el mapa al guardarlos (`Servicios/Geocodificador.cs`, OpenStreetMap), se piden los tiempos de manejo entre todos los puntos a OSRM (gratuito) y se prueban todos los órdenes (`Servicios/OptimizadorDeRuta.cs`, con los métodos genéricos `Ordenes.Permutaciones<T>` y `Ordenes.Mejor<T>`). Si OSRM no responde, se usa la distancia en línea recta.
+
+### HU25 (US E4-25) – Chat grupal del viaje · *Francisco*
+**Como** conductor o pasajero, **quiero** un chat con todos los que viajan, **para** ponernos de acuerdo (por ejemplo, juntarnos en un mismo punto).
+
+Criterios de aceptación:
+- Cada viaje tiene un chat grupal: el conductor y los pasajeros anotados. Se abre desde Mis viajes con el botón "Chat", que muestra cuántos mensajes nuevos hay ("Chat (2)").
+- Solo lo pueden leer y escribir quienes participan del viaje (regla en `/chats/{viajeId}`). Quien se baja deja de verlo.
+- Mensajes automáticos: "Ana se sumó al viaje", "Ana se bajó del viaje", "Juan canceló el viaje".
+- Con el chat cerrado, un mensaje nuevo dispara `MENSAJE_RECIBIDO` y aparece el aviso ("Ana en el chat de Saldán → UBP: …").
+- La hora de cada mensaje la pone el servidor de Firebase, así el orden es el mismo para todos.
+- Errores: mensaje vacío o de más de 500 caracteres (`ArgumentException`), no participa del viaje (`NoAnotadoException`), viaje terminado (`ViajeVencidoException`), sin internet (`SinConexionException`).
+
+Prioridad: Should · Estimación: M
+
+---
+
+## 7. Definición de "Hecho"
 
 - [ ] Compila sin errores y anda en Windows.
 - [ ] Se probó con dos usuarios (una PC cada uno).
@@ -229,6 +251,6 @@ Prioridad: Could · Estimación: M · Depende de: HU14 y HU15
 
 ---
 
-## 7. Para empezar con Claude
+## 8. Para empezar con Claude
 
 > Estoy trabajando en el proyecto Pool Compartido (.NET MAUI + Firebase). Leé `docs/Sprint4.md` (convenciones y estructura) y `docs/Sprint5.md` (qué cambió y las historias de este sprint). Voy a hacer la **HU14** en la rama `hu-14-octa`. Antes de escribir código, revisá los archivos que vas a tocar y contame qué pensás cambiar. Respetá las convenciones de excepciones, eventos y estilo, y no toques `ClavesFirebase.cs`.

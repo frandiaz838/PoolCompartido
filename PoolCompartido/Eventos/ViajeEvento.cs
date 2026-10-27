@@ -15,5 +15,6 @@ public enum ViajeEvento
     COSTO_RECALCULADO,     // HU14
     VIAJE_INICIADO,        // HU15
     VIAJE_FINALIZADO,      // HU15
-    PASAJERO_A_BORDO       // HU15
+    PASAJERO_A_BORDO,      // HU15
+    MENSAJE_RECIBIDO       // HU25
 }

@@ -24,7 +24,7 @@ public partial class MainPage : ContentPage
             ViajeEvento.VIAJE_PUBLICADO, ViajeEvento.ASIENTO_RESERVADO, ViajeEvento.ASIENTO_LIBERADO,
             ViajeEvento.VIAJE_CANCELADO, ViajeEvento.REEMPLAZO_ENCONTRADO, ViajeEvento.SIN_REEMPLAZO,
             ViajeEvento.COSTO_RECALCULADO, ViajeEvento.VIAJE_INICIADO, ViajeEvento.PASAJERO_A_BORDO,
-            ViajeEvento.VIAJE_FINALIZADO
+            ViajeEvento.VIAJE_FINALIZADO, ViajeEvento.MENSAJE_RECIBIDO
         };
         foreach (var evento in eventos)
             _servicio.Eventos.Registrar(evento, viaje => AlOcurrirEvento(evento, viaje));
@@ -165,6 +165,9 @@ public partial class MainPage : ContentPage
             await _servicio.AnotarseAsync(viaje);
             await PaginaVisible.DisplayAlertAsync("Reserva confirmada",
                 $"¡Te anotaste al viaje de {viaje.Conductor}! Quedan {viaje.AsientosDisponibles} asientos.", "OK");
+
+            // HU25: aviso automático en el chat del viaje
+            await ServicioChat.Instancia.AvisarAlGrupoAsync(viaje, "se sumó al viaje");
 
             // HU24: enseguida se pregunta dónde lo pasan a buscar (se puede dejar para después)
             await PuntoDeEncuentro.PedirYGuardarAsync(PaginaVisible, viaje);

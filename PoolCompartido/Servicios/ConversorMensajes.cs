@@ -87,10 +87,18 @@ public static class ConversorMensajes
             (ViajeEvento.VIAJE_FINALIZADO, RolEnViaje.Pasajero) =>
                 $"Llegaron a {viaje.Destino}: {viaje.Conductor} finalizó el viaje.",
 
+            // HU25: llegó un mensaje al chat del viaje (los automáticos no generan aviso)
+            (ViajeEvento.MENSAJE_RECIBIDO, RolEnViaje.Conductor or RolEnViaje.Pasajero)
+                when viaje.UltimoMensaje is MensajeChat m && !m.Sistema && !m.EsMio =>
+                $"{m.AutorNombre} en el chat de {viaje.Ruta}: {Recortar(m.Texto, 80)}",
+
             // Cualquier otra combinación no le interesa a este usuario
             _ => null
         };
     }
+
+    private static string Recortar(string texto, int largo) =>
+        texto.Length <= largo ? texto : texto[..(largo - 1)].TrimEnd() + "…";
 
     private static string Asientos(Viaje viaje) => viaje.AsientosDisponibles switch
     {

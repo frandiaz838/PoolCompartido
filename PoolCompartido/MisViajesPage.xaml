@@ -10,15 +10,18 @@
         <ToolbarItem Text="Mi perfil" IconImageSource="perfil.png" Clicked="OnPerfilClicked" />
     </ContentPage.ToolbarItems>
 
-    <Grid Padding="16" RowSpacing="12" RowDefinitions="Auto,*">
+    <!-- En pantallas anchas (compu) el contenido no se estira de punta a punta -->
+    <Grid Padding="16" RowSpacing="12" RowDefinitions="Auto,*" MaximumWidthRequest="980">
 
         <VerticalStackLayout Grid.Row="0" Spacing="2">
-            <Label x:Name="lblSaludo" FontSize="18" FontAttributes="Bold" />
-            <Label Text="Viajes en los que participás. Los que ya terminaron se ocultan solos." FontSize="14" />
-            <!-- HU15: historial con los viajes que ya terminaron -->
-            <HorizontalStackLayout Spacing="8" Margin="0,4,0,0">
-                <Switch x:Name="swAnteriores" Toggled="OnVerAnterioresToggled" VerticalOptions="Center" />
+            <Label x:Name="lblSaludo" FontSize="20" FontAttributes="Bold" />
+            <Label Text="Viajes en los que participás. Los que ya terminaron se ocultan solos."
+                   Style="{StaticResource TextoSecundario}" FontSize="14" />
+            <!-- HU15: historial con los viajes que ya terminaron (el texto va antes del interruptor,
+                 así en Windows no queda un hueco entre los dos) -->
+            <HorizontalStackLayout Spacing="10" Margin="0,6,0,0">
                 <Label Text="Ver viajes anteriores" FontSize="14" VerticalOptions="Center" />
+                <Switch x:Name="swAnteriores" Toggled="OnVerAnterioresToggled" VerticalOptions="Center" />
             </HorizontalStackLayout>
         </VerticalStackLayout>
 
@@ -26,18 +29,16 @@
         <CollectionView x:Name="listaMisViajes" Grid.Row="1" SelectionMode="None">
             <CollectionView.EmptyView>
                 <Label Text="Todavía no publicaste ni te anotaste a ningún viaje."
+                       Style="{StaticResource TextoSecundario}"
                        HorizontalOptions="Center"
                        Margin="0,30" />
             </CollectionView.EmptyView>
             <CollectionView.ItemsLayout>
-                <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+                <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
             </CollectionView.ItemsLayout>
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="local:Viaje">
-                    <Border Padding="12"
-                            StrokeShape="RoundRectangle 10"
-                            StrokeThickness="1"
-                            Stroke="{AppThemeBinding Light=#DDDDDD, Dark=#555555}">
+                    <Border Style="{StaticResource TarjetaViaje}">
                         <!-- El viaje en curso se resalta con borde verde -->
                         <Border.Triggers>
                             <DataTrigger TargetType="Border" Binding="{Binding Estado}" Value="{x:Static local:EstadoViaje.EnCurso}">
@@ -45,16 +46,28 @@
                                 <Setter Property="StrokeThickness" Value="2" />
                             </DataTrigger>
                         </Border.Triggers>
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                            <VerticalStackLayout Spacing="2">
-                                <Label Text="{Binding Ruta}" FontSize="17" FontAttributes="Bold" />
-                                <Label Text="{Binding Detalle}" FontSize="13" />
+
+                        <VerticalStackLayout Spacing="10">
+                            <!-- Encabezado: ruta y rol -->
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <VerticalStackLayout Spacing="2">
+                                    <Label Text="{Binding Ruta}" FontSize="18" FontAttributes="Bold" />
+                                    <Label Text="{Binding Detalle}" Style="{StaticResource TextoSecundario}" />
+                                </VerticalStackLayout>
+                                <Border Grid.Column="1" Style="{StaticResource Etiqueta}">
+                                    <Label Text="{Binding RolUsuarioActual}" FontSize="12" FontAttributes="Bold"
+                                           TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                </Border>
+                            </Grid>
+
+                            <!-- Datos del viaje -->
+                            <VerticalStackLayout Spacing="3">
                                 <!-- HU24: punto de partida público del conductor -->
-                                <Label Text="{Binding PuntoPartidaTexto}" FontSize="13" IsVisible="{Binding TienePuntoPartida}" />
-                                <Label Text="{Binding AsientosDisponibles, StringFormat='Asientos libres: {0}'}" FontSize="13" />
+                                <Label Text="{Binding PuntoPartidaTexto}" Style="{StaticResource TextoSecundario}" IsVisible="{Binding TienePuntoPartida}" />
+                                <Label Text="{Binding AsientosDisponibles, StringFormat='Asientos libres: {0}'}" Style="{StaticResource TextoSecundario}" />
                                 <!-- HU14: cuánto paga cada pasajero (solo en viajes con costo) -->
-                                <Label Text="{Binding CostoTexto}" FontSize="13" IsVisible="{Binding TieneCosto}" />
-                                <Label Text="{Binding PasajerosTexto}" FontSize="13" IsVisible="{Binding EsDelUsuarioActual}" />
+                                <Label Text="{Binding CostoTexto}" FontSize="14" FontAttributes="Bold" IsVisible="{Binding TieneCosto}" />
+                                <Label Text="{Binding PasajerosTexto}" Style="{StaticResource TextoSecundario}" IsVisible="{Binding EsDelUsuarioActual}" />
                                 <!-- Estado según la hora: sale en menos de 5 minutos, en curso o cancelado -->
                                 <Label Text="{Binding EstadoTexto}"
                                        FontSize="13"
@@ -73,56 +86,44 @@
                                 <!-- HU15: cuántos pasajeros ya subieron (el conductor, con el viaje iniciado) -->
                                 <Label Text="{Binding ABordoTexto}" FontSize="13" IsVisible="{Binding MostrarABordo}" />
                                 <!-- HU15: el conductor ya confirmó mi PIN -->
-                                <Label Text="✓ Estás a bordo" FontSize="13" FontAttributes="Bold" IsVisible="{Binding EstoyABordo}" />
+                                <Label Text="✓ Estás a bordo" FontSize="13" FontAttributes="Bold" TextColor="#2E9E5B" IsVisible="{Binding EstoyABordo}" />
                             </VerticalStackLayout>
-                            <VerticalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="Center">
-                                <!-- Rol del usuario en este viaje -->
-                                <Border HorizontalOptions="End"
-                                        Padding="10,4"
-                                        StrokeShape="RoundRectangle 12"
-                                        Stroke="#512BD4"
-                                        BackgroundColor="{AppThemeBinding Light=#EFEAFB, Dark=#2A2340}">
-                                    <Label Text="{Binding RolUsuarioActual}" FontSize="13" FontAttributes="Bold" />
-                                </Border>
-                                <!-- HU22: ver el recorrido en Google Maps -->
-                                <Button Text="Ver ruta"
-                                        BackgroundColor="Transparent"
-                                        TextColor="{AppThemeBinding Light=#512BD4, Dark=#AC99EA}"
-                                        BorderColor="{AppThemeBinding Light=#512BD4, Dark=#AC99EA}"
-                                        BorderWidth="1"
-                                        Clicked="OnVerRutaClicked" />
-                                <!-- HU5: solo aparece en tus viajes como conductor que no estén cancelados -->
-                                <Button Text="Cancelar viaje"
-                                        IsVisible="{Binding PuedeCancelar}"
-                                        Clicked="OnCancelarViajeClicked" />
+
+                            <BoxView HeightRequest="1" Color="{AppThemeBinding Light=#EEEAF6, Dark=#333333}" />
+
+                            <!-- Acciones: en fila y bajan de renglón si no entran (así se ve bien en el celular).
+                                 Primero la acción del momento, después las de consulta y al final las de salir o cancelar. -->
+                            <FlexLayout Wrap="Wrap" Direction="Row" JustifyContent="Start" AlignItems="Start" Margin="0,0,0,-8">
                                 <!-- HU15: ciclo de vida del viaje (solo el conductor) -->
-                                <Button Text="Iniciar viaje"
-                                        IsVisible="{Binding PuedeIniciar}"
-                                        Clicked="OnIniciarViajeClicked" />
-                                <Button Text="Confirmar PIN"
-                                        IsVisible="{Binding PuedeConfirmarPin}"
-                                        Clicked="OnConfirmarPinClicked" />
-                                <Button Text="Finalizar viaje"
-                                        IsVisible="{Binding PuedeFinalizar}"
-                                        Clicked="OnFinalizarViajeClicked" />
+                                <Button Text="Iniciar viaje" Style="{StaticResource BotonPrincipal}"
+                                        IsVisible="{Binding PuedeIniciar}" Clicked="OnIniciarViajeClicked" />
+                                <Button Text="Confirmar PIN" Style="{StaticResource BotonPrincipal}"
+                                        IsVisible="{Binding PuedeConfirmarPin}" Clicked="OnConfirmarPinClicked" />
+                                <Button Text="Finalizar viaje" Style="{StaticResource BotonPrincipal}"
+                                        IsVisible="{Binding PuedeFinalizar}" Clicked="OnFinalizarViajeClicked" />
                                 <!-- HU15: el pasajero muestra su PIN al subir -->
-                                <Button Text="Mi PIN"
-                                        IsVisible="{Binding PuedeVerPin}"
-                                        Clicked="OnMiPinClicked" />
+                                <Button Text="Mi PIN" Style="{StaticResource BotonPrincipal}"
+                                        IsVisible="{Binding PuedeVerPin}" Clicked="OnMiPinClicked" />
+                                <!-- HU22 / HU24: recorrido con las paradas -->
+                                <Button Text="Ver ruta" Style="{StaticResource BotonSecundario}"
+                                        Clicked="OnVerRutaClicked" />
+                                <!-- HU25: chat grupal del viaje; muestra cuántos mensajes nuevos hay -->
+                                <Button Text="{Binding TextoBotonChat}" Style="{StaticResource BotonSecundario}"
+                                        IsVisible="{Binding PuedeChatear}" Clicked="OnChatClicked" />
                                 <!-- HU24: el pasajero carga o cambia dónde lo pasan a buscar -->
-                                <Button Text="Mi punto de encuentro"
-                                        IsVisible="{Binding PuedeSalirse}"
-                                        Clicked="OnMiPuntoClicked" />
+                                <Button Text="Mi punto de encuentro" Style="{StaticResource BotonSecundario}"
+                                        IsVisible="{Binding PuedeSalirse}" Clicked="OnMiPuntoClicked" />
                                 <!-- HU24: el conductor ve dónde buscar a cada pasajero -->
-                                <Button Text="Puntos de encuentro"
-                                        IsVisible="{Binding PuedeVerPuntosDeEncuentro}"
-                                        Clicked="OnPuntosDeEncuentroClicked" />
-                                <!-- HU4: solo aparece en los viajes activos donde estás anotado como pasajero -->
-                                <Button Text="Salirme"
-                                        IsVisible="{Binding PuedeSalirse}"
-                                        Clicked="OnSalirmeClicked" />
-                            </VerticalStackLayout>
-                        </Grid>
+                                <Button Text="Puntos de encuentro" Style="{StaticResource BotonSecundario}"
+                                        IsVisible="{Binding PuedeVerPuntosDeEncuentro}" Clicked="OnPuntosDeEncuentroClicked" />
+                                <!-- HU5: el conductor cancela -->
+                                <Button Text="Cancelar viaje" Style="{StaticResource BotonPeligro}"
+                                        IsVisible="{Binding PuedeCancelar}" Clicked="OnCancelarViajeClicked" />
+                                <!-- HU4: el pasajero se baja -->
+                                <Button Text="Salirme" Style="{StaticResource BotonPeligro}"
+                                        IsVisible="{Binding PuedeSalirse}" Clicked="OnSalirmeClicked" />
+                            </FlexLayout>
+                        </VerticalStackLayout>
                     </Border>
                 </DataTemplate>
             </CollectionView.ItemTemplate>

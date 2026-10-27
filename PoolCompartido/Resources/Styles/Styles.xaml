@@ -434,4 +434,74 @@
         <Setter Property="SelectedTabColor" Value="{AppThemeBinding Light={StaticResource Gray950}, Dark={StaticResource Gray200}}" />
     </Style>
 
+    <!-- ───── Tarjetas de viaje y acciones (diseño de la app) ───── -->
+
+    <!-- Tarjeta: fondo apenas distinto del de la página, bordes redondeados -->
+    <Style x:Key="TarjetaViaje" TargetType="Border">
+        <Setter Property="Padding" Value="16,14" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 14" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light=#E6E1F2, Dark=#333333}" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#FFFFFF, Dark=#262626}" />
+    </Style>
+
+    <!-- Texto secundario de la tarjeta (fecha, asientos, costo...) -->
+    <Style x:Key="TextoSecundario" TargetType="Label">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray300}}" />
+    </Style>
+
+    <!-- Etiqueta chica redondeada (rol, "Anotado", "Tu viaje") -->
+    <Style x:Key="Etiqueta" TargetType="Border">
+        <Setter Property="Padding" Value="10,3" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 11" />
+        <Setter Property="VerticalOptions" Value="Start" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#EFEAFB, Dark=#352D52}" />
+    </Style>
+
+    <!-- Botones de las tarjetas: chicos y redondeados. Tres niveles para que se note qué es lo importante:
+         principal (relleno), secundario (contorno) y peligro (rojo, para salir o cancelar) -->
+    <Style x:Key="BotonPrincipal" TargetType="Button">
+        <Setter Property="FontFamily" Value="OpenSansSemibold" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Padding" Value="16,0" />
+        <Setter Property="HeightRequest" Value="36" />
+        <Setter Property="MinimumHeightRequest" Value="36" />
+        <Setter Property="CornerRadius" Value="18" />
+        <Setter Property="Margin" Value="0,0,8,8" />
+        <Setter Property="BorderWidth" Value="0" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Property="Opacity" Value="0.5" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="PointerOver" />
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <Style x:Key="BotonSecundario" TargetType="Button" BasedOn="{StaticResource BotonPrincipal}">
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+        <Setter Property="BorderWidth" Value="1" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+        <Setter Property="BorderColor" Value="{AppThemeBinding Light=#C9BEF2, Dark=#5B4E86}" />
+    </Style>
+
+    <Style x:Key="BotonPeligro" TargetType="Button" BasedOn="{StaticResource BotonPrincipal}">
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+        <Setter Property="BorderWidth" Value="1" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light=#C62828, Dark=#F07178}" />
+        <Setter Property="BorderColor" Value="{AppThemeBinding Light=#F1B5B5, Dark=#6B2F33}" />
+    </Style>
+
 </ResourceDictionary>
