@@ -18,7 +18,9 @@ internal static class Notificaciones
         var capas = new Grid();
         if (pagina.Content is View contenido)
             capas.Add(contenido);
-        capas.Add(new CartelNotificacion());
+        var cartel = new CartelNotificacion();
+        capas.Add(cartel);
+        capas.SizeChanged += (s, e) => cartel.AjustarAncho(capas.Width);
         pagina.Content = capas;
 
         if (conCampana)
@@ -51,6 +53,9 @@ internal static class Notificaciones
 
     /// <summary>Viaje que hay que mostrar cuando se abra "Mis viajes" o "Viajes disponibles".</summary>
     public static Viaje? ViajePendiente { get; private set; }
+
+    /// <summary>Pide que la próxima vez que aparezca la lista, se muestre ese viaje.</summary>
+    public static void MarcarViajeParaMostrar(Viaje viaje) => ViajePendiente = viaje;
 
     /// <summary>Lo toma la pantalla que lo muestra (una sola vez).</summary>
     public static Viaje? TomarViajePendiente()
