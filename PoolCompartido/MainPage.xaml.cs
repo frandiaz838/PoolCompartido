@@ -196,20 +196,8 @@ public partial class MainPage : ContentPage
     {
         if (sender is not Button { BindingContext: Viaje viaje }) return;
 
-        try
-        {
-            await ServicioMapas.AbrirRutaAsync(viaje);
-        }
-        catch (ArgumentException ex)
-        {
-            RegistroErrores.RegistrarAviso(ex, "Ver ruta");
-            await DisplayAlertAsync("No se puede mostrar la ruta", ex.Message, "OK");
-        }
-        catch (MapaNoDisponibleException ex)
-        {
-            RegistroErrores.RegistrarError(ex, "Ver ruta");
-            await DisplayAlertAsync("Mapa no disponible", ex.Message, "OK");
-        }
+        // HU24: si participás del viaje, la ruta pasa por los puntos de encuentro de los pasajeros
+        await PuntoDeEncuentro.AbrirRutaAsync(this, viaje);
     }
 
     /// <summary>Registra la excepción como aviso y se la muestra al usuario.</summary>

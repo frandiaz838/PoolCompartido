@@ -19,7 +19,7 @@ internal static class PuntoDeEncuentro
     public static async Task PedirYGuardarAsync(Page pagina, Viaje viaje)
     {
         string? opcion = await pagina.DisplayActionSheetAsync(
-            $"¿Dónde te pasa a buscar {viaje.Conductor}? Solo lo va a ver el conductor.",
+            $"¿Dónde te pasa a buscar {viaje.Conductor}? Lo ven solo el conductor y los pasajeros de este viaje.",
             "Después", null, OpcionUbicacion, OpcionEscribir);
 
         if (opcion == OpcionUbicacion)
@@ -43,7 +43,7 @@ internal static class PuntoDeEncuentro
             UbicacionActual ubicacion = await ServicioUbicacion.ObtenerAsync();
             await Servicio.GuardarMiUbicacionAsync(viaje, ubicacion);
             await pagina.DisplayAlertAsync("Listo",
-                $"Guardamos tu ubicación (en {ubicacion.Barrio}). Solo la ve el conductor.", "OK");
+                $"Guardamos tu ubicación (en {ubicacion.Barrio}). Ya aparece como parada en la ruta del viaje.", "OK");
             return true;
         }
         catch (UbicacionNoDisponibleException ex)
@@ -88,7 +88,7 @@ internal static class PuntoDeEncuentro
         }
 
         string? texto = await pagina.DisplayPromptAsync("Punto de encuentro",
-            $"Escribí dónde te pasa a buscar {viaje.Conductor}. Solo lo va a ver el conductor.",
+            $"Escribí dónde te pasa a buscar {viaje.Conductor}. Lo ven solo el conductor y los pasajeros de este viaje.",
             accept: "Guardar", cancel: "Después",
             placeholder: "Ej: Av. Colón y General Paz",
             maxLength: ServicioEncuentros.LargoMaximo,
@@ -99,7 +99,7 @@ internal static class PuntoDeEncuentro
         try
         {
             await Servicio.GuardarMiPuntoAsync(viaje, texto);
-            await pagina.DisplayAlertAsync("Listo", "Guardamos tu punto de encuentro. Solo lo ve el conductor.", "OK");
+            await pagina.DisplayAlertAsync("Listo", "Guardamos tu punto de encuentro. Ya aparece como parada en la ruta del viaje.", "OK");
         }
         catch (ArgumentException ex)
         {
@@ -180,6 +180,39 @@ internal static class PuntoDeEncuentro
         catch (MapaNoDisponibleException ex)
         {
             RegistroErrores.RegistrarError(ex, "Abrir punto de encuentro");
+            await pagina.DisplayAlertAsync("Mapa no disponible", ex.Message, "OK");
+        }
+    }
+
+    /// <summary>
+    /// HU24: abre la ruta del viaje en Google Maps. Si el usuario participa del viaje,
+    /// la ruta pasa por los puntos de encuentro de los pasajeros. Si no se pueden leer
+    /// (por ejemplo, sin internet), se abre igual la ruta simple en vez de fallar.
+    /// </summary>
+    public static async Task AbrirRutaAsync(Page pagina, Viaje viaje)
+    {
+        IReadOnlyList<PuntoPasajero> paradas = Array.Empty<PuntoPasajero>();
+        try
+        {
+            paradas = await Servicio.ObtenerParadasAsync(viaje);
+        }
+        catch (Exception ex) when (ex is SinConexionException or PermisoDenegadoException or ServidorException or SesionVencidaException)
+        {
+            RegistroErrores.RegistrarError(ex, "Leer paradas de la ruta");
+        }
+
+        try
+        {
+            await ServicioMapas.AbrirRutaAsync(viaje, paradas);
+        }
+        catch (ArgumentException ex)
+        {
+            RegistroErrores.RegistrarAviso(ex, "Ver ruta");
+            await pagina.DisplayAlertAsync("No se puede mostrar la ruta", ex.Message, "OK");
+        }
+        catch (MapaNoDisponibleException ex)
+        {
+            RegistroErrores.RegistrarError(ex, "Ver ruta");
             await pagina.DisplayAlertAsync("Mapa no disponible", ex.Message, "OK");
         }
     }

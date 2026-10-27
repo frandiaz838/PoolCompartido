@@ -4,12 +4,31 @@
       ".read": "auth != null",
       "$viajeId": {
         ".write": "auth != null && ((!data.exists() && newData.child('conductorUid').val() === auth.uid && newData.child('cancelado').val() === false) || (data.exists() && newData.exists() && data.child('conductorUid').val() === auth.uid && newData.child('conductorUid').val() === auth.uid) || (data.exists() && newData.exists() && data.child('cancelado').val() === false && newData.child('conductorUid').val() === data.child('conductorUid').val() && newData.child('origen').val() === data.child('origen').val() && newData.child('destino').val() === data.child('destino').val() && newData.child('fecha').val() === data.child('fecha').val() && newData.child('hora').val() === data.child('hora').val() && newData.child('puntoPartida').val() === data.child('puntoPartida').val() && newData.child('costoTotal').val() === data.child('costoTotal').val() && newData.child('iniciado').val() === data.child('iniciado').val() && newData.child('finalizado').val() === data.child('finalizado').val() && newData.child('cancelado').val() === false && newData.child('asientosDisponibles').val() === data.child('asientosDisponibles').val() - 1 && !data.child('pasajeros').child(auth.uid).exists() && newData.child('pasajeros').child(auth.uid).exists()) || (data.exists() && newData.exists() && data.child('cancelado').val() === false && newData.child('conductorUid').val() === data.child('conductorUid').val() && newData.child('origen').val() === data.child('origen').val() && newData.child('destino').val() === data.child('destino').val() && newData.child('fecha').val() === data.child('fecha').val() && newData.child('hora').val() === data.child('hora').val() && newData.child('puntoPartida').val() === data.child('puntoPartida').val() && newData.child('costoTotal').val() === data.child('costoTotal').val() && newData.child('iniciado').val() === data.child('iniciado').val() && newData.child('finalizado').val() === data.child('finalizado').val() && newData.child('cancelado').val() === false && newData.child('asientosDisponibles').val() === data.child('asientosDisponibles').val() + 1 && data.child('pasajeros').child(auth.uid).exists() && !newData.child('pasajeros').child(auth.uid).exists()))",
-        ".validate": "newData.hasChildren(['origen', 'destino', 'fecha', 'hora', 'conductorUid', 'conductorNombre', 'asientosDisponibles', 'cancelado']) && newData.child('asientosDisponibles').isNumber() && newData.child('asientosDisponibles').val() >= 0 && newData.child('asientosDisponibles').val() <= 4 && newData.child('cancelado').isBoolean() && (!newData.child('puntoPartida').exists() || (newData.child('puntoPartida').isString() && newData.child('puntoPartida').val().length <= 100)) && (!newData.child('costoTotal').exists() || (newData.child('costoTotal').isNumber() && newData.child('costoTotal').val() >= 0 && newData.child('costoTotal').val() <= 1000000))"
+        ".validate": "newData.hasChildren(['origen', 'destino', 'fecha', 'hora', 'conductorUid', 'conductorNombre', 'asientosDisponibles', 'cancelado']) && newData.child('asientosDisponibles').isNumber() && newData.child('asientosDisponibles').val() >= 0 && newData.child('asientosDisponibles').val() <= 4 && newData.child('cancelado').isBoolean() && (!newData.child('puntoPartida').exists() || (newData.child('puntoPartida').isString() && newData.child('puntoPartida').val().length <= 100)) && (!newData.child('costoTotal').exists() || (newData.child('costoTotal').isNumber() && newData.child('costoTotal').val() >= 0 && newData.child('costoTotal').val() <= 1000000)) && (!newData.child('iniciado').exists() || newData.child('iniciado').isBoolean()) && (!newData.child('finalizado').exists() || newData.child('finalizado').isBoolean())",
+        "pinHash": {
+          "$uid": {
+            ".validate": "newData.isString() && newData.val().length === 64 && (newData.val() === data.val() || $uid === auth.uid)"
+          }
+        },
+        "aBordo": {
+          "$uid": {
+            ".validate": "newData.val() === true && (data.val() === true || root.child('viajes/' + $viajeId + '/conductorUid').val() === auth.uid)"
+          }
+        }
+      }
+    },
+    "pines": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        "$viajeId": {
+          ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}$/)"
+        }
       }
     },
     "encuentros": {
       "$viajeId": {
-        ".read": "auth != null && root.child('viajes/' + $viajeId + '/conductorUid').val() === auth.uid",
+        ".read": "auth != null && (root.child('viajes/' + $viajeId + '/conductorUid').val() === auth.uid || root.child('viajes/' + $viajeId + '/pasajeros/' + auth.uid).exists())",
         "$uid": {
           ".read": "auth != null && auth.uid === $uid",
           ".write": "auth != null && auth.uid === $uid",
