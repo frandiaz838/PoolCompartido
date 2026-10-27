@@ -42,6 +42,11 @@ internal class PuntoEncuentroDatos
     /// <summary>HU23: coordenadas exactas si el pasajero usó "Mi ubicación" (privadas, solo las ve el conductor).</summary>
     public double? Lat { get; set; }
     public double? Lon { get; set; }
+    /// <summary>
+    /// true si las coordenadas se calcularon a partir de la dirección escrita (aproximadas):
+    /// sirven para ordenar la ruta, pero en el mapa se muestra la dirección tal cual la escribió.
+    /// </summary>
+    public bool? Aproximado { get; set; }
 }
 
 /// <summary>Respuesta de Firebase al crear un viaje: el id que le asignó.</summary>

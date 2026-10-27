@@ -166,8 +166,8 @@ internal static class PuntoDeEncuentro
 
         try
         {
-            if (punto.Latitud is double lat && punto.Longitud is double lon)
-                await ServicioMapas.AbrirCoordenadasAsync(lat, lon);   // HU23: compartió su ubicación exacta
+            if (punto.MostrarCoordenadas && punto.Lugar is Coordenada exacto)
+                await ServicioMapas.AbrirCoordenadasAsync(exacto.Latitud, exacto.Longitud);   // HU23: compartió su ubicación exacta
             else
                 // El origen del viaje ubica mejor la dirección (no es lo mismo "Colón 1200" en Córdoba que en otro lado)
                 await ServicioMapas.AbrirLugarAsync(lugar, viaje.Origen);
@@ -189,12 +189,21 @@ internal static class PuntoDeEncuentro
     /// la ruta pasa por los puntos de encuentro de los pasajeros. Si no se pueden leer
     /// (por ejemplo, sin internet), se abre igual la ruta simple en vez de fallar.
     /// </summary>
-    public static async Task AbrirRutaAsync(Page pagina, Viaje viaje)
+    public static async Task AbrirRutaAsync(Page pagina, Viaje viaje, Button? boton = null)
     {
+        // Ordenar las paradas puede tardar unos segundos: se avisa en el botón
+        string? textoBoton = boton?.Text;
+        if (boton is not null)
+        {
+            boton.IsEnabled = false;
+            boton.Text = "Armando ruta...";
+        }
+
         IReadOnlyList<PuntoPasajero> paradas = Array.Empty<PuntoPasajero>();
         try
         {
-            paradas = await Servicio.ObtenerParadasAsync(viaje);
+            // Ruta óptima: las paradas en el orden más corto
+            paradas = await Servicio.ObtenerParadasOrdenadasAsync(viaje);
         }
         catch (Exception ex) when (ex is SinConexionException or PermisoDenegadoException or ServidorException or SesionVencidaException)
         {
@@ -214,6 +223,14 @@ internal static class PuntoDeEncuentro
         {
             RegistroErrores.RegistrarError(ex, "Ver ruta");
             await pagina.DisplayAlertAsync("Mapa no disponible", ex.Message, "OK");
+        }
+        finally
+        {
+            if (boton is not null)
+            {
+                boton.Text = textoBoton;
+                boton.IsEnabled = true;
+            }
         }
     }
 

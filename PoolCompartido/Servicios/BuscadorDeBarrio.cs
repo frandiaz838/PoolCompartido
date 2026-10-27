@@ -16,7 +16,7 @@ public record UbicacionActual(double Latitud, double Longitud, string Barrio);
 public static class BuscadorDeBarrio
 {
     /// <summary>Nominatim exige que cada app se identifique con un User-Agent propio.</summary>
-    private const string UserAgent = "PoolCompartido/1.0 (proyecto universitario)";
+    internal const string UserAgent = "PoolCompartido/1.0 (proyecto universitario)";
 
     /// <summary>
     /// Campos de la dirección que sirven como "barrio", del más chico al más grande.
