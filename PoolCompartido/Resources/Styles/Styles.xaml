@@ -500,8 +500,8 @@
         <Setter Property="FontFamily" Value="OpenSansRegular" />
         <Setter Property="BorderWidth" Value="1" />
         <Setter Property="BackgroundColor" Value="Transparent" />
-        <Setter Property="TextColor" Value="{AppThemeBinding Light=#C62828, Dark=#F07178}" />
-        <Setter Property="BorderColor" Value="{AppThemeBinding Light=#F1B5B5, Dark=#6B2F33}" />
+        <Setter Property="TextColor" Value="{DynamicResource ColorPeligro}" />
+        <Setter Property="BorderColor" Value="{DynamicResource ColorPeligroBorde}" />
     </Style>
 
 </ResourceDictionary>

@@ -27,6 +27,14 @@
     <Color x:Key="Gray900">#212121</Color>
     <Color x:Key="Gray950">#141414</Color>
 
+    <!-- HU19: colores de estado. Las pantallas los usan con DynamicResource y ServicioApariencia
+         los cambia según el tema y la paleta para daltonismo (estos son solo los valores iniciales) -->
+    <Color x:Key="ColorExito">#1B7F48</Color>
+    <Color x:Key="ColorExitoFondo">#E3F4EA</Color>
+    <Color x:Key="ColorPeligro">#C62828</Color>
+    <Color x:Key="ColorPeligroBorde">#F1B5B5</Color>
+    <Color x:Key="ColorAviso">#A85A0A</Color>
+
     <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource Primary}"/>
     <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource Secondary}"/>
     <SolidColorBrush x:Key="TertiaryBrush" Color="{StaticResource Tertiary}"/>
@@ -41,4 +49,4 @@
     <SolidColorBrush x:Key="Gray600Brush" Color="{StaticResource Gray600}"/>
     <SolidColorBrush x:Key="Gray900Brush" Color="{StaticResource Gray900}"/>
     <SolidColorBrush x:Key="Gray950Brush" Color="{StaticResource Gray950}"/>
-</ResourceDictionary>
+</ResourceDictionary>

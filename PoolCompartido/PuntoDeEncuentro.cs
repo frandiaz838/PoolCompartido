@@ -88,9 +88,10 @@ internal static class PuntoDeEncuentro
         }
 
         string? texto = await pagina.DisplayPromptAsync("Punto de encuentro",
-            $"Escribí dónde te pasa a buscar {viaje.Conductor}. Lo ven solo el conductor y los pasajeros de este viaje.",
+            $"Escribí dónde te pasa a buscar {viaje.Conductor}: calle y altura, o una esquina. " +
+            "Si queda en otra localidad, agregala al final. Lo ven solo el conductor y los pasajeros de este viaje.",
             accept: "Guardar", cancel: "Después",
-            placeholder: "Ej: Av. Colón y General Paz",
+            placeholder: "Ej: Av. Goycoechea 250, Villa Allende",
             maxLength: ServicioEncuentros.LargoMaximo,
             initialValue: actual ?? "");
 
@@ -98,8 +99,14 @@ internal static class PuntoDeEncuentro
 
         try
         {
-            await Servicio.GuardarMiPuntoAsync(viaje, texto);
-            await pagina.DisplayAlertAsync("Listo", "Guardamos tu punto de encuentro. Ya aparece como parada en la ruta del viaje.", "OK");
+            LugarEncontrado? lugar = await Servicio.GuardarMiPuntoAsync(viaje, texto);
+
+            // Se le dice dónde lo ubicamos, así puede darse cuenta si quedó en otra ciudad
+            string mensaje = lugar?.Zona is string zona
+                ? $"Guardamos tu punto de encuentro y lo ubicamos en {zona}. Ya aparece como parada en la ruta del viaje."
+                : "Guardamos tu punto de encuentro, pero no lo encontramos en el mapa. " +
+                  "Revisá cómo está escrito o agregale la localidad (por ejemplo: \"Av. Goycoechea 250, Villa Allende\").";
+            await pagina.DisplayAlertAsync("Listo", mensaje, "OK");
         }
         catch (ArgumentException ex)
         {
@@ -169,8 +176,8 @@ internal static class PuntoDeEncuentro
             if (punto.MostrarCoordenadas && punto.Lugar is Coordenada exacto)
                 await ServicioMapas.AbrirCoordenadasAsync(exacto.Latitud, exacto.Longitud);   // HU23: compartió su ubicación exacta
             else
-                // El origen del viaje ubica mejor la dirección (no es lo mismo "Colón 1200" en Córdoba que en otro lado)
-                await ServicioMapas.AbrirLugarAsync(lugar, viaje.Origen);
+                // Con la localidad del punto, no la del origen: el pasajero puede vivir en otra localidad
+                await ServicioMapas.AbrirLugarAsync(lugar, punto.Zona);
         }
         catch (ArgumentException ex)
         {

@@ -56,15 +56,19 @@ public static class ServicioMapas
 
         // HU24: si el conductor indicó un punto de partida, la ruta arranca ahí
         string origen = viaje.TienePuntoPartida ? $"{viaje.PuntoPartida}, {viaje.Origen}" : viaje.Origen;
-        var textos = paradas?.Select(p => ParadaParaMaps(p, viaje.Origen)).OfType<string>();
+        // Cada parada lleva su propia localidad: un pasajero puede vivir en otra que el origen del viaje
+        var textos = paradas?.Select(p => ParadaParaMaps(p)).OfType<string>();
         await AbrirAsync(ArmarUrlRuta(origen, viaje.Destino, textos));
     }
 
     /// <summary>
     /// Cómo se le pasa una parada a Google Maps: las coordenadas exactas si el pasajero usó
-    /// su ubicación, o la dirección escrita con la localidad para que la encuentre bien.
+    /// su ubicación, o la dirección escrita con SU localidad y provincia ("Av. Goycoechea 250,
+    /// Villa Allende, Córdoba"), que se averiguaron al guardarla. No se usa el origen del viaje:
+    /// suele ser un barrio ("Saldán Centro") y el pasajero puede vivir en otra localidad.
     /// </summary>
-    public static string? ParadaParaMaps(PuntoPasajero punto, string? zona)
+    /// <param name="zonaSiFalta">Solo para puntos viejos que no tienen zona guardada.</param>
+    public static string? ParadaParaMaps(PuntoPasajero punto, string? zonaSiFalta = null)
     {
         ArgumentNullException.ThrowIfNull(punto);
         // Coordenadas solo si son exactas ("Usar mi ubicación"); si no, la dirección tal cual la escribió
@@ -72,21 +76,34 @@ public static class ServicioMapas
             return lugar.ATexto();
         if (string.IsNullOrWhiteSpace(punto.Texto))
             return null;
-        return string.IsNullOrWhiteSpace(zona)
-            ? $"{punto.Texto.Trim()}, {Pais}"
-            : $"{punto.Texto.Trim()}, {zona.Trim()}, {Pais}";
+        return $"{ConZona(punto.Texto, punto.Zona ?? zonaSiFalta)}, {Pais}";
+    }
+
+    /// <summary>
+    /// Agrega la zona a la dirección, sin repetir lo que la persona ya escribió:
+    /// "Goycoechea 250, Villa Allende" + "Villa Allende, Córdoba" = "Goycoechea 250, Villa Allende, Córdoba".
+    /// </summary>
+    private static string ConZona(string texto, string? zona)
+    {
+        string limpio = texto.Trim();
+        if (string.IsNullOrWhiteSpace(zona))
+            return limpio;
+
+        var faltan = zona.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(parte => !limpio.Contains(parte, StringComparison.OrdinalIgnoreCase));
+        return string.Join(", ", faltan.Prepend(limpio));
     }
 
     /// <summary>HU24: arma la dirección web de Google Maps que muestra un lugar.</summary>
     /// <param name="lugar">El punto de encuentro, por ejemplo "Av. Colón y General Paz".</param>
-    /// <param name="zona">La localidad, para ubicarlo mejor (por ejemplo, el origen del viaje).</param>
+    /// <param name="zona">La localidad y provincia del punto, para ubicarlo mejor (por ejemplo "Villa Allende, Córdoba").</param>
     /// <exception cref="ArgumentException">No se indicó el lugar.</exception>
     public static Uri ArmarUrlLugar(string? lugar, string? zona)
     {
         if (string.IsNullOrWhiteSpace(lugar))
             throw new ArgumentException("No hay un lugar para mostrar en el mapa.");
 
-        string texto = string.IsNullOrWhiteSpace(zona) ? lugar.Trim() : $"{lugar.Trim()}, {zona.Trim()}";
+        string texto = ConZona(lugar, zona);
         return new Uri($"https://www.google.com/maps/search/?api=1&query={Uri.EscapeDataString($"{texto}, {Pais}")}");
     }
 

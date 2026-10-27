@@ -38,6 +38,9 @@ public partial class MainPage : ContentPage
         // Pasó el tiempo y algún viaje cerró las anotaciones: desaparece de la lista
         _servicio.EstadosCambiados += (sender, e) => Redibujar();
 
+        // HU19: cambió el tema o la paleta: las tarjetas se vuelven a dibujar con los colores nuevos
+        ServicioApariencia.Eventos.Registrar(EventoApariencia.APARIENCIA_CAMBIADA, _ => Redibujar());
+
         Redibujar();
 
         if (_servicio.AvisoAlIniciar is string aviso)

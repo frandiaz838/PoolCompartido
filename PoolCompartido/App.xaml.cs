@@ -13,6 +13,9 @@ namespace PoolCompartido
         {
             InitializeComponent();
 
+            // HU18 + HU19: tema y paleta que eligió el usuario la última vez
+            ServicioApariencia.Inicializar();
+
             // Carpeta de datos propia de la app en cada dispositivo (Windows, Android...)
             Configuracion.CarpetaDatos = FileSystem.AppDataDirectory;
 
@@ -53,6 +56,7 @@ namespace PoolCompartido
             _timerSincronizacion = null;
             ServicioViajes.Instancia.Reiniciar();
             ServicioChat.Instancia.Reiniciar();   // HU25
+            ServicioApariencia.Reiniciar();       // HU19
             CambiarPagina(new LoginPage());
         }
 

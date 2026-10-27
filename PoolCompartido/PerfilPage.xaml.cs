@@ -5,9 +5,40 @@ public partial class PerfilPage : ContentPage
 {
     private readonly ServicioAutenticacion _auth = ServicioAutenticacion.Instancia;
 
+    // Mientras se cargan los valores guardados, los cambios del Picker y del Switch no se aplican
+    private bool _cargandoApariencia;
+
     public PerfilPage()
     {
         InitializeComponent();
+
+        // HU18 + HU19: lo que eligió el usuario la última vez
+        _cargandoApariencia = true;
+        pickerTema.ItemsSource = new[] { "Según el sistema", "Claro", "Oscuro" };   // mismo orden que el enum Tema
+        pickerTema.SelectedIndex = (int)ServicioApariencia.Actual.Tema;
+        swDaltonico.IsToggled = ServicioApariencia.Actual.Daltonico;
+        _cargandoApariencia = false;
+    }
+
+    /// <summary>HU18: el tema se aplica al instante y se recuerda.</summary>
+    private void OnTemaCambiado(object? sender, EventArgs e)
+    {
+        if (_cargandoApariencia || pickerTema.SelectedIndex < 0) return;
+        try
+        {
+            ServicioApariencia.CambiarTema((Tema)pickerTema.SelectedIndex);
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            RegistroErrores.RegistrarAviso(ex, "Cambiar tema");
+        }
+    }
+
+    /// <summary>HU19: paleta para daltonismo.</summary>
+    private void OnDaltonicoCambiado(object? sender, ToggledEventArgs e)
+    {
+        if (_cargandoApariencia) return;
+        ServicioApariencia.CambiarDaltonico(e.Value);
     }
 
     // Cada vez que se muestra: datos del usuario y si ya verificó el mail
@@ -21,7 +52,8 @@ public partial class PerfilPage : ContentPage
         {
             bool verificado = await _auth.MailVerificadoAsync();
             lblVerificacion.Text = verificado ? "✓ Mail verificado" : "Mail sin verificar";
-            lblVerificacion.TextColor = verificado ? Color.FromArgb("#2E9E5B") : Color.FromArgb("#D9822B");
+            // HU19: color de la paleta actual (se actualiza solo si se cambia la paleta)
+            lblVerificacion.SetDynamicResource(Label.TextColorProperty, verificado ? "ColorExito" : "ColorAviso");
             btnReenviar.IsVisible = !verificado;
         }
         catch (SesionVencidaException ex)

@@ -52,7 +52,7 @@
                     Placeholder="Ej: llevo lugar para mochilas" />
 
             <Label x:Name="lblError"
-                   TextColor="Red"
+                   TextColor="{DynamicResource ColorPeligro}"
                    IsVisible="False"
                    Margin="0,8,0,0" />
 

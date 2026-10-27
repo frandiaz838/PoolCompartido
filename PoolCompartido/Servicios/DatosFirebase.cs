@@ -47,6 +47,11 @@ internal class PuntoEncuentroDatos
     /// sirven para ordenar la ruta, pero en el mapa se muestra la dirección tal cual la escribió.
     /// </summary>
     public bool? Aproximado { get; set; }
+    /// <summary>
+    /// Localidad y provincia donde queda la dirección escrita (por ejemplo "Villa Allende, Córdoba"),
+    /// para que Google Maps la encuentre. null en los puntos guardados antes de este cambio.
+    /// </summary>
+    public string? Zona { get; set; }
 }
 
 /// <summary>HU25: un mensaje del chat tal como se lee de Firebase (/chats/{viajeId}/{clave}).</summary>

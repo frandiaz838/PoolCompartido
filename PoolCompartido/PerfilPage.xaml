@@ -43,14 +43,45 @@
                    FontSize="12"
                    TextColor="Gray" />
 
+            <!-- HU18 + HU19: apariencia -->
+            <Label Text="Apariencia" FontAttributes="Bold" Margin="0,16,0,0" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <Label Text="Tema" VerticalOptions="Center" />
+                <Picker x:Name="pickerTema"
+                        Grid.Column="1"
+                        WidthRequest="190"
+                        SelectedIndexChanged="OnTemaCambiado" />
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                    <Label Text="Colores para daltonismo" />
+                    <Label Text="Cambia el verde y el rojo por azul y naranja, que se distinguen mejor."
+                           Style="{StaticResource TextoSecundario}" FontSize="12" />
+                </VerticalStackLayout>
+                <Switch x:Name="swDaltonico" Grid.Column="1" VerticalOptions="Center" Toggled="OnDaltonicoCambiado" />
+            </Grid>
+            <!-- Vista previa: así se ven los estados de los viajes con los colores elegidos.
+                 Cada estado tiene su texto, así nunca depende solo del color -->
+            <FlexLayout Wrap="Wrap" Margin="0,4,0,0">
+                <Border Style="{StaticResource Etiqueta}" BackgroundColor="{DynamicResource ColorExitoFondo}" Margin="0,0,8,8">
+                    <Label Text="✓ En curso" FontSize="12" FontAttributes="Bold" TextColor="{DynamicResource ColorExito}" />
+                </Border>
+                <Border Style="{StaticResource Etiqueta}" Margin="0,0,8,8">
+                    <Label Text="Sale en menos de 5 minutos" FontSize="12" FontAttributes="Bold" TextColor="{DynamicResource ColorAviso}" />
+                </Border>
+                <Border Style="{StaticResource Etiqueta}" Margin="0,0,8,8">
+                    <Label Text="Cancelado" FontSize="12" FontAttributes="Bold" TextColor="{DynamicResource ColorPeligro}" />
+                </Border>
+            </FlexLayout>
+
             <!-- Cuenta -->
             <Label Text="Cuenta" FontAttributes="Bold" Margin="0,16,0,0" />
             <Button x:Name="btnContrasena" Text="Cambiar contraseña" Clicked="OnCambiarContrasenaClicked" />
             <Button Text="Registro de errores" Clicked="OnRegistroClicked" />
             <Button Text="Cerrar sesión"
                     BackgroundColor="Transparent"
-                    TextColor="#E5484D"
-                    BorderColor="#E5484D"
+                    TextColor="{DynamicResource ColorPeligro}"
+                    BorderColor="{DynamicResource ColorPeligro}"
                     BorderWidth="1"
                     Margin="0,16,0,0"
                     Clicked="OnCerrarSesionClicked" />
@@ -58,7 +89,7 @@
             <!-- HU21: borrar la cuenta. Primero se pide la contraseña -->
             <Button x:Name="btnBorrarCuenta"
                     Text="Borrar mi cuenta"
-                    BackgroundColor="#E5484D"
+                    BackgroundColor="{DynamicResource ColorPeligro}"
                     TextColor="White"
                     Clicked="OnBorrarCuentaClicked" />
             <VerticalStackLayout x:Name="panelBorrar" IsVisible="False" Spacing="8">
@@ -82,8 +113,8 @@
                 <Button x:Name="btnConfirmarBorrado"
                         Text="Confirmar borrado"
                         BackgroundColor="Transparent"
-                        TextColor="#E5484D"
-                        BorderColor="#E5484D"
+                        TextColor="{DynamicResource ColorPeligro}"
+                        BorderColor="{DynamicResource ColorPeligro}"
                         BorderWidth="1"
                         Clicked="OnConfirmarBorradoClicked" />
             </VerticalStackLayout>
