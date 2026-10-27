@@ -10,6 +10,27 @@ public static class ServicioMapas
     /// <summary>Se agrega al origen y al destino para que "Palermo" no termine en Italia.</summary>
     private const string Pais = "Argentina";
 
+    /// <summary>Google Maps acepta hasta 9 paradas intermedias en la app del celular.</summary>
+    public const int MaximoParadas = 9;
+
+    /// <summary>
+    /// Arma la dirección web de Google Maps con la ruta en auto de origen a destino,
+    /// pasando por las paradas indicadas (HU24: los puntos de encuentro de los pasajeros).
+    /// </summary>
+    /// <param name="paradas">Direcciones o coordenadas "lat,lon", ya listas para Maps. Puede ser null.</param>
+    /// <exception cref="ArgumentException">Falta el origen o el destino.</exception>
+    public static Uri ArmarUrlRuta(string? origen, string? destino, IEnumerable<string>? paradas)
+    {
+        Uri sinParadas = ArmarUrlRuta(origen, destino);
+        var lista = paradas?.Where(p => !string.IsNullOrWhiteSpace(p)).Take(MaximoParadas).ToList();
+        if (lista is null || lista.Count == 0)
+            return sinParadas;
+
+        // Las paradas van separadas por "|" (que también se escapa)
+        string waypoints = Uri.EscapeDataString(string.Join("|", lista));
+        return new Uri($"{sinParadas.AbsoluteUri}&waypoints={waypoints}");
+    }
+
     /// <summary>Arma la dirección web de Google Maps con la ruta en auto de origen a destino.</summary>
     /// <exception cref="ArgumentException">Falta el origen o el destino.</exception>
     public static Uri ArmarUrlRuta(string? origen, string? destino)
@@ -29,13 +50,30 @@ public static class ServicioMapas
     /// <exception cref="ArgumentNullException">No se indicó el viaje.</exception>
     /// <exception cref="ArgumentException">Falta el origen o el destino.</exception>
     /// <exception cref="MapaNoDisponibleException">El dispositivo no pudo abrir el mapa.</exception>
-    public static async Task AbrirRutaAsync(Viaje viaje)
+    public static async Task AbrirRutaAsync(Viaje viaje, IEnumerable<PuntoPasajero>? paradas = null)
     {
         ArgumentNullException.ThrowIfNull(viaje);
 
         // HU24: si el conductor indicó un punto de partida, la ruta arranca ahí
         string origen = viaje.TienePuntoPartida ? $"{viaje.PuntoPartida}, {viaje.Origen}" : viaje.Origen;
-        await AbrirAsync(ArmarUrlRuta(origen, viaje.Destino));
+        var textos = paradas?.Select(p => ParadaParaMaps(p, viaje.Origen)).OfType<string>();
+        await AbrirAsync(ArmarUrlRuta(origen, viaje.Destino, textos));
+    }
+
+    /// <summary>
+    /// Cómo se le pasa una parada a Google Maps: las coordenadas exactas si el pasajero usó
+    /// su ubicación, o la dirección escrita con la localidad para que la encuentre bien.
+    /// </summary>
+    public static string? ParadaParaMaps(PuntoPasajero punto, string? zona)
+    {
+        ArgumentNullException.ThrowIfNull(punto);
+        if (punto.Latitud is double lat && punto.Longitud is double lon)
+            return string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{lat:0.######},{lon:0.######}");
+        if (string.IsNullOrWhiteSpace(punto.Texto))
+            return null;
+        return string.IsNullOrWhiteSpace(zona)
+            ? $"{punto.Texto.Trim()}, {Pais}"
+            : $"{punto.Texto.Trim()}, {zona.Trim()}, {Pais}";
     }
 
     /// <summary>HU24: arma la dirección web de Google Maps que muestra un lugar.</summary>

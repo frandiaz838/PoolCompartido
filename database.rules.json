@@ -28,7 +28,7 @@
     },
     "encuentros": {
       "$viajeId": {
-        ".read": "auth != null && root.child('viajes/' + $viajeId + '/conductorUid').val() === auth.uid",
+        ".read": "auth != null && (root.child('viajes/' + $viajeId + '/conductorUid').val() === auth.uid || root.child('viajes/' + $viajeId + '/pasajeros/' + auth.uid).exists())",
         "$uid": {
           ".read": "auth != null && auth.uid === $uid",
           ".write": "auth != null && auth.uid === $uid",

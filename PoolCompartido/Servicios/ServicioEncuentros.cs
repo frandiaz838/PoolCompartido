@@ -6,10 +6,10 @@ namespace PoolCompartido;
 public record PuntoPasajero(string Uid, string Nombre, string? Texto, double? Latitud = null, double? Longitud = null);
 
 /// <summary>
-/// HU24: punto de encuentro privado. Cada pasajero indica dónde lo pasan a buscar.
+/// HU24: punto de encuentro. Cada pasajero indica dónde lo pasan a buscar.
 /// Se guarda en Firebase aparte del viaje (/encuentros/{viajeId}/{uid}) y las reglas
-/// solo dejan leerlo al conductor de ese viaje y al pasajero que lo cargó:
-/// la dirección nunca queda a la vista de todos.
+/// solo dejan leerlo a los que participan de ese viaje (el conductor y los pasajeros),
+/// para armar la ruta con todas las paradas: la dirección no queda a la vista del resto de los usuarios.
 /// </summary>
 public class ServicioEncuentros
 {
@@ -96,6 +96,28 @@ public class ServicioEncuentros
                 ? new PuntoPasajero(p.Key, p.Value, datos.Texto, datos.Lat, datos.Lon)
                 : new PuntoPasajero(p.Key, p.Value, null))
             .OrderBy(p => p.Nombre)
+            .ToList();
+    }
+
+    /// <summary>
+    /// HU24: las paradas del viaje (los puntos que cargaron los pasajeros), para armar la ruta.
+    /// Las ven el conductor y los pasajeros de ese viaje, así los que viven cerca se pueden juntar.
+    /// Quien no participa del viaje no recibe ninguna (las reglas tampoco se lo permitirían).
+    /// </summary>
+    /// <exception cref="ArgumentNullException">No se indicó el viaje.</exception>
+    /// <exception cref="SinConexionException">No hay internet.</exception>
+    public async Task<IReadOnlyList<PuntoPasajero>> ObtenerParadasAsync(Viaje viaje)
+    {
+        ArgumentNullException.ThrowIfNull(viaje);
+        if (!viaje.EsDelUsuarioActual && !viaje.EstoyAnotado)
+            return Array.Empty<PuntoPasajero>();
+
+        var puntos = await _remoto.ObtenerEncuentrosAsync(viaje.Id);
+
+        // Solo los que siguen anotados y cargaron su punto, en el orden en que se anotaron
+        return viaje.PasajerosPorUid
+            .Where(p => puntos.ContainsKey(p.Key))
+            .Select(p => new PuntoPasajero(p.Key, p.Value, puntos[p.Key].Texto, puntos[p.Key].Lat, puntos[p.Key].Lon))
             .ToList();
     }
 
