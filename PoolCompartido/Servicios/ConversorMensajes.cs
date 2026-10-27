@@ -73,6 +73,20 @@ public static class ConversorMensajes
             (ViajeEvento.COSTO_RECALCULADO, RolEnViaje.Pasajero) =>
                 $"Ahora pagás {Viaje.Pesos(viaje.CostoPorPasajero)} ({SonPasajeros(viaje.Pasajeros.Count)}).",
 
+            // Check-in y ciclo de vida del viaje (HU15)
+            (ViajeEvento.VIAJE_INICIADO, RolEnViaje.Conductor) =>
+                $"Iniciaste el viaje a {viaje.Destino}. Cuando suba cada pasajero, pedile su PIN y tocá \"Confirmar PIN\".",
+            (ViajeEvento.VIAJE_INICIADO, RolEnViaje.Pasajero) =>
+                $"{viaje.Conductor} inició el viaje a {viaje.Destino}. Cuando subas, decile tu PIN (lo ves en Mis viajes).",
+            (ViajeEvento.PASAJERO_A_BORDO, RolEnViaje.Conductor) =>
+                $"{viaje.UltimoPasajeroABordo} subió. {viaje.ABordoTexto}.",
+            (ViajeEvento.PASAJERO_A_BORDO, RolEnViaje.Pasajero) when viaje.UltimoPasajeroABordoUid == yo =>
+                $"Check-in listo: ya estás a bordo del viaje de {viaje.Conductor}.",
+            (ViajeEvento.VIAJE_FINALIZADO, RolEnViaje.Conductor) =>
+                $"Finalizaste el viaje a {viaje.Destino}. Quedó en tu historial.",
+            (ViajeEvento.VIAJE_FINALIZADO, RolEnViaje.Pasajero) =>
+                $"Llegaron a {viaje.Destino}: {viaje.Conductor} finalizó el viaje.",
+
             // Cualquier otra combinación no le interesa a este usuario
             _ => null
         };

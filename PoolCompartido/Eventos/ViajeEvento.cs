@@ -12,5 +12,8 @@ public enum ViajeEvento
     VIAJE_CANCELADO,       // HU5
     REEMPLAZO_ENCONTRADO,  // HU6
     SIN_REEMPLAZO,         // HU6
-    COSTO_RECALCULADO      // HU14
+    COSTO_RECALCULADO,     // HU14
+    VIAJE_INICIADO,        // HU15
+    VIAJE_FINALIZADO,      // HU15
+    PASAJERO_A_BORDO       // HU15
 }

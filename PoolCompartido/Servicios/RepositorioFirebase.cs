@@ -135,6 +135,39 @@ internal class RepositorioFirebase
         Verificar(respuesta);
     }
 
+    // ───── HU15: PIN de cada pasajero (/pines/{uid}/{viajeId}) ─────
+
+    /// <summary>El PIN del pasajero para ese viaje, o null si no tiene. Las reglas solo se lo dejan leer a él.</summary>
+    public async Task<string?> ObtenerPinAsync(string uid, string viajeId)
+    {
+        using var pedido = new HttpRequestMessage(HttpMethod.Get, await UrlAsync($"pines/{uid}/{viajeId}"));
+        using var respuesta = await ClienteHttp.EnviarAsync(pedido);
+        Verificar(respuesta);
+
+        string cuerpo = await respuesta.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize(cuerpo, JsonPool.Default.String);
+    }
+
+    /// <summary>Guarda (o reemplaza) el PIN del pasajero para ese viaje.</summary>
+    public async Task GuardarPinAsync(string uid, string viajeId, string pin)
+    {
+        using var pedido = new HttpRequestMessage(HttpMethod.Put, await UrlAsync($"pines/{uid}/{viajeId}"))
+        {
+            Content = new StringContent(JsonSerializer.Serialize(pin, JsonPool.Default.String),
+                                        Encoding.UTF8, "application/json")
+        };
+        using var respuesta = await ClienteHttp.EnviarAsync(pedido);
+        Verificar(respuesta);
+    }
+
+    /// <summary>Borra el PIN del pasajero para ese viaje (si no existía, no pasa nada).</summary>
+    public async Task BorrarPinAsync(string uid, string viajeId)
+    {
+        using var pedido = new HttpRequestMessage(HttpMethod.Delete, await UrlAsync($"pines/{uid}/{viajeId}"));
+        using var respuesta = await ClienteHttp.EnviarAsync(pedido);
+        Verificar(respuesta);
+    }
+
     private static StringContent Json(ViajeDatos datos) =>
         new(JsonSerializer.Serialize(datos, JsonPool.Default.ViajeDatos), Encoding.UTF8, "application/json");
 
