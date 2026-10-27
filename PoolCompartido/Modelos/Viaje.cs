@@ -116,6 +116,7 @@ public class Viaje : INotifyPropertyChanged
             if (_asientosDisponibles == value) return;
             _asientosDisponibles = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(AsientosChip));   // HU29
         }
     }
 
@@ -293,6 +294,73 @@ public class Viaje : INotifyPropertyChanged
         ? "Sin pasajeros anotados"
         : $"Pasajeros: {string.Join(", ", _pasajeros.Values)}";
 
+    // ───── HU29: datos cortos para las tarjetas (chips y avatares) ─────
+
+    private static readonly string[] Dias = { "Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb" };
+
+    /// <summary>"Hoy", "Mañana" o "Lun 03/11".</summary>
+    public string DiaTexto => DiaTextoEn(DateTime.Now);
+
+    /// <summary>Separado de DateTime.Now para poder probarlo.</summary>
+    public string DiaTextoEn(DateTime ahora)
+    {
+        var dia = Fecha.Date;
+        if (dia == ahora.Date) return "Hoy";
+        if (dia == ahora.Date.AddDays(1)) return "Mañana";
+        return $"{Dias[(int)dia.DayOfWeek]} {dia:dd/MM}";
+    }
+
+    public string HoraChip => $"🕗 {DiaTexto} · {Hora}";
+
+    public string AsientosChip => AsientosDisponibles switch
+    {
+        <= 0 => "💺 Completo",
+        1 => "💺 1 lugar libre",
+        var n => $"💺 {n} lugares libres"
+    };
+
+    /// <summary>Lo que le importa a cada uno: cuánto paga cada pasajero, o cuánto pagaría yo si me anoto.</summary>
+    public string CostoChip
+    {
+        get
+        {
+            if (!TieneCosto) return "";
+            if (EsDelUsuarioActual)
+                return _pasajeros.Count == 0 ? $"💲 {Pesos(CostoTotal!.Value)} en total" : $"💲 {Pesos(CostoPorPasajero)} c/u";
+            if (EstoyAnotado)
+                return $"💲 Pagás {Pesos(CostoPorPasajero)}";
+            return $"💲 Si te anotás: {Pesos(CostoPara(_pasajeros.Count + 1))}";
+        }
+    }
+
+    public bool TieneCostoChip => CostoChip != "";
+
+    public string PartidaChip => $"📍 {PuntoPartida}";
+
+    /// <summary>Cuántos avatares entran en la tarjeta; el resto se resume en "+N".</summary>
+    public const int MaximoAvatares = 5;
+
+    /// <summary>Cuántos colores distintos hay para los avatares (los define la pantalla).</summary>
+    public const int ColoresDeAvatar = 8;
+
+    /// <summary>El conductor primero y después los pasajeros, cada uno con sus iniciales y su color.</summary>
+    public IReadOnlyList<Participante> Participantes =>
+        new[] { new Participante(Conductor, Participante.Iniciales(Conductor), Participante.ColorPara(ConductorUid, ColoresDeAvatar), true) }
+            .Concat(_pasajeros.Select(p => new Participante(p.Value, Participante.Iniciales(p.Value), Participante.ColorPara(p.Key, ColoresDeAvatar), false)))
+            .ToList();
+
+    public IReadOnlyList<Participante> AvataresVisibles => Participantes.Take(MaximoAvatares).ToList();
+    public string AvataresExtra => Participantes.Count > MaximoAvatares ? $"+{Participantes.Count - MaximoAvatares}" : "";
+    public bool HayAvataresExtra => AvataresExtra != "";
+
+    /// <summary>"Francis · conductor" o "Francis y 2 pasajeros".</summary>
+    public string ParticipantesTexto => _pasajeros.Count switch
+    {
+        0 => $"{Conductor} · conductor",
+        1 => $"{Conductor} y 1 pasajero",
+        var n => $"{Conductor} y {n} pasajeros"
+    };
+
     // ───── HU14: reparto del costo ─────
 
     /// <summary>El conductor cargó un costo: solo en esos viajes se muestra y se recalcula.</summary>
@@ -378,6 +446,13 @@ public class Viaje : INotifyPropertyChanged
             OnPropertyChanged(nameof(PuedeChatear));       // HU25
             OnPropertyChanged(nameof(CostoPorPasajero));   // HU14: cambió entre cuántos se divide
             OnPropertyChanged(nameof(CostoTexto));
+            OnPropertyChanged(nameof(CostoChip));          // HU29: chips y avatares de la tarjeta
+            OnPropertyChanged(nameof(TieneCostoChip));
+            OnPropertyChanged(nameof(Participantes));
+            OnPropertyChanged(nameof(AvataresVisibles));
+            OnPropertyChanged(nameof(AvataresExtra));
+            OnPropertyChanged(nameof(HayAvataresExtra));
+            OnPropertyChanged(nameof(ParticipantesTexto));
             AvisarCambioDeCheckIn();                       // HU15: cambia cuántos faltan subir
         }
 

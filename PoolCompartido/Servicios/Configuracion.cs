@@ -9,6 +9,13 @@ public static class Configuracion
     /// </summary>
     public static string CarpetaDatos { get; set; } = AppContext.BaseDirectory;
 
+    /// <summary>
+    /// Zona donde se usa la app (Córdoba capital, donde está la UBP). Cuando se busca un lugar sin saber
+    /// dónde queda el viaje, se prefieren resultados cerca de acá: "Universidad Blas Pascal" o "UTN"
+    /// tienen sedes en otras ciudades, y sin esto OpenStreetMap a veces elegía las de Buenos Aires.
+    /// </summary>
+    public static Coordenada ZonaPorDefecto { get; set; } = new(-31.4201, -64.1888);
+
     // Datos del proyecto de Firebase. Están en ClavesFirebase.cs, que NO se sube a GitHub.
     public static string FirebaseApiKey { get; set; } = ClavesFirebase.ApiKey;
     public static string FirebaseUrlBase { get; set; } = ClavesFirebase.UrlBase;

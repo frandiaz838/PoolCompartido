@@ -61,6 +61,8 @@ public partial class MainPage : ContentPage
         if (evento is ViajeEvento.VIAJE_PUBLICADO or ViajeEvento.VIAJE_CANCELADO or ViajeEvento.ASIENTO_LIBERADO
                    or ViajeEvento.VIAJE_INICIADO or ViajeEvento.VIAJE_FINALIZADO)
             Redibujar();
+        else
+            ActualizarProximo();   // HU29: por ejemplo, me anoté y ahora ese es mi próximo viaje
 
         // HU6: se encontró un viaje parecido, se ofrece anotarse con un toque
         if (evento == ViajeEvento.REEMPLAZO_ENCONTRADO && viaje.Reemplazo is Viaje otro)
@@ -108,6 +110,49 @@ public partial class MainPage : ContentPage
         _viajesVisibles.Clear();
         foreach (var viaje in filtrados)
             _viajesVisibles.Add(viaje);
+
+        ActualizarProximo();
+    }
+
+    // ───── HU29: tarjeta "Tu próximo viaje" ─────
+
+    /// <summary>El viaje más próximo donde soy conductor o pasajero (el que está en curso, primero).</summary>
+    private Viaje? _proximo;
+
+    private void ActualizarProximo()
+    {
+        var proximo = _servicio.Viajes
+            .Where(v => (v.EsDelUsuarioActual || v.EstoyAnotado) && v.Estado is not (EstadoViaje.Cancelado or EstadoViaje.Finalizado))
+            .OrderBy(v => v.Estado == EstadoViaje.EnCurso ? 0 : 1)
+            .ThenBy(v => v.Salida)
+            .FirstOrDefault();
+
+        if (!ReferenceEquals(proximo, _proximo))
+        {
+            _proximo = proximo;
+            tarjetaProximo.BindingContext = proximo;
+        }
+        tarjetaProximo.IsVisible = proximo is not null;
+    }
+
+    private async void OnProximoRutaClicked(object? sender, EventArgs e)
+    {
+        if (_proximo is Viaje viaje)
+            await PuntoDeEncuentro.AbrirRutaAsync(this, viaje, sender as Button);
+    }
+
+    private async void OnProximoChatClicked(object? sender, EventArgs e)
+    {
+        if (_proximo is Viaje viaje)
+            await Navigation.PushAsync(new ChatPage(viaje));
+    }
+
+    /// <summary>Lleva a "Mis viajes", con la lista en ese viaje (lo mismo que tocar un aviso, HU26).</summary>
+    private async void OnProximoVerClicked(object? sender, EventArgs e)
+    {
+        if (_proximo is not Viaje viaje) return;
+        Notificaciones.MarcarViajeParaMostrar(viaje);
+        await Shell.Current.GoToAsync("//MisViajesPage");
     }
 
     private void OnDestinoCambiado(object? sender, TextChangedEventArgs e) => Redibujar();

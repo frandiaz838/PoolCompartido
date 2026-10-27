@@ -13,6 +13,9 @@ public class CartelNotificacion : ContentView
     /// <summary>Cuánto tiempo queda a la vista.</summary>
     public static readonly TimeSpan Duracion = TimeSpan.FromSeconds(5);
 
+    /// <summary>Ancho máximo del cartel (en la compu no ocupa toda la ventana).</summary>
+    public const double AnchoMaximo = 560;
+
     private readonly Label _icono;
     private readonly Label _texto;
     private readonly Action<Notificacion?> _alLlegar;
@@ -23,7 +26,7 @@ public class CartelNotificacion : ContentView
     public CartelNotificacion()
     {
         _icono = new Label { FontSize = 18, VerticalOptions = LayoutOptions.Center };
-        _texto = new Label { FontSize = 14, LineBreakMode = LineBreakMode.WordWrap, VerticalOptions = LayoutOptions.Center };
+        _texto = new Label { FontSize = 14, LineBreakMode = LineBreakMode.WordWrap, MaxLines = 4, VerticalOptions = LayoutOptions.Center };
         _texto.SetAppThemeColor(Label.TextColorProperty, Color.FromArgb("#1F1F1F"), Color.FromArgb("#F2F2F2"));
 
         var cerrar = new Label
@@ -60,8 +63,8 @@ public class CartelNotificacion : ContentView
 
         Content = caja;
         VerticalOptions = LayoutOptions.Start;
-        Margin = new Thickness(12, 8);
-        MaximumWidthRequest = 560;
+        HorizontalOptions = LayoutOptions.Center;
+        Margin = new Thickness(12, 10);
         IsVisible = false;
         ZIndex = 100;
 
@@ -74,6 +77,18 @@ public class CartelNotificacion : ContentView
         // Se suscribe mientras está en pantalla y se borra de la tabla al salir (Despachador.Quitar)
         Loaded += (s, e) => AlCargar();
         Unloaded += (s, e) => _registradoEn?.Quitar(EventoNotificacion.NOTIFICACION_NUEVA, _alLlegar);
+    }
+
+    /// <summary>
+    /// Fija el ancho según la pantalla. Con un ancho fijo el texto se acomoda en varias líneas y el cartel
+    /// crece hacia abajo; con un ancho "máximo" Windows lo medía en una sola línea y lo recortaba.
+    /// </summary>
+    public void AjustarAncho(double anchoPantalla)
+    {
+        if (anchoPantalla <= 0) return;
+        double ancho = Math.Min(AnchoMaximo, anchoPantalla - Margin.HorizontalThickness);
+        if (Math.Abs(WidthRequest - ancho) > 0.5)
+            WidthRequest = ancho;
     }
 
     private void AlCargar()

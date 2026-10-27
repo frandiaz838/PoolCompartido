@@ -62,7 +62,8 @@ public static class Geocodificador
     /// <summary>Cuántos lugares encontrados se guardan en el dispositivo como máximo.</summary>
     private const int MaximoGuardados = 300;
 
-    private static string RutaGuardados => Path.Combine(Configuracion.CarpetaDatos, "lugares.json");
+    // v2: la primera versión guardó algunos lugares de Buenos Aires por error; se empieza de cero
+    private static string RutaGuardados => Path.Combine(Configuracion.CarpetaDatos, "lugares_v2.json");
 
     // Lugares encontrados en otras sesiones (se cargan del archivo la primera vez que se usan)
     private static Dictionary<string, LugarGuardadoDatos>? _guardados;
@@ -83,7 +84,8 @@ public static class Geocodificador
         ["ucc"] = "Universidad Católica de Córdoba",
         ["utn"] = "Universidad Tecnológica Nacional",
         ["unc"] = "Ciudad Universitaria",
-        ["ues21"] = "Universidad Siglo 21"
+        ["ues21"] = "Universidad Siglo 21",
+        ["cba"] = "Córdoba"
     };
 
     /// <summary>Palabras que no ayudan a encontrar el lugar ("la facu ubp" = "ubp").</summary>
@@ -236,6 +238,10 @@ public static class Geocodificador
             ? null
             : $"{solo}, {zonaRespaldo.Trim()}";
         bool acotado = cerca is not null;
+        // Sin un punto del viaje, igual se prefieren resultados cerca de donde se usa la app (no se descarta el resto)
+        Coordenada referencia = cerca ?? Configuracion.ZonaPorDefecto;
+        // Si la persona escribió la provincia ("utn cordoba", "utn cba"), el resultado tiene que ser de ahí
+        string? provinciaPedida = ProvinciaMencionada(solo);
 
         // "facu ubp" no existe en el mapa, "Universidad Blas Pascal" sí
         string? expandido = ExpandirSiglas(solo);
@@ -246,8 +252,8 @@ public static class Geocodificador
         // Sin un punto de referencia, el texto solo podría aparecer en cualquier lugar del país:
         // en ese caso se empieza por la versión con la zona.
         var intentos = new List<Uri>();
-        void Nominatim(string? consulta) { if (consulta is not null) intentos.Add(ArmarUrl(consulta, cerca, acotado)); }
-        void Photon(string? consulta) { if (consulta is not null) intentos.Add(ArmarUrlPhoton(consulta, cerca, acotado)); }
+        void Nominatim(string? consulta) { if (consulta is not null) intentos.Add(ArmarUrl(consulta, referencia, acotado)); }
+        void Photon(string? consulta) { if (consulta is not null) intentos.Add(ArmarUrlPhoton(consulta, referencia, acotado)); }
 
         if (acotado)
         {
@@ -264,7 +270,7 @@ public static class Geocodificador
 
         // La respuesta final también se guarda: la próxima vez no se repiten los intentos fallidos
         string claveBusqueda = string.Create(CultureInfo.InvariantCulture,
-            $"buscar|{solo}|{zonaRespaldo?.Trim()}|{cerca?.ATexto()}");
+            $"buscar|{solo}|{zonaRespaldo?.Trim()}|{referencia.ATexto()}|{acotado}");
         lock (_memoria)
         {
             if (Guardados().TryGetValue(claveBusqueda, out var yaEncontrado))
@@ -273,7 +279,7 @@ public static class Geocodificador
 
         foreach (Uri url in intentos)
         {
-            if (await PedirAsync(url) is LugarEncontrado lugar)
+            if (await PedirAsync(url) is LugarEncontrado lugar && EsDeLaProvincia(lugar, provinciaPedida))
             {
                 lock (_memoria)
                     Guardar(claveBusqueda, lugar);
@@ -281,6 +287,81 @@ public static class Geocodificador
             }
         }
         return null;
+    }
+
+    /// <summary>
+    /// Provincias argentinas y cómo las escribe la gente (sin tildes ni mayúsculas).
+    /// "Buenos Aires" incluye CABA: en el mapa las dos dicen "Buenos Aires".
+    /// </summary>
+    private static readonly (string Provincia, string[] Formas)[] Provincias =
+    {
+        ("cordoba", new[] { "cordoba", "cba" }),
+        ("buenos aires", new[] { "buenos aires", "bs as", "bsas", "caba", "capital federal" }),
+        ("santa fe", new[] { "santa fe" }), ("mendoza", new[] { "mendoza", "mza" }),
+        ("tucuman", new[] { "tucuman" }), ("salta", new[] { "salta" }), ("jujuy", new[] { "jujuy" }),
+        ("san luis", new[] { "san luis" }), ("san juan", new[] { "san juan" }), ("la rioja", new[] { "la rioja" }),
+        ("catamarca", new[] { "catamarca" }), ("santiago del estero", new[] { "santiago del estero" }),
+        ("la pampa", new[] { "la pampa" }), ("neuquen", new[] { "neuquen" }), ("rio negro", new[] { "rio negro" }),
+        ("chubut", new[] { "chubut" }), ("santa cruz", new[] { "santa cruz" }), ("tierra del fuego", new[] { "tierra del fuego" }),
+        ("entre rios", new[] { "entre rios" }), ("corrientes", new[] { "corrientes" }), ("misiones", new[] { "misiones" }),
+        ("chaco", new[] { "chaco" }), ("formosa", new[] { "formosa" })
+    };
+
+    /// <summary>Saca tildes y mayúsculas: "Córdoba" → "cordoba".</summary>
+    public static string Normalizar(string texto)
+    {
+        var sinTildes = texto.Normalize(System.Text.NormalizationForm.FormD)
+            .Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark);
+        return new string(sinTildes.ToArray()).ToLowerInvariant();
+    }
+
+    /// <summary>Palabras que indican que lo que sigue es el nombre de una calle ("Av. Córdoba", "calle Mendoza").</summary>
+    private static readonly HashSet<string> TiposDeCalle = new()
+    {
+        "av", "avda", "avenida", "calle", "bv", "bvd", "bvar", "boulevard", "bulevar", "pje", "pasaje",
+        "ruta", "diagonal", "camino", "costanera", "autopista", "esquina", "barrio", "b", "plaza", "parque", "colegio", "escuela"
+    };
+
+    /// <summary>
+    /// La provincia que nombró la persona en el texto ("utn cba" → "cordoba"), o null si no nombró ninguna.
+    /// No cuenta cuando el nombre es parte de una calle o de un lugar: "Av. Córdoba 1200", "Córdoba 1200",
+    /// "Santa Fe y Colón" (una esquina) o "Plaza Mendoza".
+    /// </summary>
+    public static string? ProvinciaMencionada(string texto)
+    {
+        var palabras = Normalizar(texto)
+            .Split(new[] { ' ', ',', '.', '(', ')', '-' }, StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (var (provincia, formas) in Provincias)
+        {
+            foreach (var forma in formas)
+            {
+                var partes = forma.Split(' ');
+                for (int i = 0; i + partes.Length <= palabras.Length; i++)
+                {
+                    if (!partes.Select((p, k) => palabras[i + k] == p).All(igual => igual)) continue;
+
+                    string? antes = i > 0 ? palabras[i - 1] : null;
+                    string? despues = i + partes.Length < palabras.Length ? palabras[i + partes.Length] : null;
+
+                    bool esCalle = antes is not null && TiposDeCalle.Contains(antes);    // "Av. Córdoba"
+                    bool esAltura = despues is not null && despues.Any(char.IsDigit);    // "Córdoba 1200"
+                    bool esEsquina = antes == "y" || despues == "y";                     // "Santa Fe y Colón"
+                    if (!esCalle && !esAltura && !esEsquina)
+                        return provincia;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// <summary>Si la persona nombró una provincia, el lugar encontrado tiene que estar ahí.</summary>
+    public static bool EsDeLaProvincia(LugarEncontrado lugar, string? provinciaPedida)
+    {
+        if (provinciaPedida is null) return true;
+        // Si el mapa no dice la provincia, no se puede comprobar: se acepta
+        if (string.IsNullOrWhiteSpace(lugar.Provincia)) return true;
+        return Normalizar(lugar.Provincia).Contains(provinciaPedida);
     }
 
     /// <summary>Como <see cref="BuscarLugarAsync"/>, pero devuelve solo las coordenadas.</summary>
