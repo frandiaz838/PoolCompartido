@@ -94,3 +94,28 @@ public class HorarioOcupadoException : ViajeException
         Otro = otro;
     }
 }
+
+/// <summary>HU15: el PIN que escribió el conductor no es el de ningún pasajero que falte subir.</summary>
+public class PinInvalidoException : ViajeException
+{
+    public PinInvalidoException()
+        : base("Ese PIN no es el de ningún pasajero que falte subir. Pedile que lo mire de nuevo en Mis viajes.") { }
+
+    /// <summary>Para otros problemas con el PIN (formato, o un pasajero que no tiene).</summary>
+    public PinInvalidoException(string mensaje)
+        : base(mensaje) { }
+}
+
+/// <summary>HU15: el conductor quiere iniciar el viaje más de 15 minutos antes de la salida.</summary>
+public class InicioAnticipadoException : ViajeException
+{
+    public InicioAnticipadoException(DateTime desde)
+        : base($"Todavía es temprano: podés iniciar el viaje desde las {desde:HH:mm}.") { }
+}
+
+/// <summary>HU15: la acción necesita que el conductor haya tocado "Iniciar viaje".</summary>
+public class ViajeNoIniciadoException : ViajeException
+{
+    public ViajeNoIniciadoException()
+        : base("Primero tocá \"Iniciar viaje\".") { }
+}

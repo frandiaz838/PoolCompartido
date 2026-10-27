@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 
 namespace PoolCompartido;
@@ -149,6 +151,9 @@ public class ServicioViajes
 
                 int pasajerosAntes = local.PasajerosPorUid.Count;
                 bool estabaCancelado = local.Cancelado;
+                bool estabaIniciado = local.Iniciado;
+                bool estabaFinalizado = local.Finalizado;
+                int aBordoAntes = local.ABordo.Count;
                 local.ActualizarDesde(datos);
 
                 if (!estabaCancelado && local.Cancelado)
@@ -157,6 +162,14 @@ public class ServicioViajes
                     eventos.Add((ViajeEvento.ASIENTO_RESERVADO, local));
                 else if (local.PasajerosPorUid.Count < pasajerosAntes)
                     eventos.Add((ViajeEvento.ASIENTO_LIBERADO, local));
+
+                // HU15: lo que marcó el conductor en su dispositivo, en el orden en que pasa
+                if (!estabaIniciado && local.Iniciado)
+                    eventos.Add((ViajeEvento.VIAJE_INICIADO, local));
+                if (local.ABordo.Count > aBordoAntes)
+                    eventos.Add((ViajeEvento.PASAJERO_A_BORDO, local));
+                if (!estabaFinalizado && local.Finalizado)
+                    eventos.Add((ViajeEvento.VIAJE_FINALIZADO, local));
             }
             _viajes.RemoveAll(v => !remotos.ContainsKey(v.Id));
 
@@ -288,12 +301,17 @@ public class ServicioViajes
         var usuario = UsuarioRequerido;
 
         // Validación temprana con lo que ya sabemos
-        ValidarAnotarse(viaje.Cancelado, viaje.ConductorUid, viaje.PasajerosPorUid.ContainsKey(usuario.Uid),
+        ValidarAnotarse(viaje.Cancelado, viaje.Iniciado, viaje.ConductorUid, viaje.PasajerosPorUid.ContainsKey(usuario.Uid),
                         viaje.Salida, viaje.AsientosDisponibles, usuario.Uid);
 
         // No puede estar en dos viajes al mismo tiempo
         if (ViajeQueSeSuperpone(viaje.Salida, exceptoId: viaje.Id) is Viaje otro)
             throw new HorarioOcupadoException(otro);
+
+        // HU15: el PIN se guarda primero en /pines (solo lo lee el pasajero) y en el viaje va solo su hash.
+        // Si anotarse falla después, queda un PIN suelto que no sirve para nada: no hace daño
+        string pin = GenerarPin();
+        await _remoto.GuardarPinAsync(usuario.Uid, viaje.Id, pin);
 
         for (int intento = 1; intento <= ReintentosPorConflicto; intento++)
         {
@@ -305,7 +323,7 @@ public class ServicioViajes
             try
             {
                 // Se vuelve a validar con los datos frescos: otra persona pudo anotarse recién
-                ValidarAnotarse(datos.Cancelado, datos.ConductorUid, datos.Pasajeros.ContainsKey(usuario.Uid),
+                ValidarAnotarse(datos.Cancelado, datos.Iniciado == true, datos.ConductorUid, datos.Pasajeros.ContainsKey(usuario.Uid),
                                 viaje.Salida, datos.AsientosDisponibles, usuario.Uid);
             }
             catch (ViajeException)
@@ -316,6 +334,8 @@ public class ServicioViajes
 
             datos.AsientosDisponibles--;
             datos.Pasajeros[usuario.Uid] = usuario.Nombre;
+            datos.PinHash ??= new Dictionary<string, string>();
+            datos.PinHash[usuario.Uid] = HashDelPin(viaje.Id, usuario.Uid, pin);   // HU15, en el mismo guardado
 
             if (await _remoto.ReemplazarSiNoCambioAsync(viaje.Id, datos, etag))
             {
@@ -346,13 +366,15 @@ public class ServicioViajes
 
         if (viaje.ConductorUid != usuario.Uid) throw new NoEsConductorException();
         if (viaje.Cancelado) throw new ViajeCanceladoException();
-        if (DateTime.Now >= viaje.Salida) throw new ViajeVencidoException();
+        if (DateTime.Now >= viaje.Salida || viaje.Iniciado) throw new ViajeVencidoException();   // HU15: ya arrancó
 
         for (int intento = 1; intento <= ReintentosPorConflicto; intento++)
         {
             var (datos, etag) = await _remoto.ObtenerConEtagAsync(viaje.Id);
             if (datos is null || datos.Cancelado)
                 throw new ViajeCanceladoException();
+            if (datos.Iniciado == true)
+                throw new ViajeVencidoException();
 
             datos.Cancelado = true;
 
@@ -382,7 +404,7 @@ public class ServicioViajes
         var usuario = UsuarioRequerido;
 
         // Validación temprana con lo que ya sabemos
-        ValidarSalirse(viaje.Cancelado, viaje.PasajerosPorUid.ContainsKey(usuario.Uid), viaje.Salida);
+        ValidarSalirse(viaje.Cancelado, viaje.Iniciado, viaje.PasajerosPorUid.ContainsKey(usuario.Uid), viaje.Salida);
 
         for (int intento = 1; intento <= ReintentosPorConflicto; intento++)
         {
@@ -394,7 +416,7 @@ public class ServicioViajes
             try
             {
                 // Se vuelve a validar con los datos frescos: el conductor pudo cancelar recién
-                ValidarSalirse(datos.Cancelado, datos.Pasajeros.ContainsKey(usuario.Uid), viaje.Salida);
+                ValidarSalirse(datos.Cancelado, datos.Iniciado == true, datos.Pasajeros.ContainsKey(usuario.Uid), viaje.Salida);
             }
             catch (ViajeException)
             {
@@ -407,6 +429,11 @@ public class ServicioViajes
             if (datos.Pasajeros.Count == 0)
                 datos.Pasajeros = null;   // así no se guarda un "pasajeros" vacío en Firebase
 
+            // HU15: también se va el hash de su PIN
+            datos.PinHash?.Remove(usuario.Uid);
+            if (datos.PinHash?.Count == 0)
+                datos.PinHash = null;
+
             if (await _remoto.ReemplazarSiNoCambioAsync(viaje.Id, datos, etag))
             {
                 int pasajerosAntes = viaje.PasajerosPorUid.Count;
@@ -414,6 +441,7 @@ public class ServicioViajes
                 if (viaje.PasajerosPorUid.Count < pasajerosAntes)
                     Eventos.Disparar(ViajeEvento.ASIENTO_LIBERADO, viaje);
                 GuardarCache();
+                await BorrarPinSinFallarAsync(usuario.Uid, viaje.Id);
                 return;
             }
             // Otra persona modificó el viaje entre que lo leímos y lo guardamos: se reintenta
@@ -463,6 +491,176 @@ public class ServicioViajes
         {
             RegistroErrores.RegistrarError(ex, "Borrar caché de viajes");
         }
+    }
+
+    // ───────────────────────── HU15: check-in y ciclo de vida ─────────────────────────
+
+    /// <summary>
+    /// HU15: el conductor marca que arrancó (desde 15 minutos antes de la salida).
+    /// Desde ese momento el viaje está "En curso" aunque no haya llegado la hora:
+    /// ya no se anota, no se baja nadie y no se puede cancelar.
+    /// </summary>
+    /// <exception cref="ArgumentNullException">No se indicó el viaje.</exception>
+    /// <exception cref="InicioAnticipadoException">Faltan más de 15 minutos para salir.</exception>
+    /// <exception cref="ViajeException">No es el conductor, o el viaje está cancelado, terminado o ya iniciado.</exception>
+    /// <exception cref="SinConexionException">No hay internet.</exception>
+    public async Task IniciarViajeAsync(Viaje viaje)
+    {
+        ArgumentNullException.ThrowIfNull(viaje);
+        ValidarConductor(viaje);
+
+        if (viaje.Cancelado) throw new ViajeCanceladoException();
+        if (viaje.Terminado) throw new ViajeException("Este viaje ya terminó.");
+        if (viaje.Iniciado) throw new ViajeException("El viaje ya está en curso.");
+        if (DateTime.Now < viaje.InicioPermitido) throw new InicioAnticipadoException(viaje.InicioPermitido);
+
+        await ModificarComoConductorAsync(viaje, datos =>
+        {
+            if (datos.Cancelado) throw new ViajeCanceladoException();
+            datos.Iniciado = true;
+        });
+        Eventos.Disparar(ViajeEvento.VIAJE_INICIADO, viaje);
+    }
+
+    /// <summary>HU15: el conductor marca que llegaron. El viaje pasa al historial.</summary>
+    /// <exception cref="ArgumentNullException">No se indicó el viaje.</exception>
+    /// <exception cref="ViajeNoIniciadoException">Todavía no tocó "Iniciar viaje".</exception>
+    /// <exception cref="ViajeException">No es el conductor, o el viaje ya terminó.</exception>
+    /// <exception cref="SinConexionException">No hay internet.</exception>
+    public async Task FinalizarViajeAsync(Viaje viaje)
+    {
+        ArgumentNullException.ThrowIfNull(viaje);
+        ValidarConductor(viaje);
+
+        if (viaje.Terminado) throw new ViajeException("Este viaje ya terminó.");
+        if (!viaje.Iniciado) throw new ViajeNoIniciadoException();
+
+        await ModificarComoConductorAsync(viaje, datos => datos.Finalizado = true);
+        Eventos.Disparar(ViajeEvento.VIAJE_FINALIZADO, viaje);
+    }
+
+    /// <summary>
+    /// HU15: check-in. El pasajero le dice su PIN al conductor, que lo escribe: la app busca
+    /// a qué pasajero corresponde comparando hashes, lo marca a bordo y dispara PASAJERO_A_BORDO.
+    /// </summary>
+    /// <returns>El nombre del pasajero que subió.</returns>
+    /// <exception cref="ArgumentNullException">No se indicó el viaje.</exception>
+    /// <exception cref="PinInvalidoException">No son 4 números, o no es el PIN de ningún pasajero que falte subir.</exception>
+    /// <exception cref="ViajeNoIniciadoException">Todavía no tocó "Iniciar viaje".</exception>
+    /// <exception cref="ViajeException">No es el conductor, o el viaje ya terminó.</exception>
+    /// <exception cref="SinConexionException">No hay internet.</exception>
+    public async Task<string> ConfirmarPinAsync(Viaje viaje, string? pin)
+    {
+        ArgumentNullException.ThrowIfNull(viaje);
+        ValidarConductor(viaje);
+
+        if (viaje.Terminado) throw new ViajeException("Este viaje ya terminó.");
+        if (!viaje.Iniciado) throw new ViajeNoIniciadoException();
+
+        string limpio = pin?.Trim() ?? "";
+        if (!EsPinValido(limpio))
+            throw new PinInvalidoException("El PIN tiene que ser de 4 números.");
+
+        string? uid = null;
+        await ModificarComoConductorAsync(viaje, datos =>
+        {
+            // Se busca con los datos frescos: el pasajero pudo bajarse recién
+            uid = PasajeroDelPin(viaje.Id, datos, limpio) ?? throw new PinInvalidoException();
+            datos.ABordo ??= new Dictionary<string, bool>();
+            datos.ABordo[uid] = true;
+        });
+
+        Eventos.Disparar(ViajeEvento.PASAJERO_A_BORDO, viaje);
+        return viaje.PasajerosPorUid.GetValueOrDefault(uid!, "El pasajero");
+    }
+
+    /// <summary>HU15: el PIN del usuario actual para ese viaje. Lo lee de /pines, que solo puede leer él.</summary>
+    /// <exception cref="ArgumentNullException">No se indicó el viaje.</exception>
+    /// <exception cref="NoAnotadoException">No está anotado en ese viaje.</exception>
+    /// <exception cref="PinInvalidoException">Se anotó antes de que existiera el PIN.</exception>
+    /// <exception cref="SinConexionException">No hay internet.</exception>
+    public async Task<string> ObtenerMiPinAsync(Viaje viaje)
+    {
+        ArgumentNullException.ThrowIfNull(viaje);
+        var usuario = UsuarioRequerido;
+
+        if (!viaje.PasajerosPorUid.ContainsKey(usuario.Uid))
+            throw new NoAnotadoException();
+
+        return await _remoto.ObtenerPinAsync(usuario.Uid, viaje.Id)
+            ?? throw new PinInvalidoException("No tenés PIN para este viaje porque te anotaste antes de que existiera. Salite y volvé a anotarte.");
+    }
+
+    /// <summary>PIN de 4 números al azar. RandomNumberGenerator, a diferencia de Random, no se puede predecir.</summary>
+    internal static string GenerarPin() =>
+        RandomNumberGenerator.GetInt32(0, 10_000).ToString("D4", CultureInfo.InvariantCulture);
+
+    internal static bool EsPinValido(string pin) => pin.Length == 4 && pin.All(char.IsAsciiDigit);
+
+    /// <summary>
+    /// Hash SHA-256 del PIN. Se mezcla con el viaje y el pasajero, así el mismo PIN
+    /// da un hash distinto en cada viaje y el conductor no lo puede leer del viaje.
+    /// </summary>
+    internal static string HashDelPin(string viajeId, string uid, string pin) =>
+        Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes($"{viajeId}:{uid}:{pin}")));
+
+    /// <summary>El uid del pasajero que todavía no subió y tiene ese PIN, o null si no hay ninguno.</summary>
+    private static string? PasajeroDelPin(string viajeId, ViajeDatos datos, string pin) =>
+        datos.Pasajeros?.Keys.FirstOrDefault(uid =>
+            datos.ABordo?.GetValueOrDefault(uid) != true
+            && datos.PinHash?.GetValueOrDefault(uid) == HashDelPin(viajeId, uid, pin));
+
+    /// <summary>Al salirse, el PIN ya no sirve. Si falla el borrado no pasa nada: el hash ya no está en el viaje.</summary>
+    private async Task BorrarPinSinFallarAsync(string uid, string viajeId)
+    {
+        try
+        {
+            await _remoto.BorrarPinAsync(uid, viajeId);
+        }
+        catch (Exception ex) when (ex is SinConexionException or PermisoDenegadoException or ServidorException)
+        {
+            RegistroErrores.RegistrarAviso(ex, "Borrar PIN al salirse");
+        }
+    }
+
+    private static void ValidarConductor(Viaje viaje)
+    {
+        if (viaje.ConductorUid != UsuarioRequerido.Uid)
+            throw new NoEsConductorException("Solo el conductor puede hacer esto.");
+    }
+
+    /// <summary>
+    /// HU15: el conductor cambia su viaje con el mismo patrón ETag que anotarse o cancelar:
+    /// lee, aplica el cambio y guarda solo si nadie lo modificó en el medio.
+    /// </summary>
+    private async Task ModificarComoConductorAsync(Viaje viaje, Action<ViajeDatos> cambiar)
+    {
+        for (int intento = 1; intento <= ReintentosPorConflicto; intento++)
+        {
+            var (datos, etag) = await _remoto.ObtenerConEtagAsync(viaje.Id);
+            if (datos is null)
+                throw new ViajeCanceladoException();
+
+            try
+            {
+                cambiar(datos);
+            }
+            catch (ViajeException)
+            {
+                viaje.ActualizarDesde(datos);   // la pantalla muestra el estado real
+                throw;
+            }
+
+            if (await _remoto.ReemplazarSiNoCambioAsync(viaje.Id, datos, etag))
+            {
+                viaje.ActualizarDesde(datos);
+                GuardarCache();
+                return;
+            }
+            // Un pasajero se bajó o se anotó entre que lo leímos y lo guardamos: se reintenta
+        }
+
+        throw new ConflictoException();
     }
 
     /// <summary>
@@ -526,10 +724,11 @@ public class ServicioViajes
 
     // ───────────────────────── Auxiliares ─────────────────────────
 
-    private static void ValidarAnotarse(bool cancelado, string conductorUid, bool yaAnotado,
+    private static void ValidarAnotarse(bool cancelado, bool iniciado, string conductorUid, bool yaAnotado,
                                         DateTime salida, int asientos, string uid)
     {
         if (cancelado) throw new ViajeCanceladoException();
+        if (iniciado) throw new ViajeVencidoException();   // HU15: el conductor ya arrancó
         if (conductorUid == uid) throw new AutoReservaException();
         if (yaAnotado) throw new YaAnotadoException();
         if (DateTime.Now >= salida) throw new ViajeVencidoException();
@@ -537,11 +736,11 @@ public class ServicioViajes
         if (asientos <= 0) throw new ViajeCompletoException();
     }
 
-    private static void ValidarSalirse(bool cancelado, bool anotado, DateTime salida)
+    private static void ValidarSalirse(bool cancelado, bool iniciado, bool anotado, DateTime salida)
     {
         if (cancelado) throw new ViajeCanceladoException();
         if (!anotado) throw new NoAnotadoException();
-        if (DateTime.Now >= salida) throw new ViajeVencidoException();
+        if (DateTime.Now >= salida || iniciado) throw new ViajeVencidoException();   // HU15: o ya arrancó
     }
 
     private void CambiarConexion(bool hayConexion)

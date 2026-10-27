@@ -15,6 +15,11 @@
         <VerticalStackLayout Grid.Row="0" Spacing="2">
             <Label x:Name="lblSaludo" FontSize="18" FontAttributes="Bold" />
             <Label Text="Viajes en los que participás. Los que ya terminaron se ocultan solos." FontSize="14" />
+            <!-- HU15: historial con los viajes que ya terminaron -->
+            <HorizontalStackLayout Spacing="8" Margin="0,4,0,0">
+                <Switch x:Name="swAnteriores" Toggled="OnVerAnterioresToggled" VerticalOptions="Center" />
+                <Label Text="Ver viajes anteriores" FontSize="14" VerticalOptions="Center" />
+            </HorizontalStackLayout>
         </VerticalStackLayout>
 
         <!-- HU8: viajes del usuario como conductor y como pasajero -->
@@ -65,6 +70,10 @@
                                         </DataTrigger>
                                     </Label.Triggers>
                                 </Label>
+                                <!-- HU15: cuántos pasajeros ya subieron (el conductor, con el viaje iniciado) -->
+                                <Label Text="{Binding ABordoTexto}" FontSize="13" IsVisible="{Binding MostrarABordo}" />
+                                <!-- HU15: el conductor ya confirmó mi PIN -->
+                                <Label Text="✓ Estás a bordo" FontSize="13" FontAttributes="Bold" IsVisible="{Binding EstoyABordo}" />
                             </VerticalStackLayout>
                             <VerticalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="Center">
                                 <!-- Rol del usuario en este viaje -->
@@ -86,6 +95,20 @@
                                 <Button Text="Cancelar viaje"
                                         IsVisible="{Binding PuedeCancelar}"
                                         Clicked="OnCancelarViajeClicked" />
+                                <!-- HU15: ciclo de vida del viaje (solo el conductor) -->
+                                <Button Text="Iniciar viaje"
+                                        IsVisible="{Binding PuedeIniciar}"
+                                        Clicked="OnIniciarViajeClicked" />
+                                <Button Text="Confirmar PIN"
+                                        IsVisible="{Binding PuedeConfirmarPin}"
+                                        Clicked="OnConfirmarPinClicked" />
+                                <Button Text="Finalizar viaje"
+                                        IsVisible="{Binding PuedeFinalizar}"
+                                        Clicked="OnFinalizarViajeClicked" />
+                                <!-- HU15: el pasajero muestra su PIN al subir -->
+                                <Button Text="Mi PIN"
+                                        IsVisible="{Binding PuedeVerPin}"
+                                        Clicked="OnMiPinClicked" />
                                 <!-- HU24: el pasajero carga o cambia dónde lo pasan a buscar -->
                                 <Button Text="Mi punto de encuentro"
                                         IsVisible="{Binding PuedeSalirse}"

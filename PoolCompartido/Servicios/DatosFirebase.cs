@@ -25,6 +25,14 @@ internal class ViajeDatos
     public string? PuntoPartida { get; set; }
     /// <summary>HU14: costo total del viaje en pesos, o null si es sin costo (así no se guarda en Firebase).</summary>
     public decimal? CostoTotal { get; set; }
+    /// <summary>HU15: el conductor inició el viaje. Solo se guarda si es true (null = no), así los viajes viejos no cambian.</summary>
+    public bool? Iniciado { get; set; }
+    /// <summary>HU15: el conductor finalizó el viaje. Solo se guarda si es true (null = no).</summary>
+    public bool? Finalizado { get; set; }
+    /// <summary>HU15: uid → true de los pasajeros que ya subieron (check-in con PIN). Solo lo escribe el conductor.</summary>
+    public Dictionary<string, bool>? ABordo { get; set; }
+    /// <summary>HU15: uid → hash SHA-256 del PIN de cada pasajero. El PIN en sí está en /pines/{uid}, que solo lee él.</summary>
+    public Dictionary<string, string>? PinHash { get; set; }
 }
 
 /// <summary>HU24: punto de encuentro privado de un pasajero (/encuentros/{viajeId}/{uid}).</summary>
@@ -136,6 +144,7 @@ internal class DetalleErrorAuth
 [JsonSerializable(typeof(ViajeDatos))]
 [JsonSerializable(typeof(Dictionary<string, ViajeDatos>))]
 [JsonSerializable(typeof(RespuestaCreacion))]
+[JsonSerializable(typeof(string))]   // HU15: el PIN en /pines
 [JsonSerializable(typeof(PuntoEncuentroDatos))]
 [JsonSerializable(typeof(Dictionary<string, PuntoEncuentroDatos>))]
 [JsonSerializable(typeof(SesionGuardada))]
@@ -198,6 +207,10 @@ internal static class ConversorViajes
             ? new Dictionary<string, string>(viaje.PasajerosPorUid)
             : null,
         PuntoPartida = viaje.TienePuntoPartida ? viaje.PuntoPartida : null,
-        CostoTotal = viaje.CostoTotal
+        CostoTotal = viaje.CostoTotal,
+        Iniciado = viaje.Iniciado ? true : null,
+        Finalizado = viaje.Finalizado ? true : null,
+        ABordo = viaje.ABordo.Count > 0 ? viaje.ABordo.ToDictionary(uid => uid, _ => true) : null,
+        PinHash = viaje.PinHashPorUid.Count > 0 ? new Dictionary<string, string>(viaje.PinHashPorUid) : null
     };
 }

@@ -43,6 +43,26 @@ public class Viaje : INotifyPropertyChanged
     public bool TienePuntoPartida => !string.IsNullOrWhiteSpace(PuntoPartida);
     public string PuntoPartidaTexto => $"Sale desde: {PuntoPartida}";
 
+    // ───── HU15: check-in y ciclo de vida ─────
+
+    /// <summary>HU15: el conductor tocó "Iniciar viaje".</summary>
+    public bool Iniciado { get; private set; }
+
+    /// <summary>HU15: el conductor tocó "Finalizar viaje".</summary>
+    public bool Finalizado { get; private set; }
+
+    // HU15: uid de los pasajeros que ya subieron (confirmados con su PIN)
+    private readonly HashSet<string> _aBordo = new();
+    public IReadOnlyCollection<string> ABordo => _aBordo;
+
+    // HU15: uid → hash del PIN de cada pasajero (el PIN en sí solo lo ve el pasajero)
+    private readonly Dictionary<string, string> _pinHash = new();
+    internal IReadOnlyDictionary<string, string> PinHashPorUid => _pinHash;
+
+    /// <summary>HU15: nombre y uid del último pasajero que subió (para el aviso de PASAJERO_A_BORDO).</summary>
+    public string? UltimoPasajeroABordo { get; private set; }
+    public string? UltimoPasajeroABordoUid { get; private set; }
+
     // Pasajeros anotados: uid → nombre
     private readonly Dictionary<string, string> _pasajeros = new();
     public IReadOnlyDictionary<string, string> PasajerosPorUid => _pasajeros;
@@ -104,9 +124,11 @@ public class Viaje : INotifyPropertyChanged
     /// <summary>Estado del viaje en un momento dado (separado de DateTime.Now para poder probarlo).</summary>
     public EstadoViaje EstadoEn(DateTime ahora)
     {
+        // HU15: lo que marcó el conductor manda sobre la hora. Si nunca toca los botones, sigue todo por la hora
+        if (Finalizado) return EstadoViaje.Finalizado;
         if (ahora >= Salida + DuracionEnCurso) return EstadoViaje.Finalizado;
         if (Cancelado) return EstadoViaje.Cancelado;
-        if (ahora >= Salida) return EstadoViaje.EnCurso;
+        if (Iniciado || ahora >= Salida) return EstadoViaje.EnCurso;
         if (ahora >= Salida - CierreAnotaciones) return EstadoViaje.PorSalir;
         return EstadoViaje.Abierto;
     }
@@ -133,6 +155,7 @@ public class Viaje : INotifyPropertyChanged
 
     // Último estado avisado a la pantalla (para no redibujar si no cambió nada)
     private EstadoViaje? _estadoAvisado;
+    private bool? _puedeIniciarAvisado;
 
     /// <summary>
     /// Se llama con el timer: si el viaje cambió de estado porque pasó el tiempo
@@ -140,6 +163,13 @@ public class Viaje : INotifyPropertyChanged
     /// </summary>
     internal bool RefrescarEstado()
     {
+        // HU15: "Iniciar viaje" aparece 15 minutos antes de salir, aunque el estado todavía no cambie
+        if (_puedeIniciarAvisado != PuedeIniciar)
+        {
+            _puedeIniciarAvisado = PuedeIniciar;
+            OnPropertyChanged(nameof(PuedeIniciar));
+        }
+
         if (_estadoAvisado == Estado) return false;
 
         AvisarCambioDeEstado();
@@ -159,6 +189,21 @@ public class Viaje : INotifyPropertyChanged
         OnPropertyChanged(nameof(PuedeCancelar));
         OnPropertyChanged(nameof(PuedeSalirse));
         OnPropertyChanged(nameof(PuedeVerPuntosDeEncuentro));
+        AvisarCambioDeCheckIn();
+    }
+
+    /// <summary>HU15: botones y textos del check-in que dependen del estado o de quién subió.</summary>
+    private void AvisarCambioDeCheckIn()
+    {
+        _puedeIniciarAvisado = PuedeIniciar;
+        OnPropertyChanged(nameof(PuedeIniciar));
+        OnPropertyChanged(nameof(PuedeFinalizar));
+        OnPropertyChanged(nameof(PuedeConfirmarPin));
+        OnPropertyChanged(nameof(PuedeVerPin));
+        OnPropertyChanged(nameof(EstoyABordo));
+        OnPropertyChanged(nameof(MostrarABordo));
+        OnPropertyChanged(nameof(ABordoTexto));
+        OnPropertyChanged(nameof(FaltanSubir));
     }
 
     // Relación del viaje con el usuario que inició sesión
@@ -179,6 +224,38 @@ public class Viaje : INotifyPropertyChanged
     public bool PuedeVerPuntosDeEncuentro =>
         EsDelUsuarioActual && _pasajeros.Count > 0
         && Estado is EstadoViaje.Abierto or EstadoViaje.PorSalir or EstadoViaje.EnCurso;
+
+    // ───── HU15: qué puede hacer cada uno ─────
+
+    /// <summary>HU15: el conductor puede iniciar el viaje desde 15 minutos antes de la salida.</summary>
+    public static readonly TimeSpan AnticipacionInicio = TimeSpan.FromMinutes(15);
+    public DateTime InicioPermitido => Salida - AnticipacionInicio;
+
+    /// <summary>HU15: "Iniciar viaje" (conductor, desde 15 minutos antes, si no está cancelado ni terminado).</summary>
+    public bool PuedeIniciar =>
+        EsDelUsuarioActual && !Iniciado && DateTime.Now >= InicioPermitido
+        && (Estado is EstadoViaje.Abierto or EstadoViaje.PorSalir or EstadoViaje.EnCurso);
+
+    /// <summary>HU15: "Finalizar viaje" (conductor, después de iniciarlo).</summary>
+    public bool PuedeFinalizar => EsDelUsuarioActual && Iniciado && Estado == EstadoViaje.EnCurso;
+
+    /// <summary>HU15: pasajeros que todavía no confirmaron su PIN.</summary>
+    public int FaltanSubir => _pasajeros.Keys.Count(uid => !_aBordo.Contains(uid));
+
+    /// <summary>HU15: "Confirmar PIN" (conductor, con el viaje iniciado y alguien que falte subir).</summary>
+    public bool PuedeConfirmarPin => PuedeFinalizar && FaltanSubir > 0;
+
+    /// <summary>HU15: el conductor ve cuántos subieron desde que inicia el viaje.</summary>
+    public bool MostrarABordo => EsDelUsuarioActual && Iniciado && _pasajeros.Count > 0;
+    public string ABordoTexto => $"A bordo: {_pasajeros.Count - FaltanSubir} de {_pasajeros.Count}";
+
+    /// <summary>HU15: soy pasajero y el conductor ya confirmó mi PIN.</summary>
+    public bool EstoyABordo => ServicioAutenticacion.UidActual is string uid && _aBordo.Contains(uid);
+
+    /// <summary>HU15: el pasajero ve su PIN hasta que sube, mientras el viaje no terminó ni se canceló.</summary>
+    public bool PuedeVerPin =>
+        EstoyAnotado && !EstoyABordo
+        && (Estado is EstadoViaje.Abierto or EstadoViaje.PorSalir or EstadoViaje.EnCurso);
 
     // Textos listos para mostrar en la lista
     public string Ruta => $"{Origen} → {Destino}";
@@ -262,10 +339,48 @@ public class Viaje : INotifyPropertyChanged
             OnPropertyChanged(nameof(PuedeVerPuntosDeEncuentro));
             OnPropertyChanged(nameof(CostoPorPasajero));   // HU14: cambió entre cuántos se divide
             OnPropertyChanged(nameof(CostoTexto));
+            AvisarCambioDeCheckIn();                       // HU15: cambia cuántos faltan subir
         }
 
         AsientosDisponibles = datos.AsientosDisponibles;
         Cancelado = datos.Cancelado;
+        ActualizarCheckInDesde(datos);
+    }
+
+    /// <summary>HU15: hashes de los PIN, quién subió y si el conductor inició o finalizó.</summary>
+    private void ActualizarCheckInDesde(ViajeDatos datos)
+    {
+        _pinHash.Clear();
+        foreach (var (uid, hash) in datos.PinHash ?? new Dictionary<string, string>())
+            _pinHash[uid] = hash;
+
+        var aBordo = (datos.ABordo ?? new Dictionary<string, bool>())
+            .Where(p => p.Value)
+            .Select(p => p.Key)
+            .ToHashSet();
+        bool cambioABordo = !aBordo.SetEquals(_aBordo);
+        if (cambioABordo)
+        {
+            string? subio = aBordo.FirstOrDefault(uid => !_aBordo.Contains(uid));
+            if (subio != null)
+            {
+                UltimoPasajeroABordoUid = subio;
+                UltimoPasajeroABordo = _pasajeros.GetValueOrDefault(subio, "Un pasajero");
+            }
+            _aBordo.Clear();
+            _aBordo.UnionWith(aBordo);
+        }
+
+        bool iniciado = datos.Iniciado == true;
+        bool finalizado = datos.Finalizado == true;
+        bool cambioEstado = iniciado != Iniciado || finalizado != Finalizado;
+        Iniciado = iniciado;
+        Finalizado = finalizado;
+
+        if (cambioEstado)
+            AvisarCambioDeEstado();   // también avisa lo del check-in
+        else if (cambioABordo)
+            AvisarCambioDeCheckIn();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

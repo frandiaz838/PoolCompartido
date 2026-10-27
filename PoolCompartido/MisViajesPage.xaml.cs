@@ -19,6 +19,8 @@ public partial class MisViajesPage : ContentPage
         _servicio.Eventos.Registrar(ViajeEvento.ASIENTO_RESERVADO, _ => Redibujar());
         _servicio.Eventos.Registrar(ViajeEvento.ASIENTO_LIBERADO, _ => Redibujar());
         _servicio.Eventos.Registrar(ViajeEvento.VIAJE_CANCELADO, _ => Redibujar());
+        _servicio.Eventos.Registrar(ViajeEvento.VIAJE_INICIADO, _ => Redibujar());     // HU15: pasa arriba
+        _servicio.Eventos.Registrar(ViajeEvento.VIAJE_FINALIZADO, _ => Redibujar());   // HU15: va al historial
 
         // Pasó el tiempo: un viaje salió (pasa arriba, "En curso") o terminó (se oculta)
         _servicio.EstadosCambiados += (sender, e) => Redibujar();
@@ -172,15 +174,109 @@ public partial class MisViajesPage : ContentPage
         }
     }
 
+    // ───── HU15: check-in y ciclo de vida ─────
+
+    private async void OnIniciarViajeClicked(object? sender, EventArgs e)
+    {
+        if (sender is not Button { BindingContext: Viaje viaje } boton) return;
+
+        await EjecutarAsync(boton, "Iniciar viaje", "No se pudo iniciar", () => _servicio.IniciarViajeAsync(viaje));
+    }
+
+    private async void OnFinalizarViajeClicked(object? sender, EventArgs e)
+    {
+        if (sender is not Button { BindingContext: Viaje viaje } boton) return;
+
+        string faltan = viaje.FaltanSubir == 0
+            ? ""
+            : $" Todavía no confirmaste el PIN de {viaje.FaltanSubir} pasajero(s).";
+        bool confirmar = await DisplayAlertAsync("Finalizar viaje",
+            $"¿Llegaron a {viaje.Destino}?{faltan} El viaje va a pasar al historial.",
+            "Sí, finalizar", "No");
+        if (!confirmar) return;
+
+        await EjecutarAsync(boton, "Finalizar viaje", "No se pudo finalizar", () => _servicio.FinalizarViajeAsync(viaje));
+    }
+
+    /// <summary>HU15: el conductor escribe el PIN que le dice el pasajero que sube.</summary>
+    private async void OnConfirmarPinClicked(object? sender, EventArgs e)
+    {
+        if (sender is not Button { BindingContext: Viaje viaje } boton) return;
+
+        string? pin = await DisplayPromptAsync("Confirmar PIN",
+            "Pedile el PIN al pasajero que sube y escribilo acá.",
+            accept: "Confirmar", cancel: "Cancelar",
+            placeholder: "4 números", maxLength: 4, keyboard: Keyboard.Numeric);
+        if (pin is null) return;   // tocó Cancelar
+
+        await EjecutarAsync(boton, "Confirmar PIN", "No se pudo confirmar", async () =>
+        {
+            string nombre = await _servicio.ConfirmarPinAsync(viaje, pin);
+            await DisplayAlertAsync("A bordo", $"✓ {nombre} subió al viaje.", "OK");
+        });
+    }
+
+    /// <summary>HU15: el pasajero ve su PIN para decírselo al conductor cuando sube.</summary>
+    private async void OnMiPinClicked(object? sender, EventArgs e)
+    {
+        if (sender is not Button { BindingContext: Viaje viaje } boton) return;
+
+        await EjecutarAsync(boton, "Ver mi PIN", "No se pudo mostrar el PIN", async () =>
+        {
+            string pin = await _servicio.ObtenerMiPinAsync(viaje);
+            await DisplayAlertAsync("Tu PIN", $"{pin}\n\nCuando subas al auto de {viaje.Conductor}, decíselo para confirmar que estás a bordo.", "OK");
+        });
+    }
+
+    /// <summary>
+    /// HU15: corre una acción del check-in con el manejo de errores de siempre
+    /// (de la excepción más específica a la más general) y el botón deshabilitado mientras espera.
+    /// </summary>
+    private async Task EjecutarAsync(Button boton, string donde, string tituloError, Func<Task> accion)
+    {
+        boton.IsEnabled = false;   // evita que se toque dos veces mientras espera al servidor
+        try
+        {
+            await accion();
+        }
+        catch (PinInvalidoException ex)
+        {
+            RegistroErrores.RegistrarAviso(ex, donde);
+            await DisplayAlertAsync("PIN incorrecto", ex.Message, "OK");
+        }
+        catch (ViajeException ex)
+        {
+            RegistroErrores.RegistrarAviso(ex, donde);
+            await DisplayAlertAsync(tituloError, ex.Message, "OK");
+        }
+        catch (SesionVencidaException ex)
+        {
+            // La app ya volvió a la pantalla de inicio de sesión
+            RegistroErrores.RegistrarAviso(ex, donde);
+        }
+        catch (Exception ex) when (ex is SinConexionException or PermisoDenegadoException or ServidorException)
+        {
+            RegistroErrores.RegistrarError(ex, donde);
+            await DisplayAlertAsync(tituloError, ex.Message, "OK");
+        }
+        finally
+        {
+            boton.IsEnabled = true;
+        }
+    }
+
+    /// <summary>HU15: mostrar u ocultar los viajes que ya terminaron.</summary>
+    private void OnVerAnterioresToggled(object? sender, ToggledEventArgs e) => Redibujar();
+
     /// <summary>
     /// Equivalente al evento Paint: vuelve a armar la lista.
-    /// Los terminados no se muestran y el viaje en curso va primero.
+    /// El viaje en curso va primero. Los terminados solo se ven con "Ver viajes anteriores" (HU15), al final.
     /// </summary>
     private void Redibujar()
     {
         var visibles = _servicio.MisViajes()
-            .Where(v => !v.Terminado)
-            .OrderBy(v => v.Estado == EstadoViaje.EnCurso ? 0 : 1)
+            .Where(v => swAnteriores.IsToggled || !v.Terminado)
+            .OrderBy(v => v.Estado == EstadoViaje.EnCurso ? 0 : v.Terminado ? 2 : 1)
             .ThenBy(v => v.Salida);
 
         _misViajes.Clear();

@@ -23,7 +23,8 @@ public partial class MainPage : ContentPage
         {
             ViajeEvento.VIAJE_PUBLICADO, ViajeEvento.ASIENTO_RESERVADO, ViajeEvento.ASIENTO_LIBERADO,
             ViajeEvento.VIAJE_CANCELADO, ViajeEvento.REEMPLAZO_ENCONTRADO, ViajeEvento.SIN_REEMPLAZO,
-            ViajeEvento.COSTO_RECALCULADO
+            ViajeEvento.COSTO_RECALCULADO, ViajeEvento.VIAJE_INICIADO, ViajeEvento.PASAJERO_A_BORDO,
+            ViajeEvento.VIAJE_FINALIZADO
         };
         foreach (var evento in eventos)
             _servicio.Eventos.Registrar(evento, viaje => AlOcurrirEvento(evento, viaje));
@@ -49,7 +50,9 @@ public partial class MainPage : ContentPage
     /// </summary>
     private void AlOcurrirEvento(ViajeEvento evento, Viaje viaje)
     {
-        if (evento is ViajeEvento.VIAJE_PUBLICADO or ViajeEvento.VIAJE_CANCELADO or ViajeEvento.ASIENTO_LIBERADO)
+        // HU15: un viaje iniciado o finalizado ya no acepta pasajeros, así que sale de la lista
+        if (evento is ViajeEvento.VIAJE_PUBLICADO or ViajeEvento.VIAJE_CANCELADO or ViajeEvento.ASIENTO_LIBERADO
+                   or ViajeEvento.VIAJE_INICIADO or ViajeEvento.VIAJE_FINALIZADO)
             Redibujar();
 
         string? mensaje = ConversorMensajes.Convertir(evento, viaje);
