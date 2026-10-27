@@ -12,4 +12,10 @@ public static class Configuracion
     // Datos del proyecto de Firebase. Están en ClavesFirebase.cs, que NO se sube a GitHub.
     public static string FirebaseApiKey { get; set; } = ClavesFirebase.ApiKey;
     public static string FirebaseUrlBase { get; set; } = ClavesFirebase.UrlBase;
+
+    /// <summary>
+    /// HU16: cuánto espera el conductor, desde que inicia el viaje, a que cada pasajero haga check-in.
+    /// Pasado ese tiempo, se lo saca del viaje y se libera su lugar. Para la demo: TimeSpan.FromMinutes(1).
+    /// </summary>
+    public static TimeSpan EsperaNoShow { get; set; } = TimeSpan.FromMinutes(10);
 }

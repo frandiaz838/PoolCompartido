@@ -44,6 +44,7 @@ public class ServicioViajes
     {
         RegistrarBusquedaDeReemplazo();
         RegistrarRecalculoDeCosto();
+        RegistrarLiberacionPorNoShow();
     }
 
     /// <summary>
@@ -90,6 +91,16 @@ public class ServicioViajes
         // A quién le importa el aviso (conductor o pasajeros) lo decide ConversorMensajes
         if (viaje.TieneCosto)
             Eventos.Disparar(ViajeEvento.COSTO_RECALCULADO, viaje);
+    }
+
+    /// <summary>
+    /// HU16 + HU11: sacar a un pasajero que no subió libera su asiento. NO_SHOW_DETECTADO dispara
+    /// ASIENTO_LIBERADO encadenado, y este a su vez COSTO_RECALCULADO (HU14):
+    /// la cadena NO_SHOW_DETECTADO → ASIENTO_LIBERADO → COSTO_RECALCULADO.
+    /// </summary>
+    private void RegistrarLiberacionPorNoShow()
+    {
+        Eventos.Registrar(ViajeEvento.NO_SHOW_DETECTADO, viaje => Eventos.Disparar(ViajeEvento.ASIENTO_LIBERADO, viaje));
     }
 
     private static Usuario UsuarioRequerido =>
@@ -161,7 +172,9 @@ public class ServicioViajes
                 else if (local.PasajerosPorUid.Count > pasajerosAntes)
                     eventos.Add((ViajeEvento.ASIENTO_RESERVADO, local));
                 else if (local.PasajerosPorUid.Count < pasajerosAntes)
-                    eventos.Add((ViajeEvento.ASIENTO_LIBERADO, local));
+                    // HU16: de un viaje iniciado nadie se baja solo: lo sacó el conductor por no subir.
+                    // NO_SHOW_DETECTADO dispara ASIENTO_LIBERADO encadenado
+                    eventos.Add((estabaIniciado ? ViajeEvento.NO_SHOW_DETECTADO : ViajeEvento.ASIENTO_LIBERADO, local));
 
                 // HU15: lo que marcó el conductor en su dispositivo, en el orden en que pasa
                 if (!estabaIniciado && local.Iniciado)
@@ -178,6 +191,14 @@ public class ServicioViajes
                 Eventos.Disparar(evento, viaje);
 
             GuardarCache();
+
+            // HU16: si me sacaron por no subir, mi PIN de ese viaje ya no sirve
+            foreach (var (evento, viaje) in eventos)
+            {
+                if (evento == ViajeEvento.NO_SHOW_DETECTADO && ServicioAutenticacion.UidActual is string yo
+                    && viaje.UltimosNoShow.ContainsKey(yo))
+                    await BorrarPinSinFallarAsync(yo, viaje.Id);
+            }
         }
         catch (SinConexionException)
         {
@@ -196,6 +217,7 @@ public class ServicioViajes
         Eventos = new Despachador<ViajeEvento, Viaje>();
         RegistrarBusquedaDeReemplazo();   // la tabla nueva arranca vacía
         RegistrarRecalculoDeCosto();
+        RegistrarLiberacionPorNoShow();
         ConexionCambiada = null;
         EstadosCambiados = null;
         HayConexion = true;
@@ -661,6 +683,74 @@ public class ServicioViajes
         }
 
         throw new ConflictoException();
+    }
+
+    // ───────────────────────── HU16: no-show ─────────────────────────
+
+    private bool _revisandoNoShow;
+
+    /// <summary>
+    /// HU16: se llama con el timer. En los viajes que maneja el usuario actual, ya iniciados,
+    /// saca a los pasajeros que no hicieron check-in dentro de Configuracion.EsperaNoShow
+    /// y dispara NO_SHOW_DETECTADO (que encadena ASIENTO_LIBERADO y COSTO_RECALCULADO).
+    /// Solo lo hace la app del conductor, que es quien puede modificar el viaje.
+    /// </summary>
+    /// <exception cref="ViajeException">El viaje se canceló o hubo conflicto al guardar.</exception>
+    /// <exception cref="SinConexionException">No hay internet.</exception>
+    public async Task RevisarNoShowAsync()
+    {
+        // Sin internet no se puede guardar: se reintenta cuando vuelva
+        if (_revisandoNoShow || !HayConexion) return;
+        _revisandoNoShow = true;
+
+        try
+        {
+            DateTime ahora = DateTime.Now;
+            // ToList(): sacar pasajeros cambia los viajes mientras se recorren
+            foreach (var viaje in _viajes.Where(v => v.HayNoShowEn(ahora)).ToList())
+                await SacarNoShowAsync(viaje);
+        }
+        finally
+        {
+            _revisandoNoShow = false;
+        }
+    }
+
+    private async Task SacarNoShowAsync(Viaje viaje)
+    {
+        int pasajerosAntes = viaje.PasajerosPorUid.Count;
+
+        // Con los datos frescos: alguien pudo hacer check-in recién, o el conductor pudo finalizar
+        await ModificarComoConductorAsync(viaje, datos =>
+        {
+            if (datos.Iniciado == true && datos.Finalizado != true)
+                SacarPasajerosSinSubir(datos);
+        });
+
+        // ActualizarDesde ya anotó en el viaje a quiénes se sacó (UltimosNoShow)
+        if (viaje.PasajerosPorUid.Count < pasajerosAntes)
+            Eventos.Disparar(ViajeEvento.NO_SHOW_DETECTADO, viaje);
+    }
+
+    /// <summary>HU16: saca del viaje a los pasajeros sin check-in y les devuelve el asiento.</summary>
+    internal static void SacarPasajerosSinSubir(ViajeDatos datos)
+    {
+        var sinSubir = (datos.Pasajeros?.Keys ?? Enumerable.Empty<string>())
+            .Where(uid => datos.ABordo?.GetValueOrDefault(uid) != true)
+            .ToList();
+
+        foreach (var uid in sinSubir)
+        {
+            datos.Pasajeros!.Remove(uid);
+            datos.PinHash?.Remove(uid);
+            datos.ABordo?.Remove(uid);
+            datos.AsientosDisponibles++;
+        }
+
+        // Así no se guardan colecciones vacías en Firebase
+        if (datos.Pasajeros?.Count == 0) datos.Pasajeros = null;
+        if (datos.PinHash?.Count == 0) datos.PinHash = null;
+        if (datos.ABordo?.Count == 0) datos.ABordo = null;
     }
 
     /// <summary>

@@ -24,7 +24,7 @@ public partial class MainPage : ContentPage
             ViajeEvento.VIAJE_PUBLICADO, ViajeEvento.ASIENTO_RESERVADO, ViajeEvento.ASIENTO_LIBERADO,
             ViajeEvento.VIAJE_CANCELADO, ViajeEvento.REEMPLAZO_ENCONTRADO, ViajeEvento.SIN_REEMPLAZO,
             ViajeEvento.COSTO_RECALCULADO, ViajeEvento.VIAJE_INICIADO, ViajeEvento.PASAJERO_A_BORDO,
-            ViajeEvento.VIAJE_FINALIZADO, ViajeEvento.MENSAJE_RECIBIDO
+            ViajeEvento.VIAJE_FINALIZADO, ViajeEvento.MENSAJE_RECIBIDO, ViajeEvento.NO_SHOW_DETECTADO
         };
         foreach (var evento in eventos)
             _servicio.Eventos.Registrar(evento, viaje => AlOcurrirEvento(evento, viaje));
@@ -58,8 +58,11 @@ public partial class MainPage : ContentPage
         string? mensaje = ConversorMensajes.Convertir(evento, viaje);
 
         // HU14: el nuevo costo llega encadenado justo después de "X se anotó" o "X se bajó":
-        // se agrega abajo de ese aviso en lugar de taparlo
-        if (evento == ViajeEvento.COSTO_RECALCULADO && mensaje is not null && _viajeDelAviso == viaje)
+        // se agrega abajo de ese aviso en lugar de taparlo.
+        // HU16: lo mismo con el lugar liberado, que llega encadenado al no-show (viaje iniciado)
+        bool encadenado = evento == ViajeEvento.COSTO_RECALCULADO
+                          || (evento == ViajeEvento.ASIENTO_LIBERADO && viaje.Iniciado);
+        if (encadenado && mensaje is not null && _viajeDelAviso == viaje)
             lblAviso.Text += "\n" + mensaje;
         else if (mensaje is not null)
             MostrarAviso(mensaje);

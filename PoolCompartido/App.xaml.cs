@@ -74,6 +74,7 @@ namespace PoolCompartido
             _timerSincronizacion.Tick += async (sender, e) =>
             {
                 await SincronizarAsync();
+                await RevisarNoShowAsync();   // HU16: solo hace algo en los viajes que manejo yo
                 // Aunque no haya internet, el tiempo pasa: los viajes cierran, salen y terminan
                 ServicioViajes.Instancia.ActualizarEstados();
                 // HU25: mensajes nuevos en los chats de mis viajes
@@ -96,6 +97,32 @@ namespace PoolCompartido
             catch (Exception ex) when (ex is PermisoDenegadoException or ServidorException)
             {
                 RegistroErrores.RegistrarError(ex, "Sincronizar viajes");
+            }
+        }
+
+        /// <summary>HU16: saca a los pasajeros que no subieron a tiempo. Si falla, se reintenta en el próximo tick.</summary>
+        private static async Task RevisarNoShowAsync()
+        {
+            try
+            {
+                await ServicioViajes.Instancia.RevisarNoShowAsync();
+            }
+            catch (ViajeException ex)
+            {
+                // Por ejemplo, un conflicto porque justo alguien hizo check-in
+                RegistroErrores.RegistrarAviso(ex, "Revisar no-show");
+            }
+            catch (SesionVencidaException ex)
+            {
+                RegistroErrores.RegistrarAviso(ex, "Revisar no-show");
+            }
+            catch (SinConexionException ex)
+            {
+                RegistroErrores.RegistrarAviso(ex, "Revisar no-show");
+            }
+            catch (Exception ex) when (ex is PermisoDenegadoException or ServidorException)
+            {
+                RegistroErrores.RegistrarError(ex, "Revisar no-show");
             }
         }
     }

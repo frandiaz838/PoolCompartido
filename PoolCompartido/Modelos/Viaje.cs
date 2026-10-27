@@ -63,6 +63,31 @@ public class Viaje : INotifyPropertyChanged
     public string? UltimoPasajeroABordo { get; private set; }
     public string? UltimoPasajeroABordoUid { get; private set; }
 
+    // ───── HU16: no-show ─────
+
+    /// <summary>
+    /// HU16: cuándo vio esta app que el conductor inició el viaje. No se guarda en Firebase:
+    /// si se reabre la app, la espera arranca de nuevo (se espera de más, nunca de menos).
+    /// </summary>
+    public DateTime? IniciadoEn { get; private set; }
+
+    // HU16: uid → nombre de los pasajeros que se sacaron por no subir a tiempo (los del último cambio)
+    private readonly Dictionary<string, string> _noShows = new();
+    public IReadOnlyDictionary<string, string> UltimosNoShow => _noShows;
+
+    /// <summary>HU16: "Juan" o "Juan y Ana", para el aviso al conductor.</summary>
+    public string NoShowTexto => _noShows.Count <= 1
+        ? _noShows.Values.FirstOrDefault() ?? ""
+        : string.Join(", ", _noShows.Values.SkipLast(1)) + " y " + _noShows.Values.Last();
+
+    /// <summary>
+    /// HU16: soy el conductor, el viaje está iniciado, alguien no subió y ya pasó el tiempo de espera.
+    /// Recibe la hora para poder probarlo.
+    /// </summary>
+    internal bool HayNoShowEn(DateTime ahora) =>
+        EsDelUsuarioActual && Iniciado && EstadoEn(ahora) == EstadoViaje.EnCurso && FaltanSubir > 0
+        && IniciadoEn is DateTime inicio && ahora >= inicio + Configuracion.EsperaNoShow;
+
     // Pasajeros anotados: uid → nombre
     private readonly Dictionary<string, string> _pasajeros = new();
     public IReadOnlyDictionary<string, string> PasajerosPorUid => _pasajeros;
@@ -327,6 +352,15 @@ public class Viaje : INotifyPropertyChanged
                 UltimoPasajeroQueSalioUid = salio.Key;
             }
 
+            // HU16: con el viaje iniciado nadie se puede bajar, así que si falta alguien es porque
+            // el conductor lo sacó por no subir a tiempo
+            if (Iniciado && salio.Key != null)
+            {
+                _noShows.Clear();
+                foreach (var (uid, nombre) in _pasajeros.Where(p => !nuevos.ContainsKey(p.Key)))
+                    _noShows[uid] = nombre;
+            }
+
             _pasajeros.Clear();
             foreach (var (uid, nombre) in nuevos)
                 _pasajeros[uid] = nombre;
@@ -378,6 +412,10 @@ public class Viaje : INotifyPropertyChanged
         bool cambioEstado = iniciado != Iniciado || finalizado != Finalizado;
         Iniciado = iniciado;
         Finalizado = finalizado;
+
+        // HU16: desde acá se cuenta la espera para el check-in
+        if (iniciado && IniciadoEn is null)
+            IniciadoEn = DateTime.Now;
 
         if (cambioEstado)
             AvisarCambioDeEstado();   // también avisa lo del check-in
