@@ -6,14 +6,17 @@
     xmlns:local="clr-namespace:PoolCompartido"
     Title="PoolCompartido">
 
-    <!-- Dos pestañas: la lista general y los viajes del usuario -->
+    <!-- Dos pestañas: la lista general y los viajes del usuario.
+         Cada una con ícono, como en cualquier app de celular; la elegida se marca con el color de la app. -->
     <TabBar>
         <ShellContent
             Title="Viajes disponibles"
+            Icon="tab_viajes.png"
             ContentTemplate="{DataTemplate local:MainPage}"
             Route="MainPage" />
         <ShellContent
             Title="Mis viajes"
+            Icon="tab_misviajes.png"
             ContentTemplate="{DataTemplate local:MisViajesPage}"
             Route="MisViajesPage" />
     </TabBar>
