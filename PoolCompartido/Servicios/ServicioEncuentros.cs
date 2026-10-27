@@ -111,7 +111,8 @@ public class ServicioEncuentros
 
         await _remoto.GuardarEncuentroAsync(viaje.Id, usuario.Uid, new PuntoEncuentroDatos
         {
-            Texto = $"Mi ubicación (en {ubicacion.Barrio})",
+            // Lo leen el conductor y los demás pasajeros: "Mi ubicación" parecería la de ellos
+            Texto = $"{TextoUbicacionCompartida} (en {ubicacion.Barrio})",
             Lat = ubicacion.Latitud,
             Lon = ubicacion.Longitud
         });
@@ -144,7 +145,7 @@ public class ServicioEncuentros
 
         return viaje.PasajerosPorUid
             .Select(p => puntos.TryGetValue(p.Key, out var datos)
-                ? new PuntoPasajero(p.Key, p.Value, datos.Texto, datos.Lat, datos.Lon, datos.Aproximado == true, datos.Zona)
+                ? new PuntoPasajero(p.Key, p.Value, ParaOtros(datos.Texto), datos.Lat, datos.Lon, datos.Aproximado == true, datos.Zona)
                 : new PuntoPasajero(p.Key, p.Value, null))
             .OrderBy(p => p.Nombre)
             .ToList();
@@ -168,7 +169,7 @@ public class ServicioEncuentros
         // Solo los que siguen anotados y cargaron su punto, en el orden en que se anotaron
         return viaje.PasajerosPorUid
             .Where(p => puntos.ContainsKey(p.Key))
-            .Select(p => new PuntoPasajero(p.Key, p.Value, puntos[p.Key].Texto, puntos[p.Key].Lat, puntos[p.Key].Lon,
+            .Select(p => new PuntoPasajero(p.Key, p.Value, ParaOtros(puntos[p.Key].Texto), puntos[p.Key].Lat, puntos[p.Key].Lon,
                                            puntos[p.Key].Aproximado == true, puntos[p.Key].Zona))
             .ToList();
     }
@@ -219,12 +220,15 @@ public class ServicioEncuentros
             if (conLugar.Count < 2)
                 return conLugar.Concat(sinLugar).ToList();
 
-            // Origen y destino, preferentemente cerca de las paradas
+            // Inicio y fin del viaje, buscados igual que al publicar (cerca del origen):
+            // así el conductor ya los tiene guardados en su dispositivo y la ruta sale al instante
             Coordenada referencia = conLugar[0].Lugar!.Value;
-            Coordenada? inicio = Creible(await Geocodificador.BuscarAsync(
-                viaje.TienePuntoPartida ? viaje.PuntoPartida : viaje.Origen,
-                viaje.TienePuntoPartida ? viaje.Origen : null, referencia), referencia);
-            Coordenada? fin = Creible(await Geocodificador.BuscarAsync(viaje.Destino, null, referencia), referencia);
+            var partida = viaje.TienePuntoPartida
+                ? await UbicarLugarDelViajeAsync(viaje.PuntoPartida, viaje.Origen)
+                : await Geocodificador.BuscarLugarAsync(viaje.Origen);
+            var llegada = await UbicarLugarDelViajeAsync(viaje.Destino, viaje.Origen);
+            Coordenada? inicio = Creible(partida?.Punto, referencia);
+            Coordenada? fin = Creible(llegada?.Punto, referencia);
 
             var orden = await OptimizadorDeRuta.OrdenarAsync(inicio, fin, conLugar.Select(p => p.Lugar!.Value).ToList());
             return orden.Select(i => conLugar[i]).Concat(sinLugar).ToList();
@@ -237,38 +241,33 @@ public class ServicioEncuentros
     }
 
     /// <summary>
-    /// Al publicar: qué lugares del viaje no se encuentran en el mapa. Sin el punto de partida
-    /// y el destino ubicados, la ruta óptima no sabe dónde empieza o termina y puede quedar desordenada.
-    /// Si no hay internet no se puede revisar: devuelve la lista vacía (no frena la publicación).
+    /// Al publicar: dónde ubica el mapa un lugar que escribió el conductor (el origen, desde dónde sale
+    /// o el destino), para mostrarle enseguida si lo encontró. El punto de partida y el destino se buscan
+    /// cerca del origen, igual que cuando se arma la ruta. Devuelve null si no lo encuentra.
     /// </summary>
-    public static async Task<IReadOnlyList<string>> LugaresNoEncontradosAsync(string? origen, string? puntoPartida, string? destino)
+    /// <param name="origen">El origen del viaje; null o vacío cuando se está revisando el origen mismo.</param>
+    /// <exception cref="SinConexionException">No hay internet.</exception>
+    /// <exception cref="ServidorException">El servicio de mapas respondió con un error.</exception>
+    public static async Task<LugarEncontrado?> UbicarLugarDelViajeAsync(string? texto, string? origen)
     {
-        var faltan = new List<string>();
-        try
-        {
-            LugarEncontrado? zona = await Geocodificador.BuscarLugarAsync(origen);
-            if (!string.IsNullOrWhiteSpace(puntoPartida))
-            {
-                var partida = await Geocodificador.BuscarLugarAsync(puntoPartida, zona?.Punto, zona is null ? origen : zona.Provincia);
-                if (partida is null) faltan.Add(puntoPartida.Trim());
-                zona ??= partida;
-            }
-            else if (zona is null && !string.IsNullOrWhiteSpace(origen))
-            {
-                faltan.Add(origen.Trim());
-            }
+        if (string.IsNullOrWhiteSpace(texto))
+            return null;
 
-            if (!string.IsNullOrWhiteSpace(destino)
-                && await Geocodificador.BuscarLugarAsync(destino, zona?.Punto, zona?.Provincia) is null)
-                faltan.Add(destino.Trim());
-        }
-        catch (Exception ex) when (ex is SinConexionException or ServidorException)
-        {
-            RegistroErrores.RegistrarAviso(ex, "Revisar lugares del viaje en el mapa");
-            return Array.Empty<string>();
-        }
-        return faltan;
+        LugarEncontrado? zona = string.IsNullOrWhiteSpace(origen) ? null : await Geocodificador.BuscarLugarAsync(origen);
+        return await Geocodificador.BuscarLugarAsync(texto, zona?.Punto, zona?.Provincia);
     }
+
+    /// <summary>Texto del punto cuando el pasajero compartió su ubicación (HU23).</summary>
+    public const string TextoUbicacionCompartida = "Ubicación compartida";
+
+    /// <summary>
+    /// Los puntos guardados antes decían "Mi ubicación (en ...)": visto por otra persona parece
+    /// su propia ubicación, así que se muestra como "Ubicación compartida (en ...)".
+    /// </summary>
+    public static string ParaOtros(string texto) =>
+        texto.StartsWith("Mi ubicación", StringComparison.OrdinalIgnoreCase)
+            ? TextoUbicacionCompartida + texto["Mi ubicación".Length..]
+            : texto;
 
     /// <summary>Una dirección escrita que todavía no tiene coordenadas o zona.</summary>
     private static bool FaltaUbicar(PuntoPasajero p) =>

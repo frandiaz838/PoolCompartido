@@ -34,10 +34,6 @@ public partial class PublicarViajePage : ContentPage
             // HU14: vacío = sin costo. Puede lanzar FormatException o ArgumentOutOfRangeException
             decimal? costo = ServicioViajes.LeerCosto(entryCosto.Text);
 
-            // Ruta óptima: si el punto de partida o el destino no aparecen en el mapa, se avisa antes de publicar
-            if (!await LugaresOkAsync(boton))
-                return;
-
             await _servicio.PublicarAsync(entryOrigen.Text, entryDestino.Text, fecha,
                                           FranjasHorarias.HoraATexto(hora), asientos, editorComentario.Text,
                                           entryPuntoPartida.Text, costo);
@@ -81,33 +77,69 @@ public partial class PublicarViajePage : ContentPage
         }
     }
 
-    /// <summary>
-    /// Revisa que los lugares del viaje se encuentren en el mapa. Si alguno no aparece
-    /// (por ejemplo "la facu"), le pregunta al conductor si lo quiere corregir.
-    /// Devuelve true si se puede publicar.
-    /// </summary>
-    private async Task<bool> LugaresOkAsync(Button boton)
+    // Ruta óptima: al salir de cada campo se busca el lugar en el mapa y se muestra debajo
+    // si se encontró ("✓ Universidad Blas Pascal, Córdoba") o no. No frena la publicación:
+    // Google Maps igual busca el texto, solo puede quedar peor el orden de las paradas.
+    private void OnOrigenUnfocused(object? sender, FocusEventArgs e) => RevisarTodoEnMapa();
+
+    private void RevisarTodoEnMapa()
     {
-        string textoBoton = boton.Text;
-        boton.Text = "Revisando el mapa...";
-        IReadOnlyList<string> faltan;
+        RevisarEnMapa(entryOrigen, lblMapaOrigen, esOrigen: true);
+        // Los otros dos se buscan cerca del origen: si cambió, se revisan de nuevo
+        RevisarEnMapa(entryPuntoPartida, lblMapaPartida);
+        RevisarEnMapa(entryDestino, lblMapaDestino);
+    }
+
+    private void OnPartidaUnfocused(object? sender, FocusEventArgs e) => RevisarEnMapa(entryPuntoPartida, lblMapaPartida);
+
+    private void OnDestinoUnfocused(object? sender, FocusEventArgs e) => RevisarEnMapa(entryDestino, lblMapaDestino);
+
+    /// <summary>Último texto buscado en cada campo, para no repetir búsquedas ni mostrar respuestas viejas.</summary>
+    private readonly Dictionary<Label, string> _buscado = new();
+
+    private async void RevisarEnMapa(Entry campo, Label resultado, bool esOrigen = false)
+    {
+        string texto = campo.Text?.Trim() ?? "";
+        string origen = esOrigen ? "" : entryOrigen.Text?.Trim() ?? "";
+        string clave = texto + "|" + origen;
+        if (_buscado.TryGetValue(resultado, out var anterior) && anterior == clave)
+            return;   // ya se buscó esto mismo
+        _buscado[resultado] = clave;
+
+        resultado.IsVisible = false;
+        if (texto == "")
+            return;
+
+        LugarEncontrado? lugar;
         try
         {
-            faltan = await ServicioEncuentros.LugaresNoEncontradosAsync(entryOrigen.Text, entryPuntoPartida.Text, entryDestino.Text);
+            lugar = await ServicioEncuentros.UbicarLugarDelViajeAsync(texto, origen);
         }
-        finally
+        catch (Exception ex) when (ex is SinConexionException or ServidorException)
         {
-            boton.Text = textoBoton;
+            // Sin internet no se puede revisar: no se muestra nada
+            RegistroErrores.RegistrarAviso(ex, "Revisar lugar en el mapa");
+            _buscado.Remove(resultado);
+            return;
         }
 
-        if (faltan.Count == 0)
-            return true;
+        // Mientras se buscaba, la persona pudo haber cambiado el texto: esta respuesta ya no sirve
+        if (!_buscado.TryGetValue(resultado, out var actual) || actual != clave)
+            return;
 
-        string lista = string.Join("\n", faltan.Select(l => $"• {l}"));
-        return await DisplayAlertAsync("No encontramos esto en el mapa",
-            $"{lista}\n\nSi lo publicás así, la ruta con los pasajeros puede quedar en un orden raro. " +
-            "Escribí el nombre completo del lugar o una dirección (por ejemplo: \"Universidad Blas Pascal\" o \"Av. Colón 1200, Córdoba\").",
-            "Publicar igual", "Corregir");
+        if (lugar is not null)
+        {
+            string nombre = string.Join(", ", new[] { lugar.Nombre, lugar.Zona }.Where(p => !string.IsNullOrWhiteSpace(p)));
+            resultado.Text = $"✓ En el mapa: {(nombre == "" ? "encontrado" : nombre)}";
+            resultado.SetDynamicResource(Label.TextColorProperty, "ColorExito");
+        }
+        else
+        {
+            resultado.Text = "No lo encontramos en el mapa. Google Maps igual lo va a buscar, pero el orden " +
+                             "de las paradas puede no ser el mejor. Probá con el nombre completo o calle y altura.";
+            resultado.SetDynamicResource(Label.TextColorProperty, "ColorAviso");
+        }
+        resultado.IsVisible = true;
     }
 
     /// <summary>HU23: completa el origen con el barrio donde está el conductor (no con la dirección exacta).</summary>
@@ -122,6 +154,7 @@ public partial class PublicarViajePage : ContentPage
         {
             UbicacionActual ubicacion = await ServicioUbicacion.ObtenerAsync();
             entryOrigen.Text = ubicacion.Barrio;
+            RevisarTodoEnMapa();
         }
         catch (UbicacionNoDisponibleException ex)
         {

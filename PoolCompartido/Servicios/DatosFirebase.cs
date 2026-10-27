@@ -54,6 +54,33 @@ internal class PuntoEncuentroDatos
     public string? Zona { get; set; }
 }
 
+/// <summary>
+/// Ruta óptima: un lugar ya encontrado en el mapa, guardado en el dispositivo (lugares.json)
+/// para no volver a buscarlo. No se sube a Firebase.
+/// </summary>
+internal class LugarGuardadoDatos
+{
+    public double Lat { get; set; }
+    public double Lon { get; set; }
+    public string? Localidad { get; set; }
+    public string? Provincia { get; set; }
+    public string? Nombre { get; set; }
+    /// <summary>Cuándo se guardó (para borrar los más viejos).</summary>
+    public DateTime Guardado { get; set; }
+
+    public LugarEncontrado ALugar() => new(new Coordenada(Lat, Lon), Localidad, Provincia, Nombre);
+
+    public static LugarGuardadoDatos De(LugarEncontrado lugar) => new()
+    {
+        Lat = lugar.Punto.Latitud,
+        Lon = lugar.Punto.Longitud,
+        Localidad = lugar.Localidad,
+        Provincia = lugar.Provincia,
+        Nombre = lugar.Nombre,
+        Guardado = DateTime.UtcNow
+    };
+}
+
 /// <summary>HU25: un mensaje del chat tal como se lee de Firebase (/chats/{viajeId}/{clave}).</summary>
 internal class MensajeDatos
 {
@@ -184,6 +211,7 @@ internal class DetalleErrorAuth
 [JsonSerializable(typeof(string))]   // HU15: el PIN en /pines
 [JsonSerializable(typeof(PuntoEncuentroDatos))]
 [JsonSerializable(typeof(Dictionary<string, PuntoEncuentroDatos>))]
+[JsonSerializable(typeof(Dictionary<string, LugarGuardadoDatos>))]   // lugares ya encontrados en el mapa
 [JsonSerializable(typeof(SesionGuardada))]
 [JsonSerializable(typeof(PedidoAutenticacion))]
 [JsonSerializable(typeof(PedidoActualizarPerfil))]

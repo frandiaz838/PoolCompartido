@@ -10,7 +10,7 @@
             <Label Text="Origen (barrio o localidad)" />
             <!-- HU23: el origen se puede completar con la ubicación (solo el barrio, nunca la dirección) -->
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                <Entry x:Name="entryOrigen" Placeholder="Ej: Villa Allende" />
+                <Entry x:Name="entryOrigen" Placeholder="Ej: Villa Allende" Unfocused="OnOrigenUnfocused" />
                 <Button x:Name="btnUbicacion"
                         Grid.Column="1"
                         Text="Usar mi ubicación"
@@ -20,10 +20,14 @@
                         BorderWidth="1"
                         Clicked="OnUsarUbicacionClicked" />
             </Grid>
+            <!-- Ruta óptima: si el lugar aparece en el mapa (se completa al salir del campo) -->
+            <Label x:Name="lblMapaOrigen" FontSize="12" IsVisible="False" />
 
             <!-- Ruta óptima: el destino tiene que aparecer en el mapa ("la facu" no aparece) -->
             <Label Text="Destino" Margin="0,8,0,0" />
-            <Entry x:Name="entryDestino" Placeholder="Nombre del lugar o dirección. Ej: Universidad Blas Pascal" />
+            <Entry x:Name="entryDestino" Placeholder="Nombre del lugar o dirección. Ej: Universidad Blas Pascal"
+                   Unfocused="OnDestinoUnfocused" />
+            <Label x:Name="lblMapaDestino" FontSize="12" IsVisible="False" />
 
             <Label Text="Fecha" Margin="0,8,0,0" />
             <DatePicker x:Name="dpFecha" Format="dd/MM/yyyy" />
@@ -39,7 +43,9 @@
             <Label Text="Desde dónde salís (opcional)" Margin="0,8,0,0" />
             <Entry x:Name="entryPuntoPartida"
                    Placeholder="Un lugar público. Ej: Plaza de Villa Allende"
-                   MaxLength="100" />
+                   MaxLength="100"
+                   Unfocused="OnPartidaUnfocused" />
+            <Label x:Name="lblMapaPartida" FontSize="12" IsVisible="False" />
             <Label Text="La ruta arranca acá, pasa a buscar a cada pasajero en el mejor orden y termina en el destino. Si lo dejás vacío, arranca en el origen."
                    Style="{StaticResource TextoSecundario}"
                    FontSize="12" />
