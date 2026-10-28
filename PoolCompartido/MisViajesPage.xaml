@@ -52,18 +52,33 @@
                         </Border.Triggers>
 
                         <VerticalStackLayout Spacing="10">
-                            <!-- Encabezado: ruta y rol -->
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                <Label Text="{Binding Ruta}" FontSize="18" FontAttributes="Bold" VerticalOptions="Center" />
-                                <Border Grid.Column="1" Style="{StaticResource Etiqueta}">
+                            <!-- Encabezado: recorrido en vertical (origen arriba, destino abajo) y rol -->
+                            <Grid ColumnDefinitions="14,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="8">
+                                <BoxView Grid.RowSpan="2" WidthRequest="2" HorizontalOptions="Center" Margin="0,12,0,10"
+                                         Color="{AppThemeBinding Light=#C9BEF2, Dark=#5B4E86}" />
+                                <Border Grid.Row="0" WidthRequest="12" HeightRequest="12" StrokeShape="RoundRectangle 6" StrokeThickness="2"
+                                        VerticalOptions="Start" Margin="0,6,0,0"
+                                        Stroke="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                                        BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#262626}" />
+                                <Border Grid.Row="1" WidthRequest="12" HeightRequest="12" StrokeShape="RoundRectangle 6" StrokeThickness="0"
+                                        VerticalOptions="Start" Margin="0,6,0,0"
+                                        BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                <VerticalStackLayout Grid.Column="1" Grid.Row="0" Spacing="1">
+                                    <Label Text="{Binding Origen}" FontSize="17" FontAttributes="Bold" />
+                                    <!-- HU24: punto de partida público del conductor -->
+                                    <Label Text="{Binding PuntoPartidaTexto}" Style="{StaticResource TextoSecundario}" IsVisible="{Binding TienePuntoPartida}" />
+                                </VerticalStackLayout>
+                                <Label Grid.Column="1" Grid.Row="1" Text="{Binding Destino}" FontSize="17" FontAttributes="Bold" />
+                                <Border Grid.Column="2" Style="{StaticResource Etiqueta}">
                                     <Label Text="{Binding RolUsuarioActual}" FontSize="12" FontAttributes="Bold"
                                            TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
                                 </Border>
                             </Grid>
 
                             <!-- HU29: quiénes viajan (conductor primero) -->
-                            <HorizontalStackLayout Spacing="10">
-                                <HorizontalStackLayout Spacing="-8" BindableLayout.ItemsSource="{Binding AvataresVisibles}" VerticalOptions="Center">
+                            <!-- Grid (no HorizontalStackLayout): así en el celular el texto se acomoda en vez de cortarse -->
+                            <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="10">
+                                <HorizontalStackLayout Grid.Column="0" Spacing="-8" BindableLayout.ItemsSource="{Binding AvataresVisibles}" VerticalOptions="Center">
                                     <BindableLayout.ItemTemplate>
                                         <DataTemplate x:DataType="local:Participante">
                                             <Border Style="{StaticResource Avatar}"
@@ -75,26 +90,41 @@
                                         </DataTemplate>
                                     </BindableLayout.ItemTemplate>
                                 </HorizontalStackLayout>
-                                <Label Text="{Binding AvataresExtra}" IsVisible="{Binding HayAvataresExtra}"
+                                <Label Grid.Column="1" Text="{Binding AvataresExtra}" IsVisible="{Binding HayAvataresExtra}"
                                        Style="{StaticResource TextoSecundario}" FontAttributes="Bold" VerticalOptions="Center" />
-                                <Label Text="{Binding ParticipantesTexto}" Style="{StaticResource TextoSecundario}" VerticalOptions="Center" />
-                            </HorizontalStackLayout>
+                                <Label Grid.Column="2" Text="{Binding ParticipantesTexto}" Style="{StaticResource TextoSecundario}"
+                                       VerticalOptions="Center" MaxLines="2" LineBreakMode="WordWrap" />
+                            </Grid>
 
                             <!-- HU29: datos cortos en chips -->
                             <FlexLayout Wrap="Wrap" Direction="Row" Margin="0,0,0,-6">
                                 <Border Style="{StaticResource Chip}">
                                     <Label Text="{Binding HoraChip}" Style="{StaticResource ChipTexto}" />
                                 </Border>
-                                <Border Style="{StaticResource Chip}">
-                                    <Label Text="{Binding AsientosChip}" Style="{StaticResource ChipTexto}" />
+                                <!-- Lugares con color según cuántos quedan (siempre con el texto) -->
+                                <Border Style="{StaticResource ChipLugares}">
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border" Binding="{Binding Lugares}" Value="{x:Static local:NivelLugares.Pocos}">
+                                            <Setter Property="BackgroundColor" Value="{DynamicResource ColorAvisoFondo}" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Border" Binding="{Binding Lugares}" Value="{x:Static local:NivelLugares.Completo}">
+                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#EEEEEE, Dark=#333333}" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Label Text="{Binding AsientosChip}" Style="{StaticResource ChipLugaresTexto}">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label" Binding="{Binding Lugares}" Value="{x:Static local:NivelLugares.Pocos}">
+                                                <Setter Property="TextColor" Value="{DynamicResource ColorAviso}" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Label" Binding="{Binding Lugares}" Value="{x:Static local:NivelLugares.Completo}">
+                                                <Setter Property="TextColor" Value="{AppThemeBinding Light=#5E5E5E, Dark=#ACACAC}" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
                                 </Border>
                                 <!-- HU14: cuánto paga cada pasajero (solo en viajes con costo) -->
                                 <Border Style="{StaticResource Chip}" IsVisible="{Binding TieneCostoChip}">
                                     <Label Text="{Binding CostoChip}" Style="{StaticResource ChipTexto}" />
-                                </Border>
-                                <!-- HU24: punto de partida público del conductor -->
-                                <Border Style="{StaticResource Chip}" IsVisible="{Binding TienePuntoPartida}">
-                                    <Label Text="{Binding PartidaChip}" Style="{StaticResource ChipTexto}" />
                                 </Border>
                                 <!-- HU31: promedio de calificaciones del conductor -->
                                 <Border Style="{StaticResource Chip}" IsVisible="{Binding TieneCalificacionChip}">
@@ -151,6 +181,9 @@
                                 <!-- HU25: chat grupal del viaje; muestra cuántos mensajes nuevos hay -->
                                 <Button Text="{Binding TextoBotonChat}" Style="{StaticResource BotonSecundario}"
                                         IsVisible="{Binding PuedeChatear}" Clicked="OnChatClicked" />
+                                <!-- HU32: llamar o escribir por WhatsApp a los del viaje -->
+                                <Button Text="Contactar" Style="{StaticResource BotonSecundario}"
+                                        IsVisible="{Binding PuedeChatear}" Clicked="OnContactarClicked" />
                                 <!-- HU24: el pasajero carga o cambia dónde lo pasan a buscar -->
                                 <Button Text="Mi punto de encuentro" Style="{StaticResource BotonSecundario}"
                                         IsVisible="{Binding PuedeSalirse}" Clicked="OnMiPuntoClicked" />

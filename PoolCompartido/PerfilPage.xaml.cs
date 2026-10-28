@@ -49,6 +49,9 @@ public partial class PerfilPage : ContentPage
     {
         base.OnAppearing();
         MostrarDatos();
+        MostrarHorarios();   // HU30 (por si se agregó o editó uno)
+        // HU32
+        entryTelefono.Text = ServicioContactos.Instancia.MiTelefono is string tel ? ServicioContactos.Mostrar(tel) : "";
 
         lblVerificacion.Text = "Consultando estado del mail…";
         try
@@ -68,6 +71,60 @@ public partial class PerfilPage : ContentPage
             RegistroErrores.RegistrarAviso(ex, "Consultar verificación del mail");
             lblVerificacion.Text = "No se pudo consultar el estado del mail";
         }
+    }
+
+    // ───── HU32: teléfono ─────
+
+    private async void OnGuardarTelefonoClicked(object? sender, EventArgs e)
+    {
+        btnGuardarTelefono.IsEnabled = false;
+        try
+        {
+            string? numero = await ServicioContactos.Instancia.GuardarAsync(entryTelefono.Text, ServicioViajes.Instancia.Viajes.ToList());
+            entryTelefono.Text = numero is null ? "" : ServicioContactos.Mostrar(numero);
+            await DisplayAlertAsync("Teléfono",
+                numero is null ? "Borramos tu teléfono." : "Listo. Lo van a ver solo las personas de tus viajes.", "OK");
+        }
+        catch (FormatException ex)
+        {
+            RegistroErrores.RegistrarAviso(ex, "Guardar teléfono");
+            await DisplayAlertAsync("Teléfono", ex.Message, "OK");
+        }
+        catch (SesionVencidaException ex)
+        {
+            RegistroErrores.RegistrarAviso(ex, "Guardar teléfono");
+        }
+        catch (Exception ex) when (ex is SinConexionException or PermisoDenegadoException or ServidorException)
+        {
+            RegistroErrores.RegistrarError(ex, "Guardar teléfono");
+            await DisplayAlertAsync("No se pudo guardar", ex.Message, "OK");
+        }
+        finally
+        {
+            btnGuardarTelefono.IsEnabled = true;
+        }
+    }
+
+    // ───── HU30: mis horarios ─────
+
+    private void MostrarHorarios() =>
+        BindableLayout.SetItemsSource(listaHorarios, ServicioHorarios.Instancia.Lista
+            .OrderBy(h => h.Hora).ToList());
+
+    private async void OnAgregarHorarioClicked(object? sender, EventArgs e)
+    {
+        if (ServicioHorarios.Instancia.Lista.Count >= ServicioHorarios.Maximo)
+        {
+            await DisplayAlertAsync("Mis horarios", $"Podés cargar hasta {ServicioHorarios.Maximo} horarios.", "OK");
+            return;
+        }
+        await Navigation.PushAsync(new HorarioPage(null));
+    }
+
+    private async void OnHorarioTocado(object? sender, TappedEventArgs e)
+    {
+        if (sender is BindableObject { BindingContext: HorarioHabitual horario })
+            await Navigation.PushAsync(new HorarioPage(horario));
     }
 
     private void MostrarDatos()

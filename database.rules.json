@@ -45,6 +45,31 @@
         }
       }
     },
+    "horarios": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        "$id": {
+          ".validate": "newData.hasChildren(['dias', 'hora', 'destino']) && newData.child('dias').isString() && newData.child('dias').val().length <= 13 && newData.child('dias').val().matches(/^[0-6](,[0-6])*$/) && newData.child('hora').isString() && newData.child('hora').val().matches(/^([01][0-9]|2[0-3]):[0-5][0-9]$/) && newData.child('destino').isString() && newData.child('destino').val().length >= 1 && newData.child('destino').val().length <= 100 && (!newData.child('origen').exists() || (newData.child('origen').isString() && newData.child('origen').val().length <= 100))"
+        }
+      }
+    },
+    "telefonos": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.hasChildren(['numero']) && newData.child('numero').isString() && newData.child('numero').val().length >= 9 && newData.child('numero').val().length <= 16 && newData.child('numero').val().matches(/^\\+[0-9]+$/)"
+      }
+    },
+    "contactos": {
+      "$viajeId": {
+        ".read": "auth != null && (root.child('viajes/' + $viajeId + '/conductorUid').val() === auth.uid || root.child('viajes/' + $viajeId + '/pasajeros/' + auth.uid).exists())",
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid && (!newData.exists() || root.child('viajes/' + $viajeId + '/conductorUid').val() === auth.uid || root.child('viajes/' + $viajeId + '/pasajeros/' + auth.uid).exists())",
+          ".validate": "newData.isString() && newData.val().length >= 9 && newData.val().length <= 16 && newData.val().matches(/^\\+[0-9]+$/)"
+        }
+      }
+    },
     "calificaciones": {
       ".read": "auth != null",
       "$calificadoUid": {

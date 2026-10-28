@@ -168,6 +168,100 @@ internal class RepositorioFirebase
         Verificar(respuesta);
     }
 
+    // ───── HU30: horarios habituales (/horarios/{uid}/{id}) ─────
+
+    /// <summary>Los horarios del usuario (id → horario). Las reglas solo se los dejan leer a él.</summary>
+    public async Task<Dictionary<string, HorarioDatos>> ObtenerHorariosAsync(string uid)
+    {
+        using var pedido = new HttpRequestMessage(HttpMethod.Get, await UrlAsync($"horarios/{uid}"));
+        using var respuesta = await ClienteHttp.EnviarAsync(pedido);
+        Verificar(respuesta);
+
+        string cuerpo = await respuesta.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize(cuerpo, JsonPool.Default.DictionaryStringHorarioDatos)
+               ?? new Dictionary<string, HorarioDatos>();
+    }
+
+    /// <summary>Guarda (o reemplaza) un horario.</summary>
+    public async Task GuardarHorarioAsync(string uid, string id, HorarioDatos datos)
+    {
+        using var pedido = new HttpRequestMessage(HttpMethod.Put, await UrlAsync($"horarios/{uid}/{id}"))
+        {
+            Content = new StringContent(JsonSerializer.Serialize(datos, JsonPool.Default.HorarioDatos),
+                                        Encoding.UTF8, "application/json")
+        };
+        using var respuesta = await ClienteHttp.EnviarAsync(pedido);
+        Verificar(respuesta);
+    }
+
+    /// <summary>Borra un horario (si no existía, no pasa nada).</summary>
+    public async Task BorrarHorarioAsync(string uid, string id)
+    {
+        using var pedido = new HttpRequestMessage(HttpMethod.Delete, await UrlAsync($"horarios/{uid}/{id}"));
+        using var respuesta = await ClienteHttp.EnviarAsync(pedido);
+        Verificar(respuesta);
+    }
+
+    // ───── HU32: teléfono (/telefonos/{uid}) y teléfonos de cada viaje (/contactos/{viajeId}/{uid}) ─────
+
+    /// <summary>Mi teléfono, o null si no lo cargué.</summary>
+    public async Task<string?> ObtenerTelefonoAsync(string uid)
+    {
+        using var pedido = new HttpRequestMessage(HttpMethod.Get, await UrlAsync($"telefonos/{uid}"));
+        using var respuesta = await ClienteHttp.EnviarAsync(pedido);
+        Verificar(respuesta);
+
+        string cuerpo = await respuesta.Content.ReadAsStringAsync();
+        var datos = JsonSerializer.Deserialize(cuerpo, JsonPool.Default.TelefonoDatos);
+        return string.IsNullOrWhiteSpace(datos?.Numero) ? null : datos.Numero;
+    }
+
+    public async Task GuardarTelefonoAsync(string uid, string numero)
+    {
+        using var pedido = new HttpRequestMessage(HttpMethod.Put, await UrlAsync($"telefonos/{uid}"))
+        {
+            Content = new StringContent(JsonSerializer.Serialize(new TelefonoDatos { Numero = numero }, JsonPool.Default.TelefonoDatos),
+                                        Encoding.UTF8, "application/json")
+        };
+        using var respuesta = await ClienteHttp.EnviarAsync(pedido);
+        Verificar(respuesta);
+    }
+
+    public async Task BorrarTelefonoAsync(string uid)
+    {
+        using var pedido = new HttpRequestMessage(HttpMethod.Delete, await UrlAsync($"telefonos/{uid}"));
+        using var respuesta = await ClienteHttp.EnviarAsync(pedido);
+        Verificar(respuesta);
+    }
+
+    /// <summary>Los teléfonos compartidos en un viaje (uid → número). Las reglas solo se lo permiten a quien participa.</summary>
+    public async Task<Dictionary<string, string>> ObtenerContactosAsync(string viajeId)
+    {
+        using var pedido = new HttpRequestMessage(HttpMethod.Get, await UrlAsync($"contactos/{viajeId}"));
+        using var respuesta = await ClienteHttp.EnviarAsync(pedido);
+        Verificar(respuesta);
+
+        string cuerpo = await respuesta.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize(cuerpo, JsonPool.Default.DictionaryStringString) ?? new Dictionary<string, string>();
+    }
+
+    public async Task GuardarContactoAsync(string viajeId, string uid, string numero)
+    {
+        using var pedido = new HttpRequestMessage(HttpMethod.Put, await UrlAsync($"contactos/{viajeId}/{uid}"))
+        {
+            Content = new StringContent(JsonSerializer.Serialize(numero, JsonPool.Default.String), Encoding.UTF8, "application/json")
+        };
+        using var respuesta = await ClienteHttp.EnviarAsync(pedido);
+        Verificar(respuesta);
+    }
+
+    public async Task BorrarContactoAsync(string viajeId, string uid)
+    {
+        using var pedido = new HttpRequestMessage(HttpMethod.Delete, await UrlAsync($"contactos/{viajeId}/{uid}"));
+        using var respuesta = await ClienteHttp.EnviarAsync(pedido);
+        Verificar(respuesta);
+    }
+
     // ───── HU15: PIN de cada pasajero (/pines/{uid}/{viajeId}) ─────
 
     /// <summary>El PIN del pasajero para ese viaje, o null si no tiene. Las reglas solo se lo dejan leer a él.</summary>

@@ -15,75 +15,99 @@
     </ContentPage.Resources>
 
     <!-- En pantallas anchas (compu) el contenido no se estira de punta a punta -->
-    <Grid Padding="16" RowSpacing="12" RowDefinitions="Auto,Auto,*,Auto" MaximumWidthRequest="980">
+    <Grid Padding="16" RowSpacing="12" RowDefinitions="Auto,*,Auto" MaximumWidthRequest="980">
 
-        <!-- HU29: "Tu próximo viaje" — lo primero que se ve, con las acciones del momento -->
-        <Border x:Name="tarjetaProximo"
-                x:DataType="local:Viaje"
-                Grid.Row="0"
-                IsVisible="False"
-                Padding="18,16"
-                StrokeThickness="0"
-                StrokeShape="RoundRectangle 18">
-            <Border.Background>
-                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                    <GradientStop Color="#512BD4" Offset="0" />
-                    <GradientStop Color="#6A45D9" Offset="1" />
-                </LinearGradientBrush>
-            </Border.Background>
-            <VerticalStackLayout Spacing="8">
-                <Grid ColumnDefinitions="*,Auto">
-                    <Label Text="TU PRÓXIMO VIAJE" FontSize="12" FontAttributes="Bold" TextColor="#E4DCFF" CharacterSpacing="1" />
-                    <Border Grid.Column="1" Padding="10,2" StrokeThickness="0" StrokeShape="RoundRectangle 10"
-                            BackgroundColor="#33FFFFFF" IsVisible="{Binding MostrarEstado}">
-                        <Label Text="{Binding EstadoTexto}" FontSize="12" FontAttributes="Bold" TextColor="White" />
-                    </Border>
-                </Grid>
-                <Label Text="{Binding Ruta}" FontSize="20" FontAttributes="Bold" TextColor="White" />
-                <Label FontSize="14" TextColor="#F1ECFF">
-                    <Label.FormattedText>
-                        <FormattedString>
-                            <Span Text="{Binding DiaTexto}" FontAttributes="Bold" />
-                            <Span Text=" · " />
-                            <Span Text="{Binding Hora}" FontAttributes="Bold" />
-                            <Span Text=" hs · " />
-                            <Span Text="{Binding RolUsuarioActual}" />
-                        </FormattedString>
-                    </Label.FormattedText>
-                </Label>
-                <Label Text="{Binding PartidaChip}" FontSize="13" TextColor="#F1ECFF" IsVisible="{Binding TienePuntoPartida}" />
-                <FlexLayout Wrap="Wrap" Direction="Row" Margin="0,4,0,-8">
-                    <Button Text="Ver ruta" Clicked="OnProximoRutaClicked"
-                            BackgroundColor="White" TextColor="#512BD4" FontAttributes="Bold"
-                            CornerRadius="18" HeightRequest="38" Padding="16,0" Margin="0,0,8,8" />
-                    <Button Text="{Binding TextoBotonChat}" Clicked="OnProximoChatClicked" IsVisible="{Binding PuedeChatear}"
-                            BackgroundColor="Transparent" TextColor="White" BorderColor="#B8A6F5" BorderWidth="1"
-                            CornerRadius="18" HeightRequest="38" Padding="16,0" Margin="0,0,8,8" />
-                    <Button Text="Ver en Mis viajes" Clicked="OnProximoVerClicked"
-                            BackgroundColor="Transparent" TextColor="White" BorderColor="#B8A6F5" BorderWidth="1"
-                            CornerRadius="18" HeightRequest="38" Padding="16,0" Margin="0,0,8,8" />
-                </FlexLayout>
-            </VerticalStackLayout>
-        </Border>
-
-        <!-- HU2: filtros por destino y franja horaria (se aplican solos al escribir o elegir) -->
-        <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-            <Entry x:Name="entryDestino"
-                   Grid.Column="0"
-                   Placeholder="Filtrar por destino"
-                   TextChanged="OnDestinoCambiado" />
-            <Picker x:Name="pickerHorario"
-                    Grid.Column="1"
-                    Title="Franja"
-                    WidthRequest="120"
-                    SelectedIndexChanged="OnHorarioCambiado" />
-            <Button Grid.Column="2"
-                    Text="Limpiar"
-                    Clicked="OnLimpiarClicked" />
-        </Grid>
+        <!-- Mejora de la HU2 (idea de Carpoolear): desde / hacia con botón para invertir, día y franja -->
+        <VerticalStackLayout Grid.Row="0" Spacing="8">
+            <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="8">
+                <Entry x:Name="entryOrigen"
+                       Grid.Column="0"
+                       Placeholder="Desde"
+                       TextChanged="OnFiltroTextoCambiado" />
+                <!-- Invierte desde y hacia (para buscar la vuelta) -->
+                <Button Grid.Column="1"
+                        Text="⇄"
+                        FontSize="18"
+                        Padding="12,0"
+                        Style="{StaticResource BotonSecundario}"
+                        Margin="0"
+                        VerticalOptions="Center"
+                        SemanticProperties.Description="Invertir desde y hacia"
+                        Clicked="OnInvertirClicked" />
+                <Entry x:Name="entryDestino"
+                       Grid.Column="2"
+                       Placeholder="Hacia"
+                       TextChanged="OnFiltroTextoCambiado" />
+            </Grid>
+            <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="8">
+                <Picker x:Name="pickerDia"
+                        Grid.Column="0"
+                        Title="Día"
+                        SelectedIndexChanged="OnHorarioCambiado" />
+                <Picker x:Name="pickerHorario"
+                        Grid.Column="1"
+                        Title="Franja"
+                        SelectedIndexChanged="OnHorarioCambiado" />
+                <Button Grid.Column="2"
+                        Text="Limpiar"
+                        Clicked="OnLimpiarClicked" />
+            </Grid>
+        </VerticalStackLayout>
 
         <!-- HU2: lista de viajes -->
-        <CollectionView x:Name="listaViajes" Grid.Row="2" SelectionMode="None">
+        <CollectionView x:Name="listaViajes" Grid.Row="1" SelectionMode="None">
+            <!-- La tarjeta "Tu próximo viaje" va como encabezado de la lista: en el celular se va con el scroll
+                 y deja lugar para ver los viajes (los filtros quedan fijos arriba) -->
+            <CollectionView.Header>
+                <!-- HU29: "Tu próximo viaje" — lo primero que se ve, con las acciones del momento -->
+                <Border x:Name="tarjetaProximo"
+                        x:DataType="local:Viaje"
+                        Margin="0,0,0,12"
+                        IsVisible="False"
+                        Padding="18,16"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 18">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#512BD4" Offset="0" />
+                            <GradientStop Color="#6A45D9" Offset="1" />
+                        </LinearGradientBrush>
+                    </Border.Background>
+                    <VerticalStackLayout Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="TU PRÓXIMO VIAJE" FontSize="12" FontAttributes="Bold" TextColor="#E4DCFF" CharacterSpacing="1" />
+                            <Border Grid.Column="1" Padding="10,2" StrokeThickness="0" StrokeShape="RoundRectangle 10"
+                                    BackgroundColor="#33FFFFFF" IsVisible="{Binding MostrarEstado}">
+                                <Label Text="{Binding EstadoTexto}" FontSize="12" FontAttributes="Bold" TextColor="White" />
+                            </Border>
+                        </Grid>
+                        <Label Text="{Binding Ruta}" FontSize="20" FontAttributes="Bold" TextColor="White" />
+                        <Label FontSize="14" TextColor="#F1ECFF">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="{Binding DiaTexto}" FontAttributes="Bold" />
+                                    <Span Text=" · " />
+                                    <Span Text="{Binding Hora}" FontAttributes="Bold" />
+                                    <Span Text=" hs · " />
+                                    <Span Text="{Binding RolUsuarioActual}" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                        <Label Text="{Binding PartidaChip}" FontSize="13" TextColor="#F1ECFF" IsVisible="{Binding TienePuntoPartida}" />
+                        <FlexLayout Wrap="Wrap" Direction="Row" Margin="0,4,0,-8">
+                            <Button Text="Ver ruta" Clicked="OnProximoRutaClicked"
+                                    BackgroundColor="White" TextColor="#512BD4" FontAttributes="Bold"
+                                    CornerRadius="18" HeightRequest="38" Padding="16,0" Margin="0,0,8,8" />
+                            <Button Text="{Binding TextoBotonChat}" Clicked="OnProximoChatClicked" IsVisible="{Binding PuedeChatear}"
+                                    BackgroundColor="Transparent" TextColor="White" BorderColor="#B8A6F5" BorderWidth="1"
+                                    CornerRadius="18" HeightRequest="38" Padding="16,0" Margin="0,0,8,8" />
+                            <Button Text="Ver en Mis viajes" Clicked="OnProximoVerClicked"
+                                    BackgroundColor="Transparent" TextColor="White" BorderColor="#B8A6F5" BorderWidth="1"
+                                    CornerRadius="18" HeightRequest="38" Padding="16,0" Margin="0,0,8,8" />
+                        </FlexLayout>
+                    </VerticalStackLayout>
+                </Border>
+            </CollectionView.Header>
             <CollectionView.EmptyView>
                 <Label Text="No hay viajes para ese filtro."
                        HorizontalOptions="Center"
@@ -96,22 +120,45 @@
                 <DataTemplate x:DataType="local:Viaje">
                     <Border Style="{StaticResource TarjetaViaje}">
                         <VerticalStackLayout Spacing="10">
-                            <!-- Encabezado: ruta, y si el viaje es mío o ya estoy anotado -->
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                <Label Text="{Binding Ruta}" FontSize="18" FontAttributes="Bold" VerticalOptions="Center" />
-                                <Border Grid.Column="1" Style="{StaticResource Etiqueta}" IsVisible="{Binding EstoyAnotado}"
+                            <!-- HU30: coincide con uno de mis horarios habituales -->
+                            <Border Style="{StaticResource Etiqueta}" HorizontalOptions="Start" IsVisible="{Binding CoincideConMiHorario}"
+                                    BackgroundColor="{DynamicResource ColorAvisoFondo}">
+                                <Label Text="{Binding CoincidenciaTexto}" FontSize="12" FontAttributes="Bold" TextColor="{DynamicResource ColorAviso}" />
+                            </Border>
+
+                            <!-- Encabezado: recorrido en vertical (idea de Carpoolear) y si el viaje es mío o ya estoy anotado -->
+                            <Grid ColumnDefinitions="14,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="8">
+                                <!-- Línea que une el origen con el destino -->
+                                <BoxView Grid.RowSpan="2" WidthRequest="2" HorizontalOptions="Center" Margin="0,12,0,10"
+                                         Color="{AppThemeBinding Light=#C9BEF2, Dark=#5B4E86}" />
+                                <!-- Punto de origen (hueco) y de destino (lleno) -->
+                                <Border Grid.Row="0" WidthRequest="12" HeightRequest="12" StrokeShape="RoundRectangle 6" StrokeThickness="2"
+                                        VerticalOptions="Start" Margin="0,6,0,0"
+                                        Stroke="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                                        BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#262626}" />
+                                <Border Grid.Row="1" WidthRequest="12" HeightRequest="12" StrokeShape="RoundRectangle 6" StrokeThickness="0"
+                                        VerticalOptions="Start" Margin="0,6,0,0"
+                                        BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                <VerticalStackLayout Grid.Column="1" Grid.Row="0" Spacing="1">
+                                    <Label Text="{Binding Origen}" FontSize="17" FontAttributes="Bold" />
+                                    <!-- HU24: punto de partida público del conductor -->
+                                    <Label Text="{Binding PuntoPartidaTexto}" Style="{StaticResource TextoSecundario}" IsVisible="{Binding TienePuntoPartida}" />
+                                </VerticalStackLayout>
+                                <Label Grid.Column="1" Grid.Row="1" Text="{Binding Destino}" FontSize="17" FontAttributes="Bold" />
+                                <Border Grid.Column="2" Style="{StaticResource Etiqueta}" IsVisible="{Binding EstoyAnotado}"
                                         BackgroundColor="{DynamicResource ColorExitoFondo}">
                                     <Label Text="✓ Anotado" FontSize="12" FontAttributes="Bold" TextColor="{DynamicResource ColorExito}" />
                                 </Border>
-                                <Border Grid.Column="1" Style="{StaticResource Etiqueta}" IsVisible="{Binding EsDelUsuarioActual}">
+                                <Border Grid.Column="2" Style="{StaticResource Etiqueta}" IsVisible="{Binding EsDelUsuarioActual}">
                                     <Label Text="Tu viaje" FontSize="12" FontAttributes="Bold"
                                            TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
                                 </Border>
                             </Grid>
 
                             <!-- HU29: quiénes viajan (conductor primero) -->
-                            <HorizontalStackLayout Spacing="10">
-                                <HorizontalStackLayout Spacing="-8" BindableLayout.ItemsSource="{Binding AvataresVisibles}" VerticalOptions="Center">
+                            <!-- Grid (no HorizontalStackLayout): así en el celular el texto se acomoda en vez de cortarse -->
+                            <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="10">
+                                <HorizontalStackLayout Grid.Column="0" Spacing="-8" BindableLayout.ItemsSource="{Binding AvataresVisibles}" VerticalOptions="Center">
                                     <BindableLayout.ItemTemplate>
                                         <DataTemplate x:DataType="local:Participante">
                                             <Border Style="{StaticResource Avatar}"
@@ -123,26 +170,41 @@
                                         </DataTemplate>
                                     </BindableLayout.ItemTemplate>
                                 </HorizontalStackLayout>
-                                <Label Text="{Binding AvataresExtra}" IsVisible="{Binding HayAvataresExtra}"
+                                <Label Grid.Column="1" Text="{Binding AvataresExtra}" IsVisible="{Binding HayAvataresExtra}"
                                        Style="{StaticResource TextoSecundario}" FontAttributes="Bold" VerticalOptions="Center" />
-                                <Label Text="{Binding ParticipantesTexto}" Style="{StaticResource TextoSecundario}" VerticalOptions="Center" />
-                            </HorizontalStackLayout>
+                                <Label Grid.Column="2" Text="{Binding ParticipantesTexto}" Style="{StaticResource TextoSecundario}"
+                                       VerticalOptions="Center" MaxLines="2" LineBreakMode="WordWrap" />
+                            </Grid>
 
                             <!-- HU29: datos cortos en chips -->
                             <FlexLayout Wrap="Wrap" Direction="Row" Margin="0,0,0,-6">
                                 <Border Style="{StaticResource Chip}">
                                     <Label Text="{Binding HoraChip}" Style="{StaticResource ChipTexto}" />
                                 </Border>
-                                <Border Style="{StaticResource Chip}">
-                                    <Label Text="{Binding AsientosChip}" Style="{StaticResource ChipTexto}" />
+                                <!-- Lugares con color según cuántos quedan (siempre con el texto, sirve también en modo daltónico) -->
+                                <Border Style="{StaticResource ChipLugares}">
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border" Binding="{Binding Lugares}" Value="{x:Static local:NivelLugares.Pocos}">
+                                            <Setter Property="BackgroundColor" Value="{DynamicResource ColorAvisoFondo}" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Border" Binding="{Binding Lugares}" Value="{x:Static local:NivelLugares.Completo}">
+                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#EEEEEE, Dark=#333333}" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Label Text="{Binding AsientosChip}" Style="{StaticResource ChipLugaresTexto}">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label" Binding="{Binding Lugares}" Value="{x:Static local:NivelLugares.Pocos}">
+                                                <Setter Property="TextColor" Value="{DynamicResource ColorAviso}" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Label" Binding="{Binding Lugares}" Value="{x:Static local:NivelLugares.Completo}">
+                                                <Setter Property="TextColor" Value="{AppThemeBinding Light=#5E5E5E, Dark=#ACACAC}" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
                                 </Border>
                                 <!-- HU14: cuánto pagaría (solo en viajes con costo) -->
                                 <Border Style="{StaticResource Chip}" IsVisible="{Binding TieneCostoChip}">
                                     <Label Text="{Binding CostoChip}" Style="{StaticResource ChipTexto}" />
-                                </Border>
-                                <!-- HU24: punto de partida público del conductor -->
-                                <Border Style="{StaticResource Chip}" IsVisible="{Binding TienePuntoPartida}">
-                                    <Label Text="{Binding PartidaChip}" Style="{StaticResource ChipTexto}" />
                                 </Border>
                                 <!-- HU31: promedio de calificaciones del conductor, para saber con quién me anoto -->
                                 <Border Style="{StaticResource Chip}" IsVisible="{Binding TieneCalificacionChip}">
@@ -169,7 +231,7 @@
              en cualquier pantalla, y quedan guardados en el centro de notificaciones (campanita) -->
 
         <!-- HU1: publicar -->
-        <Button Grid.Row="3"
+        <Button Grid.Row="2"
                 Text="Publicar un viaje"
                 FontAttributes="Bold"
                 Clicked="OnPublicarClicked" />

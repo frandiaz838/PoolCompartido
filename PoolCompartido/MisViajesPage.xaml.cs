@@ -50,6 +50,66 @@ public partial class MisViajesPage : ContentPage
         await Navigation.PushAsync(new PerfilPage());
     }
 
+    /// <summary>
+    /// HU32: llamar o escribir por WhatsApp a alguien del viaje (por ejemplo, al llegar al punto de encuentro).
+    /// Solo aparecen los que cargaron su teléfono en Mi perfil.
+    /// </summary>
+    private async void OnContactarClicked(object? sender, EventArgs e)
+    {
+        if (sender is not Button { BindingContext: Viaje viaje }) return;
+
+        IReadOnlyList<(string Nombre, string Numero, bool EsConductor)> personas;
+        try
+        {
+            personas = await ServicioContactos.Instancia.ObtenerDelViajeAsync(viaje);
+        }
+        catch (SesionVencidaException ex)
+        {
+            RegistroErrores.RegistrarAviso(ex, "Ver teléfonos del viaje");
+            return;
+        }
+        catch (Exception ex) when (ex is SinConexionException or PermisoDenegadoException or ServidorException)
+        {
+            RegistroErrores.RegistrarError(ex, "Ver teléfonos del viaje");
+            await DisplayAlertAsync("No se pudieron cargar los teléfonos", ex.Message, "OK");
+            return;
+        }
+
+        if (personas.Count == 0)
+        {
+            await DisplayAlertAsync("Contactar",
+                "Todavía nadie de este viaje cargó su teléfono. Mientras tanto podés usar el chat del viaje." +
+                (ServicioContactos.Instancia.MiTelefono is null ? "\n\nVos podés cargar el tuyo en Mi perfil." : ""), "OK");
+            return;
+        }
+
+        // Dos opciones por persona: llamar y WhatsApp
+        var opciones = new List<(string Texto, Uri Destino)>();
+        foreach (var (nombre, numero, esConductor) in personas)
+        {
+            string quien = esConductor ? $"{nombre} (conductor)" : nombre;
+            opciones.Add(($"📞 Llamar a {quien}", ServicioContactos.UrlLlamar(numero)));
+            opciones.Add(($"💬 WhatsApp a {quien}", ServicioContactos.UrlWhatsApp(numero, $"Hola! Te escribo por el viaje {viaje.Ruta} de Pool Compartido.")));
+        }
+
+        string? elegida = await DisplayActionSheetAsync("¿A quién querés contactar?", "Cancelar", null,
+                                                        opciones.Select(o => o.Texto).ToArray());
+        var opcion = opciones.FirstOrDefault(o => o.Texto == elegida);
+        if (opcion.Destino is null) return;
+
+        try
+        {
+            if (!await Launcher.Default.OpenAsync(opcion.Destino))
+                throw new FeatureNotSupportedException();
+        }
+        catch (FeatureNotSupportedException ex)
+        {
+            RegistroErrores.RegistrarAviso(ex, "Llamar o abrir WhatsApp");
+            await DisplayAlertAsync("No se pudo abrir",
+                "Este dispositivo no puede llamar ni abrir WhatsApp. Probá desde el celular.", "OK");
+        }
+    }
+
     /// <summary>HU25: abre el chat grupal del viaje.</summary>
     private async void OnChatClicked(object? sender, EventArgs e)
     {
@@ -192,6 +252,7 @@ public partial class MisViajesPage : ContentPage
             await ServicioChat.Instancia.AvisarAlGrupoAsync(viaje, "se bajó del viaje");
             await _servicio.SalirseAsync(viaje);
             await PuntoDeEncuentro.BorrarSinFallarAsync(viaje);   // HU24: el conductor ya no necesita su dirección
+            await ServicioContactos.Instancia.QuitarDeViajeSinFallarAsync(viaje);   // HU32: ni su teléfono
             await DisplayAlertAsync("Listo", $"Ya no estás anotado en el viaje de {viaje.Conductor}.", "OK");
         }
         catch (ViajeException ex)

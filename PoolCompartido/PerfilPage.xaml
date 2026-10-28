@@ -45,6 +45,45 @@
                    FontSize="12"
                    TextColor="Gray" />
 
+            <!-- HU32: teléfono de contacto (opcional) -->
+            <Label Text="Teléfono (opcional)" FontAttributes="Bold" Margin="0,16,0,0" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <Entry x:Name="entryTelefono" Placeholder="Ej: 351 123 4567" Keyboard="Telephone" MaxLength="25" />
+                <Button x:Name="btnGuardarTelefono" Grid.Column="1" Text="Guardar" Clicked="OnGuardarTelefonoClicked" />
+            </Grid>
+            <Label x:Name="lblTelefono"
+                   Text="Solo lo ven las personas que viajan con vos, para llamarte o escribirte por WhatsApp. Nunca queda a la vista de todos."
+                   Style="{StaticResource TextoSecundario}" FontSize="12" />
+
+            <!-- HU30: mis horarios habituales -->
+            <Label Text="Mis horarios" FontAttributes="Bold" Margin="0,16,0,0" />
+            <Label Text="Los días y horas en que viajás siempre. Los viajes que coinciden aparecen primero y te avisamos cuando publican uno."
+                   Style="{StaticResource TextoSecundario}" FontSize="12" />
+            <VerticalStackLayout x:Name="listaHorarios" Spacing="8">
+                <BindableLayout.EmptyView>
+                    <Label Text="Todavía no cargaste ningún horario." Style="{StaticResource TextoSecundario}" />
+                </BindableLayout.EmptyView>
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate x:DataType="local:HorarioHabitual">
+                        <Border Style="{StaticResource TarjetaViaje}" Padding="14,10">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnHorarioTocado" />
+                            </Border.GestureRecognizers>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <VerticalStackLayout Spacing="2">
+                                    <Label Text="{Binding Resumen}" FontAttributes="Bold" />
+                                    <Label Text="{Binding Ruta}" Style="{StaticResource TextoSecundario}" />
+                                </VerticalStackLayout>
+                                <Label Grid.Column="1" Text="Editar" VerticalOptions="Center" FontSize="13"
+                                       TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+            <Button Text="+ Agregar horario" Style="{StaticResource BotonSecundario}" HorizontalOptions="Start"
+                    Clicked="OnAgregarHorarioClicked" />
+
             <!-- HU18 + HU19: apariencia -->
             <Label Text="Apariencia" FontAttributes="Bold" Margin="0,16,0,0" />
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">

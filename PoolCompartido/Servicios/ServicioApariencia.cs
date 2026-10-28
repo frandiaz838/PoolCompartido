@@ -105,6 +105,7 @@ public static class ServicioApariencia
         recursos["ColorPeligro"] = Color.FromArgb(paleta.Peligro);
         recursos["ColorPeligroBorde"] = Color.FromArgb(paleta.PeligroBorde);
         recursos["ColorAviso"] = Color.FromArgb(paleta.Aviso);
+        recursos["ColorAvisoFondo"] = Color.FromArgb(paleta.AvisoFondo);   // HU29
 
         AjustarBarraDeEstado();
     }

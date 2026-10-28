@@ -100,14 +100,22 @@ public partial class PublicarViajePage : ContentPage
                     await DisplayAlertAsync("No se publicó", resultado.Resumen, "OK");
                     return;
                 }
+
+                // HU32: si cargué mi teléfono, lo van a ver los que se anoten en cualquiera de los viajes de la rutina
+                foreach (var viaje in resultado.Publicados)
+                    await ServicioContactos.Instancia.CompartirEnViajeSinFallarAsync(viaje);
+
                 await DisplayAlertAsync("Listo", resultado.Resumen + " Ya los pueden ver los demás.", "OK");
                 await Navigation.PopAsync();
                 return;
             }
 
-            await _servicio.PublicarAsync(entryOrigen.Text, entryDestino.Text, fecha,
+            var publicado = await _servicio.PublicarAsync(entryOrigen.Text, entryDestino.Text, fecha,
                                           FranjasHorarias.HoraATexto(hora), asientos, editorComentario.Text,
                                           entryPuntoPartida.Text, costo);
+
+            // HU32: si cargué mi teléfono, lo van a ver los que se anoten
+            await ServicioContactos.Instancia.CompartirEnViajeSinFallarAsync(publicado);
 
             await DisplayAlertAsync("Listo", "¡Viaje publicado! Ya lo pueden ver los demás.", "OK");
             await Navigation.PopAsync();

@@ -139,6 +139,43 @@ internal class NotificacionDatos
     };
 }
 
+/// <summary>HU32: mi teléfono (/telefonos/{uid}, solo lo lee el dueño).</summary>
+internal class TelefonoDatos
+{
+    public string Numero { get; set; } = "";
+}
+
+/// <summary>HU30: un horario habitual tal como se guarda en Firebase (/horarios/{uid}/{id}).</summary>
+internal class HorarioDatos
+{
+    /// <summary>Días de la semana separados por coma (0 = domingo … 6 = sábado), por ejemplo "1,3,5".</summary>
+    public string Dias { get; set; } = "";
+    /// <summary>"07:30".</summary>
+    public string Hora { get; set; } = "";
+    public string? Origen { get; set; }
+    public string Destino { get; set; } = "";
+
+    /// <summary>Convierte a modelo; null si los datos están rotos (no se muestran).</summary>
+    public HorarioHabitual? AHorario(string id)
+    {
+        var dias = Dias.Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(d => int.TryParse(d, out int n) && n is >= 0 and <= 6 ? (DayOfWeek?)n : null)
+            .ToList();
+        if (dias.Count == 0 || dias.Any(d => d is null) || string.IsNullOrWhiteSpace(Destino)
+            || !TimeSpan.TryParseExact(Hora, @"hh\:mm", CultureInfo.InvariantCulture, out var hora))
+            return null;
+        return new HorarioHabitual(id, dias.Select(d => d!.Value).ToList(), hora, Origen ?? "", Destino);
+    }
+
+    public static HorarioDatos De(HorarioHabitual h) => new()
+    {
+        Dias = string.Join(",", h.Dias.Select(d => (int)d)),
+        Hora = h.HoraTexto,
+        Origen = string.IsNullOrWhiteSpace(h.Origen) ? null : h.Origen,
+        Destino = h.Destino
+    };
+}
+
 /// <summary>HU25: un mensaje del chat tal como se lee de Firebase (/chats/{viajeId}/{clave}).</summary>
 internal class MensajeDatos
 {
@@ -269,8 +306,11 @@ internal class DetalleErrorAuth
 [JsonSerializable(typeof(string))]   // HU15: el PIN en /pines
 [JsonSerializable(typeof(PuntoEncuentroDatos))]
 [JsonSerializable(typeof(Dictionary<string, PuntoEncuentroDatos>))]
-[JsonSerializable(typeof(Dictionary<string, LugarGuardadoDatos>))]
-[JsonSerializable(typeof(List<NotificacionDatos>))]                // HU26: notificaciones guardadas   // lugares ya encontrados en el mapa
+[JsonSerializable(typeof(Dictionary<string, LugarGuardadoDatos>))]   // lugares ya encontrados en el mapa
+[JsonSerializable(typeof(List<NotificacionDatos>))]                // HU26: notificaciones guardadas
+[JsonSerializable(typeof(HorarioDatos))]                           // HU30: horarios habituales
+[JsonSerializable(typeof(Dictionary<string, HorarioDatos>))]
+[JsonSerializable(typeof(TelefonoDatos))]                          // HU32: teléfono de contacto
 [JsonSerializable(typeof(SesionGuardada))]
 [JsonSerializable(typeof(PedidoAutenticacion))]
 [JsonSerializable(typeof(PedidoActualizarPerfil))]

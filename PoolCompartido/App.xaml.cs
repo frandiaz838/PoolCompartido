@@ -47,12 +47,46 @@ namespace PoolCompartido
         {
             await ServicioViajes.Instancia.CargarAsync();
 
+            // HU30: mis horarios habituales. Se conecta ANTES que las notificaciones,
+            // así el aviso de un viaje nuevo ya sabe si coincide con mis horarios
+            await CargarHorariosAsync();
+            ServicioHorarios.Instancia.Conectar(ServicioViajes.Instancia.Eventos);
+
+            // HU32: mi teléfono (en segundo plano: no hace esperar la entrada a la app)
+            _ = CargarContactosAsync();
+
             // HU26: el centro de notificaciones escucha todos los eventos de viajes de este usuario
             if (ServicioAutenticacion.UidActual is string uid)
                 ServicioNotificaciones.Instancia.Conectar(ServicioViajes.Instancia.Eventos, uid);
 
             CambiarPagina(new AppShell());
             IniciarSincronizacion();
+        }
+
+        /// <summary>HU30: si no se pueden traer los horarios, la app funciona igual (solo no marca coincidencias).</summary>
+        private static async Task CargarHorariosAsync()
+        {
+            try
+            {
+                await ServicioHorarios.Instancia.CargarAsync();
+            }
+            catch (Exception ex) when (ex is SinConexionException or PermisoDenegadoException or ServidorException)
+            {
+                RegistroErrores.RegistrarAviso(ex, "Cargar mis horarios");
+            }
+        }
+
+        /// <summary>HU32: si falla, se puede cargar después desde Mi perfil.</summary>
+        private static async Task CargarContactosAsync()
+        {
+            try
+            {
+                await ServicioContactos.Instancia.CargarAsync(ServicioViajes.Instancia.Viajes.ToList());
+            }
+            catch (Exception ex) when (ex is SinConexionException or PermisoDenegadoException or ServidorException or SesionVencidaException)
+            {
+                RegistroErrores.RegistrarAviso(ex, "Cargar mi teléfono");
+            }
         }
 
         private void IrAlLogin()
@@ -64,6 +98,8 @@ namespace PoolCompartido
             ServicioCalificaciones.Instancia.Reiniciar();   // HU31
             ServicioApariencia.Reiniciar();       // HU19
             ServicioNotificaciones.Instancia.Reiniciar();   // HU26
+            ServicioHorarios.Instancia.Reiniciar();         // HU30
+            ServicioContactos.Instancia.Reiniciar();        // HU32
             CambiarPagina(new LoginPage());
         }
 

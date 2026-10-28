@@ -19,6 +19,7 @@ public partial class MainPage : ContentPage
         listaViajes.ItemsSource = _viajesVisibles;
         pickerHorario.ItemsSource = FranjasHorarias.Nombres;
         pickerHorario.SelectedIndex = 0;
+        CargarDias();
 
         // Tabla de eventos: esta pantalla registra la misma callback para todos los eventos de viajes.
         // Los eventos llegan tanto por acciones en este dispositivo como por la sincronización con Firebase.
@@ -98,14 +99,25 @@ public partial class MainPage : ContentPage
     /// </summary>
     private void Redibujar()
     {
-        string destino = entryDestino.Text?.Trim() ?? "";
+        string origen = Geocodificador.Normalizar(entryOrigen.Text?.Trim() ?? "");
+        string destino = Geocodificador.Normalizar(entryDestino.Text?.Trim() ?? "");
         var franja = (FranjaHoraria)Math.Max(pickerHorario.SelectedIndex, 0);
+        DateTime? dia = pickerDia.SelectedIndex > 0 && pickerDia.SelectedIndex < _dias.Count ? _dias[pickerDia.SelectedIndex] : null;
 
+        // HU30: se marca cada viaje que coincide con mis horarios habituales
+        ServicioHorarios.Instancia.ActualizarCoincidencias(_servicio.Viajes);
+
+        // Sin tildes ni mayúsculas: "cordoba" encuentra "Córdoba"
         var filtrados = _servicio.Viajes
             .Where(v => v.AceptaPasajeros)   // ni cancelados ni a menos de 5 minutos de salir
-            .Where(v => destino == "" || v.Destino.Contains(destino, StringComparison.OrdinalIgnoreCase))
+            .Where(v => origen == "" || Geocodificador.Normalizar(v.Origen).Contains(origen)
+                                     || Geocodificador.Normalizar(v.PuntoPartida).Contains(origen))
+            .Where(v => destino == "" || Geocodificador.Normalizar(v.Destino).Contains(destino))
+            .Where(v => dia is null || v.Fecha.Date == dia.Value)
             .Where(v => FranjasHorarias.Incluye(franja, v.Hora))
-            .OrderBy(v => v.Salida);
+            // HU30: primero los que coinciden con mis horarios, después por hora de salida
+            .OrderBy(v => v.CoincideConMiHorario ? 0 : 1)
+            .ThenBy(v => v.Salida);
 
         _viajesVisibles.Clear();
         foreach (var viaje in filtrados)
@@ -155,13 +167,47 @@ public partial class MainPage : ContentPage
         await Shell.Current.GoToAsync("//MisViajesPage");
     }
 
-    private void OnDestinoCambiado(object? sender, TextChangedEventArgs e) => Redibujar();
+    // ───── Filtros ─────
+
+    /// <summary>Fechas del filtro "Día" (la primera, null, es "Cualquier día").</summary>
+    private readonly List<DateTime?> _dias = new();
+
+    /// <summary>"Cualquier día", "Hoy", "Mañana" y los 5 días siguientes ("Sáb 01/11").</summary>
+    private void CargarDias()
+    {
+        _dias.Clear();
+        _dias.Add(null);
+        var nombres = new List<string> { "Cualquier día" };
+        for (int i = 0; i < 7; i++)
+        {
+            var fecha = DateTime.Today.AddDays(i);
+            _dias.Add(fecha);
+            nombres.Add(i switch
+            {
+                0 => "Hoy",
+                1 => "Mañana",
+                _ => $"{HorarioHabitual.DiaCorto(fecha.DayOfWeek)} {fecha:dd/MM}"
+            });
+        }
+        pickerDia.ItemsSource = nombres;
+        pickerDia.SelectedIndex = 0;
+    }
+
+    private void OnFiltroTextoCambiado(object? sender, TextChangedEventArgs e) => Redibujar();
 
     private void OnHorarioCambiado(object? sender, EventArgs e) => Redibujar();
 
+    /// <summary>⇄: invierte desde y hacia, para buscar la vuelta.</summary>
+    private void OnInvertirClicked(object? sender, EventArgs e)
+    {
+        (entryOrigen.Text, entryDestino.Text) = (entryDestino.Text, entryOrigen.Text);
+    }
+
     private void OnLimpiarClicked(object? sender, EventArgs e)
     {
+        entryOrigen.Text = "";
         entryDestino.Text = "";
+        pickerDia.SelectedIndex = 0;
         pickerHorario.SelectedIndex = 0;
     }
 
@@ -201,6 +247,9 @@ public partial class MainPage : ContentPage
 
             // HU25: aviso automático en el chat del viaje
             await ServicioChat.Instancia.AvisarAlGrupoAsync(viaje, "se sumó al viaje");
+
+            // HU32: si cargué mi teléfono, lo pueden ver los de este viaje
+            await ServicioContactos.Instancia.CompartirEnViajeSinFallarAsync(viaje);
 
             // HU24: enseguida se pregunta dónde lo pasan a buscar (se puede dejar para después)
             await PuntoDeEncuentro.PedirYGuardarAsync(PaginaVisible, viaje);
