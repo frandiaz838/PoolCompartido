@@ -131,6 +131,22 @@ public partial class MisViajesPage : ContentPage
     {
         if (sender is not Button { BindingContext: Viaje viaje } boton) return;
 
+        // HU28: si es de una rutina fija, se pregunta si es solo este o todos los que quedan
+        var quedan = _servicio.QuedanDeLaSerie(viaje);
+        if (quedan.Count > 1)
+        {
+            const string soloEste = "Solo este";
+            string todos = $"Todos los que quedan ({quedan.Count})";
+            string? opcion = await DisplayActionSheetAsync("Este viaje es parte de una rutina fija. ¿Qué querés cancelar?",
+                                                           "No cancelar", null, soloEste, todos);
+            if (opcion == todos)
+            {
+                await CancelarSerieAsync(viaje, quedan, boton);
+                return;
+            }
+            if (opcion != soloEste) return;   // tocó "No cancelar" o cerró el menú
+        }
+
         string detalle = viaje.Pasajeros.Count == 0
             ? "No hay pasajeros anotados."
             : $"Se va a avisar a {viaje.Pasajeros.Count} pasajero(s): {string.Join(", ", viaje.Pasajeros)}.";
@@ -161,6 +177,50 @@ public partial class MisViajesPage : ContentPage
         {
             RegistroErrores.RegistrarError(ex, "Cancelar viaje");
             await DisplayAlertAsync("No se pudo cancelar", ex.Message, "OK");
+        }
+        finally
+        {
+            boton.IsEnabled = true;
+        }
+    }
+
+    /// <summary>HU28: el conductor cancela todos los viajes que quedan de una rutina fija.</summary>
+    private async Task CancelarSerieAsync(Viaje viaje, IReadOnlyList<Viaje> quedan, Button boton)
+    {
+        int conPasajeros = quedan.Count(v => v.Pasajeros.Count > 0);
+        string detalle = conPasajeros == 0
+            ? "No hay pasajeros anotados."
+            : $"Se va a avisar a los pasajeros de {conPasajeros} de esos viajes.";
+
+        bool confirmar = await DisplayAlertAsync("Cancelar rutina",
+            $"¿Seguro que querés cancelar los {quedan.Count} viajes {viaje.Ruta} que quedan, del {quedan[0].Fecha:dd/MM} al {quedan[^1].Fecha:dd/MM}? {detalle}",
+            "Sí, cancelar todos", "No");
+        if (!confirmar) return;
+
+        boton.IsEnabled = false;
+        try
+        {
+            var cancelados = await _servicio.CancelarSerieAsync(viaje);
+            foreach (var cancelado in cancelados)
+                await ServicioChat.Instancia.AvisarAlGrupoAsync(cancelado, "canceló el viaje");   // HU25
+            await DisplayAlertAsync("Rutina cancelada",
+                $"Listo, se cancelaron {cancelados.Count} viajes y los pasajeros van a recibir el aviso.", "OK");
+        }
+        catch (ViajeException ex)
+        {
+            RegistroErrores.RegistrarAviso(ex, "Cancelar rutina fija");
+            await DisplayAlertAsync("No se pudo cancelar", ex.Message, "OK");
+        }
+        catch (SesionVencidaException ex)
+        {
+            // La app ya volvió a la pantalla de inicio de sesión
+            RegistroErrores.RegistrarAviso(ex, "Cancelar rutina fija");
+        }
+        catch (Exception ex) when (ex is SinConexionException or PermisoDenegadoException or ServidorException)
+        {
+            // Los que se llegaron a cancelar quedan cancelados: la lista ya los muestra así
+            RegistroErrores.RegistrarError(ex, "Cancelar rutina fija");
+            await DisplayAlertAsync("No se pudieron cancelar todos", ex.Message, "OK");
         }
         finally
         {

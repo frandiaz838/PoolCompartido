@@ -54,6 +54,10 @@ public class Viaje : INotifyPropertyChanged
     public bool TienePuntoPartida => !string.IsNullOrWhiteSpace(PuntoPartida);
     public string PuntoPartidaTexto => $"Sale desde: {PuntoPartida}";
 
+    /// <summary>HU28: los viajes de una misma rutina fija comparten este identificador (null = viaje suelto).</summary>
+    public string? SerieId { get; init; }
+    public bool EsDeSerie => !string.IsNullOrEmpty(SerieId);
+
     // ───── HU15: check-in y ciclo de vida ─────
 
     /// <summary>HU15: el conductor tocó "Iniciar viaje".</summary>

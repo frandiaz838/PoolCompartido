@@ -29,8 +29,50 @@
                    Unfocused="OnDestinoUnfocused" />
             <Label x:Name="lblMapaDestino" FontSize="12" IsVisible="False" />
 
-            <Label Text="Fecha" Margin="0,8,0,0" />
-            <DatePicker x:Name="dpFecha" Format="dd/MM/yyyy" />
+            <Label x:Name="lblFecha" Text="Fecha" Margin="0,8,0,0" />
+            <DatePicker x:Name="dpFecha" Format="dd/MM/yyyy" DateSelected="OnRepeticionCambiada" />
+
+            <!-- HU28: rutina fija. Se publica un viaje por cada día elegido, hasta la fecha "Hasta" -->
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,8,0,0">
+                <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                    <Label Text="Repetir todas las semanas" />
+                    <Label Text="Para el viaje que hacés siempre. Ej: lunes y miércoles a las 8."
+                           Style="{StaticResource TextoSecundario}" FontSize="12" />
+                </VerticalStackLayout>
+                <Switch x:Name="swRepetir" Grid.Column="1" VerticalOptions="Center" Toggled="OnRepetirToggled" />
+            </Grid>
+            <VerticalStackLayout x:Name="panelRepetir" IsVisible="False" Spacing="6">
+                <Label Text="Días" />
+                <FlexLayout Wrap="Wrap">
+                    <HorizontalStackLayout Margin="0,0,12,0">
+                        <CheckBox x:Name="chkLunes" VerticalOptions="Center" CheckedChanged="OnRepeticionCambiada" />
+                        <Label Text="Lun" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout Margin="0,0,12,0">
+                        <CheckBox x:Name="chkMartes" VerticalOptions="Center" CheckedChanged="OnRepeticionCambiada" />
+                        <Label Text="Mar" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout Margin="0,0,12,0">
+                        <CheckBox x:Name="chkMiercoles" VerticalOptions="Center" CheckedChanged="OnRepeticionCambiada" />
+                        <Label Text="Mié" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout Margin="0,0,12,0">
+                        <CheckBox x:Name="chkJueves" VerticalOptions="Center" CheckedChanged="OnRepeticionCambiada" />
+                        <Label Text="Jue" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout Margin="0,0,12,0">
+                        <CheckBox x:Name="chkViernes" VerticalOptions="Center" CheckedChanged="OnRepeticionCambiada" />
+                        <Label Text="Vie" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout Margin="0,0,12,0">
+                        <CheckBox x:Name="chkSabado" VerticalOptions="Center" CheckedChanged="OnRepeticionCambiada" />
+                        <Label Text="Sáb" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                </FlexLayout>
+                <Label Text="Hasta (como máximo 16 semanas)" />
+                <DatePicker x:Name="dpHasta" Format="dd/MM/yyyy" DateSelected="OnRepeticionCambiada" />
+                <Label x:Name="lblCantidad" Style="{StaticResource TextoSecundario}" FontSize="12" />
+            </VerticalStackLayout>
 
             <Label Text="Hora de salida" Margin="0,8,0,0" />
             <!-- Cualquier hora (antes era una lista fija de 6 horarios) -->
@@ -66,7 +108,8 @@
                    IsVisible="False"
                    Margin="0,8,0,0" />
 
-            <Button Text="Publicar viaje"
+            <Button x:Name="btnPublicar"
+                    Text="Publicar viaje"
                     FontAttributes="Bold"
                     Margin="0,12,0,0"
                     Clicked="OnConfirmarClicked" />

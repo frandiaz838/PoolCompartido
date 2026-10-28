@@ -4,6 +4,9 @@ public partial class PublicarViajePage : ContentPage
 {
     private readonly ServicioViajes _servicio = ServicioViajes.Instancia;
 
+    /// <summary>HU28: cada casilla con su día de la semana (de lunes a sábado).</summary>
+    private readonly (CheckBox Casilla, DayOfWeek Dia)[] _dias;
+
     public PublicarViajePage()
     {
         InitializeComponent();
@@ -16,6 +19,54 @@ public partial class PublicarViajePage : ContentPage
         int proximaHora = Math.Min(DateTime.Now.Hour + 1, 23);
         tpHora.Time = new TimeSpan(proximaHora, 0, 0);
         pickerAsientos.ItemsSource = new[] { "1", "2", "3", "4" };
+
+        // HU28: casillas de los días y, por defecto, una rutina de 4 semanas
+        _dias = new[]
+        {
+            (chkLunes, DayOfWeek.Monday), (chkMartes, DayOfWeek.Tuesday), (chkMiercoles, DayOfWeek.Wednesday),
+            (chkJueves, DayOfWeek.Thursday), (chkViernes, DayOfWeek.Friday), (chkSabado, DayOfWeek.Saturday)
+        };
+        dpHasta.MinimumDate = DateTime.Today;
+        dpHasta.Date = DateTime.Today.AddDays(4 * 7);
+    }
+
+    private IEnumerable<DayOfWeek> DiasElegidos() =>
+        _dias.Where(d => d.Casilla.IsChecked).Select(d => d.Dia);
+
+    /// <summary>HU28: muestra u oculta los días y la fecha "hasta".</summary>
+    private void OnRepetirToggled(object? sender, ToggledEventArgs e)
+    {
+        panelRepetir.IsVisible = e.Value;
+        lblFecha.Text = e.Value ? "Primer viaje (desde)" : "Fecha";
+        btnPublicar.Text = e.Value ? "Publicar viajes" : "Publicar viaje";
+
+        // Si todavía no eligió días, se marca el de la fecha elegida (el domingo no está)
+        DateTime fecha = ((DateTime?)dpFecha.Date) ?? DateTime.Today;
+        if (e.Value && !DiasElegidos().Any() && _dias.FirstOrDefault(d => d.Dia == fecha.DayOfWeek).Casilla is CheckBox casilla)
+            casilla.IsChecked = true;
+
+        ActualizarCantidad();
+    }
+
+    private void OnRepeticionCambiada(object? sender, EventArgs e) => ActualizarCantidad();
+
+    /// <summary>HU28: "Son 8 viajes." debajo de la fecha "hasta", o qué falta elegir.</summary>
+    private void ActualizarCantidad()
+    {
+        if (_dias is null || !swRepetir.IsToggled) return;   // todavía se está armando la pantalla
+
+        DateTime desde = ((DateTime?)dpFecha.Date) ?? DateTime.Today;
+        DateTime hasta = ((DateTime?)dpHasta.Date) ?? desde;
+        try
+        {
+            int cantidad = Repeticiones.Fechas(desde, hasta, DiasElegidos()).Count;
+            lblCantidad.Text = cantidad == 1 ? "Es 1 viaje." : $"Son {cantidad} viajes.";
+        }
+        catch (ArgumentException ex)
+        {
+            // También ArgumentOutOfRangeException (más de 16 semanas): se muestra el mismo mensaje
+            lblCantidad.Text = ex.Message;
+        }
     }
 
     private async void OnConfirmarClicked(object? sender, EventArgs e)
@@ -36,6 +87,28 @@ public partial class PublicarViajePage : ContentPage
 
             // HU14: vacío = sin costo. Puede lanzar FormatException o ArgumentOutOfRangeException
             decimal? costo = ServicioViajes.LeerCosto(entryCosto.Text);
+
+            // HU28: rutina fija, un viaje por cada día elegido
+            if (swRepetir.IsToggled)
+            {
+                DateTime hasta = ((DateTime?)dpHasta.Date) ?? fecha;
+                ResultadoSerie resultado = await _servicio.PublicarSerieAsync(entryOrigen.Text, entryDestino.Text, fecha, hasta,
+                    DiasElegidos(), FranjasHorarias.HoraATexto(hora), asientos, editorComentario.Text, entryPuntoPartida.Text, costo);
+
+                if (resultado.Publicados.Count == 0)
+                {
+                    await DisplayAlertAsync("No se publicó", resultado.Resumen, "OK");
+                    return;
+                }
+
+                // HU32: si cargué mi teléfono, lo van a ver los que se anoten en cualquiera de los viajes de la rutina
+                foreach (var viaje in resultado.Publicados)
+                    await ServicioContactos.Instancia.CompartirEnViajeSinFallarAsync(viaje);
+
+                await DisplayAlertAsync("Listo", resultado.Resumen + " Ya los pueden ver los demás.", "OK");
+                await Navigation.PopAsync();
+                return;
+            }
 
             var publicado = await _servicio.PublicarAsync(entryOrigen.Text, entryDestino.Text, fecha,
                                           FranjasHorarias.HoraATexto(hora), asientos, editorComentario.Text,
