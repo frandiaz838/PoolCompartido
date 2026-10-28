@@ -40,8 +40,15 @@ public static class ConversorMensajes
             // Se publicó un viaje
             (ViajeEvento.VIAJE_PUBLICADO, RolEnViaje.Conductor) =>
                 $"Publicaste tu viaje {viaje.Ruta} {cuando}.",
+            // HU30: si coincide con mis horarios, el aviso lo da VIAJE_COINCIDENTE (que llega encadenado)
+            (ViajeEvento.VIAJE_PUBLICADO, RolEnViaje.Ninguno)
+                when viaje.AceptaPasajeros && ServicioHorarios.Instancia.MejorCoincidencia(viaje) is not null => null,
             (ViajeEvento.VIAJE_PUBLICADO, _) =>
                 $"Nuevo viaje de {viaje.Conductor}: {viaje.Ruta} {cuando}.",
+
+            // HU30: un viaje nuevo coincide con uno de mis horarios habituales
+            (ViajeEvento.VIAJE_COINCIDENTE, RolEnViaje.Ninguno) =>
+                $"Nuevo viaje para tu horario del {viaje.Coincidencia}: {viaje.Conductor} va de {viaje.Ruta}, {viaje.DiaTexto.ToLowerInvariant()} a las {viaje.Hora}. ¡Anotate!",
 
             // Alguien se anotó
             (ViajeEvento.ASIENTO_RESERVADO, RolEnViaje.Conductor) =>

@@ -17,5 +17,6 @@ public enum ViajeEvento
     VIAJE_FINALIZADO,      // HU15
     PASAJERO_A_BORDO,      // HU15
     MENSAJE_RECIBIDO,      // HU25
-    NO_SHOW_DETECTADO      // HU16
+    NO_SHOW_DETECTADO,     // HU16
+    VIAJE_COINCIDENTE      // HU30: un viaje nuevo coincide con mis horarios (encadenado a VIAJE_PUBLICADO)
 }
