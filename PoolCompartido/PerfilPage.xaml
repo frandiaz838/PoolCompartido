@@ -24,6 +24,8 @@
             </Border>
 
             <Label x:Name="lblNombre" FontSize="22" FontAttributes="Bold" HorizontalOptions="Center" />
+            <!-- HU31: promedio de las calificaciones que recibí -->
+            <Label x:Name="lblCalificacion" FontSize="15" FontAttributes="Bold" HorizontalOptions="Center" />
             <Label x:Name="lblEmail" FontSize="14" HorizontalOptions="Center" />
             <Label x:Name="lblVerificacion" FontSize="13" HorizontalOptions="Center" />
             <Button x:Name="btnReenviar"

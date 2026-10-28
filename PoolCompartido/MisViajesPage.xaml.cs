@@ -57,6 +57,13 @@ public partial class MisViajesPage : ContentPage
         await Navigation.PushAsync(new ChatPage(viaje));
     }
 
+    /// <summary>HU31: abre la pantalla para calificar a los que viajaron.</summary>
+    private async void OnCalificarClicked(object? sender, EventArgs e)
+    {
+        if (sender is not Button { BindingContext: Viaje viaje }) return;
+        await Navigation.PushAsync(new CalificarPage(viaje));
+    }
+
     /// <summary>HU22: abre la ruta del viaje en Google Maps.</summary>
     private async void OnVerRutaClicked(object? sender, EventArgs e)
     {
