@@ -8,15 +8,18 @@ Guía del sprint para el equipo: **Compañero 1 = Francisco (Díaz)** y **Compa�
 
 Pulir la experiencia: que ningún aviso se pierda, que la app se vea moderna, que sirva para el día a día de un estudiante (siempre los mismos días y horarios) y que se pueda confiar en con quién viajás. Varias ideas salen de mirar una app parecida (PUL, pul.com.ar).
 
-| HU | Qué es | Quién | Orden |
-|---|---|---|---|
-| HU26 | Centro de notificaciones (avisos en todas las pantallas + campanita) | Compañero 1 (Francisco) | 1 |
-| HU29 | Rediseño de las tarjetas de viaje (avatares, íconos, chips, "Tu próximo viaje") | Compañero 1 (Francisco) | 2 |
-| HU30 | Viajes que coinciden con mi horario y mi zona | Compañero 1 (Francisco) | 3 (si da el tiempo) |
-| HU28 | Rutina fija: publicar un viaje que se repite toda la semana o el cuatrimestre | Compañero 2 (Octavio) | 1 |
-| HU31 | Calificaciones después del viaje | Compañero 2 (Octavio) | 2 |
+> **Sprint cerrado: todas las historias están hechas y mergeadas en `main`.**
 
-Backlog futuro: HU9 (cuántas veces viajé con alguien), HU20 (ingreso con Google) y HU27 (registro solo con mail de la facultad; se dejó para más adelante porque limita las pruebas y a usuarios de otras facultades).
+| HU | Qué es | Quién | Estado |
+|---|---|---|---|
+| HU26 | Centro de notificaciones (avisos en todas las pantallas + campanita) | Compañero 1 (Francisco) | HECHA |
+| HU29 | Rediseño de las tarjetas de viaje (avatares, chips, "Tu próximo viaje") | Compañero 1 (Francisco) | HECHA |
+| HU30 | Mis horarios: viajes que coinciden con mi rutina | Compañero 1 (Francisco) | HECHA |
+| HU32 | Teléfono de contacto: llamar o WhatsApp desde la app (agregada durante el sprint) | Compañero 1 (Francisco) | HECHA |
+| HU28 | Rutina fija: publicar un viaje que se repite toda la semana o el cuatrimestre | Compañero 2 (Octavio) | HECHA |
+| HU31 | Calificaciones después del viaje | Compañero 2 (Octavio) | HECHA |
+
+Backlog futuro: HU9 (cuántas veces viajé con alguien), HU20 (ingreso con Google), HU27 (registro solo con mail de la facultad; se dejó para más adelante porque limita las pruebas y a usuarios de otras facultades) y HU33 ("Busco pasajeros", idea de Carpoolear).
 
 ---
 
@@ -65,13 +68,13 @@ Igual que en el Sprint 5:
 - En Publicar, al salir de Origen, Destino o "Desde dónde salís" se muestra debajo si el lugar aparece en el mapa (no frena la publicación).
 
 ### Reglas de Firebase actuales
-Nodos: `viajes`, `pines`, `encuentros` (con `zona` opcional), `chats`. El archivo de `main` es el que está publicado.
+Nodos (al cierre del sprint): `viajes` (con `serieId`), `pines`, `encuentros` (con `zona` opcional), `chats`, `horarios` (HU30), `telefonos` y `contactos` (HU32) y `calificaciones` (HU31). El archivo de `main` es el que está publicado.
 
 ---
 
 ## 4. Historias de Francisco (Compañero 1)
 
-### HU26 (US E4-26) – Centro de notificaciones
+### HU26 (US E4-26) – Centro de notificaciones · HECHA
 **Como** usuario, **quiero** ver los avisos de mis viajes en cualquier pantalla y poder revisarlos después, **para** no perderme novedades aunque no esté en "Viajes disponibles".
 
 Criterios de aceptación:
@@ -85,7 +88,7 @@ Diseño:
 - El cartel es un control reutilizable en `Controles/` que se agrega a cada pantalla.
 - La oferta de reemplazo ("¿Querés anotarte?") se sigue mostrando como cartel con botones, en la pantalla que esté abierta.
 
-### HU29 (US E11-29) – Rediseño de las tarjetas de viaje
+### HU29 (US E11-29) – Rediseño de las tarjetas de viaje · HECHA
 **Como** usuario, **quiero** que las tarjetas de los viajes se lean de un vistazo, **para** encontrar rápido lo que me sirve.
 
 Criterios de aceptación:
@@ -94,19 +97,46 @@ Criterios de aceptación:
 - Arriba de "Viajes disponibles", una tarjeta **"Tu próximo viaje"** con hora, ruta y botones de Ruta y Chat.
 - Respeta tema claro/oscuro y la paleta para daltonismo (solo `DynamicResource` y `AppThemeBinding`).
 
-### HU30 (US E1-30) – Viajes que coinciden con mi horario y mi zona
-**Como** pasajero, **quiero** ver primero los viajes que salen cerca de mi horario habitual y de mi zona, **para** no tener que revisar toda la lista.
+### HU30 (US E1-30) – Mis horarios · HECHA
+**Como** pasajero, **quiero** cargar los días y horarios en que viajo siempre, **para** ver primero los viajes que me sirven y enterarme cuando publican uno.
 
-Criterios de aceptación:
-- La app aprende mi horario habitual de los viajes que hice (o lo cargo en Mi perfil).
-- Los viajes que salen ±1 hora de ese horario y desde mi zona muestran la etiqueta **"Coincide con tu horario"** y aparecen primero.
-- Usa el método genérico `Busqueda.MasCercano<T, TDistancia>` (el mismo del reemplazo).
+Cómo quedó:
+- **Mi perfil → Mis horarios** (`HorarioPage`): días de la semana, hora, desde (opcional) y hacia. Hasta 10 horarios, guardados en Firebase en `/horarios/{uid}` (solo los lee y escribe el dueño).
+- Un viaje **coincide** si sale ese día, con ±1 hora de diferencia y va al mismo lugar (compara palabras sin tildes y entiende siglas: "UBP" = "Universidad Blas Pascal"). Esos viajes aparecen primero con **"⭐ Coincide con tu horario del lunes 07:30"**.
+- `ServicioHorarios` usa el método genérico `Busqueda.MasCercano<T, TDistancia>` (el mismo del reemplazo, HU6) para elegir el horario que mejor coincide.
+- Evento nuevo `VIAJE_COINCIDENTE`, **encadenado** a `VIAJE_PUBLICADO` (HU11): el centro de notificaciones avisa "⭐ Nuevo viaje para tu horario del…".
+- Excepciones: sin días o sin destino → `ArgumentException`; más de 10 horarios → `ArgumentOutOfRangeException`.
+
+## 4b. Agregados durante el sprint (Francisco)
+
+### HU32 (US E4-32) – Teléfono de contacto · HECHA
+- Mi perfil → **Teléfono (opcional)**: se normaliza solo al formato internacional ("351 123 4567" → "+5493511234567"); un texto inválido → `FormatException`.
+- Privacidad: se guarda en `/telefonos/{uid}` (solo el dueño) y se copia a `/contactos/{viajeId}/{uid}` solo en los viajes donde participa; las reglas solo dejan leerlo a los de ese viaje. Se borra al salirse.
+- Mis viajes → **Contactar**: 📞 Llamar o 💬 WhatsApp (abre el chat con un saludo) a cada persona del viaje que cargó su número.
+
+### Mejoras de las tarjetas (ideas de Carpoolear)
+- Recorrido en vertical (origen arriba, destino abajo, con puntos y línea).
+- Lugares libres con color según cuántos quedan (verde / naranja / gris "Completo"), siempre con texto.
+- Filtros **Desde ⇄ Hacia** (el botón invierte, para buscar la vuelta), **Día** y franja; sin distinguir tildes ni mayúsculas.
+- "Tu próximo viaje" se va con el scroll en el celular (va como encabezado de la lista).
+
+### Búsqueda de lugares más confiable (`Geocodificador`)
+- Si Nominatim no encuentra un lugar, se prueba con **Photon** (tolera errores de tipeo).
+- Prioriza resultados en **Córdoba** (`Configuracion.ZonaPorDefecto`) y respeta la provincia escrita ("utn cba"), sin confundir calles como "Av. Córdoba".
+- Los lugares encontrados se guardan en el dispositivo (`lugares_v2.json`): la ruta sale al instante la segunda vez.
+- En Publicar, debajo de cada campo se ve si el lugar aparece en el mapa (no frena la publicación).
+
+### Arreglos
+- El conductor puede **finalizar el viaje** desde la hora de salida aunque no haya tocado "Iniciar viaje".
+- "Usar mi ubicación" ya no se queda en "Buscando..." en Windows (tope de tiempo propio).
+- El punto de encuentro compartido con GPS dice "Ubicación compartida" (antes decía "Mi ubicación" y confundía al conductor).
+- El cartel de notificaciones ya no se corta en Windows.
 
 ---
 
 ## 5. Historias de Octavio (Compañero 2)
 
-### HU28 (US E1-28) – Rutina fija
+### HU28 (US E1-28) – Rutina fija · HECHA
 **Como** conductor, **quiero** publicar de una vez un viaje que hago siempre (por ejemplo, lunes y miércoles a las 8), **para** no tener que cargarlo cada semana.
 
 Criterios de aceptación:
@@ -119,7 +149,7 @@ Criterios de aceptación:
 
 ---
 
-### HU31 (US E6-31) – Calificaciones
+### HU31 (US E6-31) – Calificaciones · HECHA
 **Como** usuario, **quiero** calificar a las personas con las que viajé, **para** que la reputación de cada uno se construya viaje a viaje y saber con quién me anoto.
 
 Criterios de aceptación:
@@ -136,6 +166,7 @@ Criterios de aceptación:
 - **HU9** – Ver cuántas veces viajé antes con otra persona.
 - **HU20** – Ingreso con Google.
 - **HU27** (US E6-27) – Registro solo con mail de la facultad. Se deja para más adelante: limita las pruebas, la demo y a usuarios de otras facultades. Si se retoma, que sea con un interruptor para apagarlo.
+- **HU33** (US E1-33) – "Busco pasajeros" (idea de Carpoolear): el conductor ve cuántos pasajeros tienen cargado un horario parecido (HU30) y puede publicar justo ese viaje.
 
 ---
 
