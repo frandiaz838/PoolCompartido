@@ -133,6 +133,11 @@ public partial class PerfilPage : ContentPage
         if (usuario is null) return;
 
         lblNombre.Text = usuario.Nombre;
+        // HU31: "★ 4,6 (12)", o "Nuevo" si todavía nadie me calificó
+        var calificaciones = ServicioCalificaciones.Instancia;
+        lblCalificacion.Text = calificaciones.DeLaPersona(usuario.Uid).Count == 0
+            ? "Nuevo · todavía no tenés calificaciones"
+            : calificaciones.TextoDe(usuario.Uid);
         lblEmail.Text = usuario.Email;
         lblIniciales.Text = Iniciales(usuario.Nombre);
         entryNombre.Text = usuario.Nombre;

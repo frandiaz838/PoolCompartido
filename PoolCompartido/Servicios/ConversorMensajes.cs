@@ -111,6 +111,11 @@ public static class ConversorMensajes
             (ViajeEvento.NO_SHOW_DETECTADO, RolEnViaje.Conductor) =>
                 $"{viaje.NoShowTexto} no hicieron check-in a tiempo y se los sacó de tu viaje a {viaje.Destino}.",
 
+            // HU31: alguien con quien viajé me calificó
+            (ViajeEvento.CALIFICACION_RECIBIDA, _) when viaje.UltimaCalificacion is Calificacion c && c.CalificadoUid == yo =>
+                $"{c.AutorNombre} te calificó con {Estrellas(c.Estrellas)} por el viaje a {viaje.Destino}."
+                + (c.Comentario is string comentario ? $" \"{Recortar(comentario, 80)}\"" : ""),
+
             // Cualquier otra combinación no le interesa a este usuario
             _ => null
         };
@@ -118,6 +123,8 @@ public static class ConversorMensajes
 
     private static string Recortar(string texto, int largo) =>
         texto.Length <= largo ? texto : texto[..(largo - 1)].TrimEnd() + "…";
+
+    private static string Estrellas(int cantidad) => cantidad == 1 ? "1 estrella" : $"{cantidad} estrellas";
 
     private static string Asientos(Viaje viaje) => viaje.AsientosDisponibles switch
     {

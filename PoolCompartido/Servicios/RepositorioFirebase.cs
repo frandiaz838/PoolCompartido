@@ -295,6 +295,44 @@ internal class RepositorioFirebase
         Verificar(respuesta);
     }
 
+    // ───── HU31: calificaciones (/calificaciones/{calificadoUid}/{viajeId}_{autorUid}) ─────
+
+    /// <summary>Todas las calificaciones: calificado → (clave → calificación).</summary>
+    public async Task<Dictionary<string, Dictionary<string, CalificacionDatos>>> ObtenerCalificacionesAsync()
+    {
+        using var pedido = new HttpRequestMessage(HttpMethod.Get, await UrlAsync("calificaciones"));
+        using var respuesta = await ClienteHttp.EnviarAsync(pedido);
+        Verificar(respuesta);
+
+        string cuerpo = await respuesta.Content.ReadAsStringAsync();
+        // Si todavía no hay calificaciones, Firebase responde "null"
+        return JsonSerializer.Deserialize(cuerpo, JsonPool.Default.DictionaryStringDictionaryStringCalificacionDatos)
+               ?? new Dictionary<string, Dictionary<string, CalificacionDatos>>();
+    }
+
+    /// <summary>Indica si ya existe esa calificación (el autor ya calificó a esa persona en ese viaje).</summary>
+    public async Task<bool> ExisteCalificacionAsync(string calificadoUid, string clave)
+    {
+        using var pedido = new HttpRequestMessage(HttpMethod.Get, await UrlAsync($"calificaciones/{calificadoUid}/{clave}/estrellas"));
+        using var respuesta = await ClienteHttp.EnviarAsync(pedido);
+        Verificar(respuesta);
+
+        string cuerpo = await respuesta.Content.ReadAsStringAsync();
+        return cuerpo.Trim() != "null";
+    }
+
+    /// <summary>Guarda una calificación nueva. Las reglas no dejan modificarla después.</summary>
+    public async Task GuardarCalificacionAsync(string calificadoUid, string clave, CalificacionNuevaDatos datos)
+    {
+        using var pedido = new HttpRequestMessage(HttpMethod.Put, await UrlAsync($"calificaciones/{calificadoUid}/{clave}"))
+        {
+            Content = new StringContent(JsonSerializer.Serialize(datos, JsonPool.Default.CalificacionNuevaDatos),
+                                        Encoding.UTF8, "application/json")
+        };
+        using var respuesta = await ClienteHttp.EnviarAsync(pedido);
+        Verificar(respuesta);
+    }
+
     private static StringContent Json(ViajeDatos datos) =>
         new(JsonSerializer.Serialize(datos, JsonPool.Default.ViajeDatos), Encoding.UTF8, "application/json");
 

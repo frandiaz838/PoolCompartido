@@ -206,6 +206,10 @@
                                 <Border Style="{StaticResource Chip}" IsVisible="{Binding TieneCostoChip}">
                                     <Label Text="{Binding CostoChip}" Style="{StaticResource ChipTexto}" />
                                 </Border>
+                                <!-- HU31: promedio de calificaciones del conductor, para saber con quién me anoto -->
+                                <Border Style="{StaticResource Chip}" IsVisible="{Binding TieneCalificacionChip}">
+                                    <Label Text="{Binding CalificacionChip}" Style="{StaticResource ChipTexto}" />
+                                </Border>
                             </FlexLayout>
 
                             <!-- Acciones -->

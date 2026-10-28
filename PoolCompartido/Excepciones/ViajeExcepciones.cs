@@ -119,3 +119,28 @@ public class ViajeNoIniciadoException : ViajeException
     public ViajeNoIniciadoException()
         : base("Primero tocá \"Iniciar viaje\".") { }
 }
+
+/// <summary>HU31: ya calificó a esa persona en ese viaje (se califica una sola vez).</summary>
+public class YaCalificasteException : ViajeException
+{
+    public YaCalificasteException(string nombre)
+        : base($"Ya calificaste a {nombre} en este viaje.") { }
+}
+
+/// <summary>HU31: se quiere calificar un viaje que el conductor todavía no finalizó.</summary>
+public class ViajeNoFinalizadoException : ViajeException
+{
+    public ViajeNoFinalizadoException()
+        : base("Podés calificar cuando el conductor finalice el viaje.") { }
+}
+
+/// <summary>HU31: solo califican (y son calificados) el conductor y los pasajeros que estuvieron a bordo.</summary>
+public class NoViajasteException : ViajeException
+{
+    public NoViajasteException()
+        : base("Solo pueden calificar el conductor y los pasajeros que viajaron (los que hicieron check-in).") { }
+
+    /// <summary>Para cuando la que no viajó es la otra persona.</summary>
+    public NoViajasteException(string mensaje)
+        : base(mensaje) { }
+}

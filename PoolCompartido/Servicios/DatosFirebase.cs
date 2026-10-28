@@ -37,6 +37,29 @@ internal class ViajeDatos
     public string? SerieId { get; set; }
 }
 
+/// <summary>HU31: una calificación como se lee de Firebase (/calificaciones/{calificadoUid}/{viajeId}_{autorUid}).</summary>
+internal class CalificacionDatos
+{
+    public string ViajeId { get; set; } = "";
+    public string AutorUid { get; set; } = "";
+    public string AutorNombre { get; set; } = "";
+    public int Estrellas { get; set; }
+    public string? Comentario { get; set; }
+    /// <summary>Milisegundos desde 1970 (la hora la pone el servidor de Firebase).</summary>
+    public long Hora { get; set; }
+}
+
+/// <summary>HU31: una calificación nueva. La hora la completa Firebase, así nadie la puede inventar.</summary>
+internal class CalificacionNuevaDatos
+{
+    public string ViajeId { get; set; } = "";
+    public string AutorUid { get; set; } = "";
+    public string AutorNombre { get; set; } = "";
+    public int Estrellas { get; set; }
+    public string? Comentario { get; set; }
+    public Dictionary<string, string> Hora { get; set; } = new() { [".sv"] = "timestamp" };
+}
+
 /// <summary>HU24: punto de encuentro privado de un pasajero (/encuentros/{viajeId}/{uid}).</summary>
 internal class PuntoEncuentroDatos
 {
@@ -297,6 +320,9 @@ internal class DetalleErrorAuth
 [JsonSerializable(typeof(RespuestaAutenticacion))]
 [JsonSerializable(typeof(RespuestaRefresco))]
 [JsonSerializable(typeof(RespuestaErrorAuth))]
+[JsonSerializable(typeof(CalificacionNuevaDatos))]                                         // HU31: calificaciones
+[JsonSerializable(typeof(Dictionary<string, Dictionary<string, CalificacionDatos>>))]
+[JsonSerializable(typeof(List<string>))]                                                   // HU31: calificaciones ya avisadas
 internal partial class JsonPool : JsonSerializerContext
 {
 }

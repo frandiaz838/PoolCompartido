@@ -11,6 +11,7 @@
 
 	<ItemGroup>
 		<Compile Include="..\PoolCompartido\Servicios\Repeticiones.cs" Link="App\Repeticiones.cs" />
+		<Compile Include="..\PoolCompartido\Servicios\Estadisticas.cs" Link="App\Estadisticas.cs" />
 	</ItemGroup>
 
 	<ItemGroup>

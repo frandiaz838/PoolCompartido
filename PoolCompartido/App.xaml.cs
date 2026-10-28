@@ -95,6 +95,7 @@ namespace PoolCompartido
             _timerSincronizacion = null;
             ServicioViajes.Instancia.Reiniciar();
             ServicioChat.Instancia.Reiniciar();   // HU25
+            ServicioCalificaciones.Instancia.Reiniciar();   // HU31
             ServicioApariencia.Reiniciar();       // HU19
             ServicioNotificaciones.Instancia.Reiniciar();   // HU26
             ServicioHorarios.Instancia.Reiniciar();         // HU30
@@ -125,6 +126,8 @@ namespace PoolCompartido
                 ServicioViajes.Instancia.ActualizarEstados();
                 // HU25: mensajes nuevos en los chats de mis viajes
                 await ServicioChat.Instancia.RevisarNuevosAsync();
+                // HU31: promedios de las tarjetas y calificaciones nuevas que me hicieron
+                await ServicioCalificaciones.Instancia.RevisarAsync();
             };
             _timerSincronizacion.Start();
         }

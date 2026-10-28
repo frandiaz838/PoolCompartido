@@ -574,6 +574,57 @@ public class Viaje : INotifyPropertyChanged
     /// <summary>El chat existe para el conductor y los pasajeros, hasta que el viaje termina.</summary>
     public bool PuedeChatear => (EsDelUsuarioActual || EstoyAnotado) && !Terminado;
 
+    // ───── HU31: calificaciones ─────
+
+    /// <summary>HU31: el conductor y los pasajeros que estuvieron a bordo (los que viajaron de verdad).</summary>
+    public IReadOnlyList<PersonaACalificar> QuienesViajaron =>
+        new[] { new PersonaACalificar(ConductorUid, Conductor, true) }
+            .Concat(_pasajeros.Where(p => _aBordo.Contains(p.Key)).Select(p => new PersonaACalificar(p.Key, p.Value, false)))
+            .ToList();
+
+    /// <summary>HU31: soy el conductor o estuve a bordo.</summary>
+    public bool YoViaje => EsDelUsuarioActual || EstoyABordo;
+
+    private int _pendientesDeCalificar;
+
+    /// <summary>HU31: cuántas personas de este viaje me falta calificar (lo calcula ServicioCalificaciones).</summary>
+    public int PendientesDeCalificar
+    {
+        get => _pendientesDeCalificar;
+        internal set
+        {
+            if (_pendientesDeCalificar == value) return;
+            _pendientesDeCalificar = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(PuedeCalificar));
+        }
+    }
+
+    /// <summary>HU31: el botón "Calificar" aparece en los viajes finalizados donde viajé y me falta calificar a alguien.</summary>
+    public bool PuedeCalificar => Finalizado && YoViaje && PendientesDeCalificar > 0;
+
+    private string _calificacionConductor = "";
+
+    /// <summary>HU31: "★ 4,6 (12)" o "Nuevo" (vacío hasta que se traen las calificaciones).</summary>
+    public string CalificacionConductor
+    {
+        get => _calificacionConductor;
+        internal set
+        {
+            if (_calificacionConductor == value) return;
+            _calificacionConductor = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(CalificacionChip));
+            OnPropertyChanged(nameof(TieneCalificacionChip));
+        }
+    }
+
+    public string CalificacionChip => $"Conductor: {CalificacionConductor}";
+    public bool TieneCalificacionChip => CalificacionConductor != "";
+
+    /// <summary>HU31: la última calificación que me hicieron en este viaje (para el aviso de CALIFICACION_RECIBIDA).</summary>
+    public Calificacion? UltimaCalificacion { get; internal set; }
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     private void OnPropertyChanged([CallerMemberName] string? propiedad = null) =>

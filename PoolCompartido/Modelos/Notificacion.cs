@@ -60,6 +60,7 @@ public class Notificacion : INotifyPropertyChanged
         ViajeEvento.VIAJE_FINALIZADO => "🏁",
         ViajeEvento.PASAJERO_A_BORDO => "✅",
         ViajeEvento.MENSAJE_RECIBIDO => "💬",
+        ViajeEvento.CALIFICACION_RECIBIDA => "⭐",   // HU31
         ViajeEvento.NO_SHOW_DETECTADO => "⏱️",
         ViajeEvento.VIAJE_COINCIDENTE => "⭐",
         _ => "🔔"

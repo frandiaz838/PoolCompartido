@@ -126,6 +126,10 @@
                                 <Border Style="{StaticResource Chip}" IsVisible="{Binding TieneCostoChip}">
                                     <Label Text="{Binding CostoChip}" Style="{StaticResource ChipTexto}" />
                                 </Border>
+                                <!-- HU31: promedio de calificaciones del conductor -->
+                                <Border Style="{StaticResource Chip}" IsVisible="{Binding TieneCalificacionChip}">
+                                    <Label Text="{Binding CalificacionChip}" Style="{StaticResource ChipTexto}" />
+                                </Border>
                             </FlexLayout>
 
                             <!-- Datos del viaje -->
@@ -168,6 +172,9 @@
                                 <!-- HU15: el pasajero muestra su PIN al subir -->
                                 <Button Text="Mi PIN" Style="{StaticResource BotonPrincipal}"
                                         IsVisible="{Binding PuedeVerPin}" Clicked="OnMiPinClicked" />
+                                <!-- HU31: calificar a los que viajaron (viajes finalizados, en el historial) -->
+                                <Button Text="Calificar" Style="{StaticResource BotonPrincipal}"
+                                        IsVisible="{Binding PuedeCalificar}" Clicked="OnCalificarClicked" />
                                 <!-- HU22 / HU24: recorrido con las paradas -->
                                 <Button Text="Ver ruta" Style="{StaticResource BotonSecundario}"
                                         Clicked="OnVerRutaClicked" />
