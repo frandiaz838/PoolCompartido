@@ -69,6 +69,15 @@
           ".validate": "newData.isString() && newData.val().length >= 9 && newData.val().length <= 16 && newData.val().matches(/^\\+[0-9]+$/)"
         }
       }
+    },
+    "calificaciones": {
+      ".read": "auth != null",
+      "$calificadoUid": {
+        "$clave": {
+          ".write": "auth != null && !data.exists() && newData.exists() && $calificadoUid !== auth.uid && $clave === newData.child('viajeId').val() + '_' + auth.uid && root.child('viajes/' + newData.child('viajeId').val() + '/finalizado').val() === true && (root.child('viajes/' + newData.child('viajeId').val() + '/conductorUid').val() === auth.uid || root.child('viajes/' + newData.child('viajeId').val() + '/aBordo/' + auth.uid).val() === true) && (root.child('viajes/' + newData.child('viajeId').val() + '/conductorUid').val() === $calificadoUid || root.child('viajes/' + newData.child('viajeId').val() + '/aBordo/' + $calificadoUid).val() === true)",
+          ".validate": "newData.hasChildren(['viajeId', 'autorUid', 'autorNombre', 'estrellas', 'hora']) && newData.child('viajeId').isString() && newData.child('autorUid').val() === auth.uid && newData.child('autorNombre').isString() && newData.child('autorNombre').val().length >= 1 && newData.child('autorNombre').val().length <= 40 && newData.child('estrellas').isNumber() && newData.child('estrellas').val() >= 1 && newData.child('estrellas').val() <= 5 && newData.child('estrellas').val() % 1 === 0 && (!newData.child('comentario').exists() || (newData.child('comentario').isString() && newData.child('comentario').val().length <= 200)) && newData.child('hora').val() === now"
+        }
+      }
     }
   }
 }
