@@ -33,6 +33,8 @@ internal class ViajeDatos
     public Dictionary<string, bool>? ABordo { get; set; }
     /// <summary>HU15: uid → hash SHA-256 del PIN de cada pasajero. El PIN en sí está en /pines/{uid}, que solo lee él.</summary>
     public Dictionary<string, string>? PinHash { get; set; }
+    /// <summary>HU28: identificador común de los viajes de una rutina fija, o null si es un viaje suelto.</summary>
+    public string? SerieId { get; set; }
 }
 
 /// <summary>HU24: punto de encuentro privado de un pasajero (/encuentros/{viajeId}/{uid}).</summary>
@@ -285,7 +287,8 @@ internal static class ConversorViajes
             Conductor = datos.ConductorNombre,
             Comentario = datos.Comentario,
             PuntoPartida = datos.PuntoPartida ?? "",
-            CostoTotal = datos.CostoTotal
+            CostoTotal = datos.CostoTotal,
+            SerieId = datos.SerieId
         };
         viaje.ActualizarDesde(datos);
         return viaje;
@@ -310,6 +313,7 @@ internal static class ConversorViajes
         Iniciado = viaje.Iniciado ? true : null,
         Finalizado = viaje.Finalizado ? true : null,
         ABordo = viaje.ABordo.Count > 0 ? viaje.ABordo.ToDictionary(uid => uid, _ => true) : null,
-        PinHash = viaje.PinHashPorUid.Count > 0 ? new Dictionary<string, string>(viaje.PinHashPorUid) : null
+        PinHash = viaje.PinHashPorUid.Count > 0 ? new Dictionary<string, string>(viaje.PinHashPorUid) : null,
+        SerieId = viaje.SerieId
     };
 }

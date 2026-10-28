@@ -155,7 +155,9 @@ public class ServicioViajes
                     if (CrearDesde(id, datos) is Viaje nuevo)
                     {
                         _viajes.Add(nuevo);
-                        eventos.Add((ViajeEvento.VIAJE_PUBLICADO, nuevo));
+                        // HU28: de una rutina fija llegan muchos viajes juntos: se avisa uno solo por serie
+                        if (!nuevo.EsDeSerie || !eventos.Any(e => e.Evento == ViajeEvento.VIAJE_PUBLICADO && e.Viaje.SerieId == nuevo.SerieId))
+                            eventos.Add((ViajeEvento.VIAJE_PUBLICADO, nuevo));
                     }
                     continue;
                 }
@@ -247,15 +249,7 @@ public class ServicioViajes
     public async Task<Viaje> PublicarAsync(string? origen, string? destino, DateTime fecha, string? hora, int asientos, string? comentario,
                                            string? puntoPartida = null, decimal? costoTotal = null)
     {
-        // Validación temprana de la entrada
-        if (string.IsNullOrWhiteSpace(origen) || string.IsNullOrWhiteSpace(destino))
-            throw new ArgumentException("Completá el origen y el destino.");
-
-        if (string.IsNullOrWhiteSpace(hora))
-            throw new ArgumentException("Elegí un horario de salida.");
-
-        if (!FranjasHorarias.TryLeerHora(hora, out TimeSpan horaSalida))
-            throw new ArgumentException("La hora de salida no es válida.");
+        var datos = ArmarViaje(origen, destino, hora, asientos, comentario, puntoPartida, costoTotal, out TimeSpan horaSalida);
 
         // innerException: null elige el constructor que deja el mensaje limpio
         if (fecha.Date < DateTime.Today)
@@ -269,6 +263,104 @@ public class ServicioViajes
         if (salida - DateTime.Now < Viaje.CierreAnotaciones)
             throw new ArgumentOutOfRangeException("El viaje tiene que salir dentro de más de 5 minutos, así los pasajeros llegan a anotarse.", innerException: null);
 
+        // No puede manejar un viaje a la misma hora que otro donde ya participa
+        if (ViajeQueSeSuperpone(salida) is Viaje otro)
+            throw new HorarioOcupadoException(otro);
+
+        datos.Fecha = ConversorViajes.FechaATexto(fecha.Date);
+        var viaje = await CrearAsync(datos);
+
+        Eventos.Disparar(ViajeEvento.VIAJE_PUBLICADO, viaje);
+        GuardarCache();
+        return viaje;
+    }
+
+    /// <summary>
+    /// HU28: rutina fija. Publica un viaje por cada fecha entre "desde" y "hasta" que cae en los días elegidos,
+    /// todos con los mismos datos y el mismo SerieId. Las fechas que ya pasaron o que chocan con otro viaje
+    /// del usuario se saltean (no frenan la serie) y quedan en el resumen.
+    /// Se dispara un solo VIAJE_PUBLICADO (con el primero), así no llegan 14 avisos juntos.
+    /// </summary>
+    /// <exception cref="ArgumentException">Faltan datos, no se eligió ningún día, "hasta" es anterior a "desde" o no cae ningún día elegido.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Asientos fuera de rango o más de 16 semanas.</exception>
+    /// <exception cref="SinConexionException">No hay internet (antes de publicar el primero).</exception>
+    public async Task<ResultadoSerie> PublicarSerieAsync(string? origen, string? destino, DateTime desde, DateTime hasta,
+                                                         IEnumerable<DayOfWeek> dias, string? hora, int asientos, string? comentario,
+                                                         string? puntoPartida = null, decimal? costoTotal = null)
+    {
+        // Primero se valida todo, así un error de tipeo no deja la serie por la mitad
+        ArmarViaje(origen, destino, hora, asientos, comentario, puntoPartida, costoTotal, out TimeSpan horaSalida);
+
+        // Puede lanzar ArgumentException o ArgumentOutOfRangeException
+        IReadOnlyList<DateTime> fechas = Repeticiones.Fechas(desde, hasta, dias);
+        if (fechas.Count == 0)
+            throw new ArgumentException("Entre esas fechas no cae ninguno de los días elegidos.");
+
+        string serieId = Guid.NewGuid().ToString("N");
+        var publicados = new List<Viaje>();
+        var salteadas = new List<FechaSalteada>();
+
+        for (int i = 0; i < fechas.Count; i++)
+        {
+            DateTime fecha = fechas[i];
+            DateTime salida = fecha + horaSalida;
+
+            if (salida - DateTime.Now < Viaje.CierreAnotaciones)
+            {
+                salteadas.Add(new FechaSalteada(fecha, "ese horario ya pasó"));
+                continue;
+            }
+            if (ViajeQueSeSuperpone(salida) is Viaje otro)
+            {
+                RegistroErrores.RegistrarAviso(new HorarioOcupadoException(otro), "Publicar rutina fija");
+                salteadas.Add(new FechaSalteada(fecha, "ya tenés otro viaje a esa hora"));
+                continue;
+            }
+
+            var datos = ArmarViaje(origen, destino, hora, asientos, comentario, puntoPartida, costoTotal, out _);
+            datos.Fecha = ConversorViajes.FechaATexto(fecha);
+            datos.SerieId = serieId;
+
+            try
+            {
+                publicados.Add(await CrearAsync(datos));
+            }
+            catch (Exception ex) when (publicados.Count > 0 && ex is SinConexionException or ServidorException)
+            {
+                // Los que ya se publicaron quedan publicados: en el resumen se avisa cuáles faltaron
+                RegistroErrores.RegistrarError(ex, "Publicar rutina fija");
+                salteadas.AddRange(fechas.Skip(i).Select(f => new FechaSalteada(f, "se cortó la conexión")));
+                break;
+            }
+        }
+
+        if (publicados.Count > 0)
+        {
+            Eventos.Disparar(ViajeEvento.VIAJE_PUBLICADO, publicados[0]);
+            GuardarCache();
+        }
+        return new ResultadoSerie(publicados, salteadas);
+    }
+
+    /// <summary>
+    /// Valida los datos que no dependen de la fecha y arma el viaje (sin la fecha).
+    /// Lo usan HU1 (un viaje) y HU28 (rutina fija).
+    /// </summary>
+    /// <exception cref="ArgumentException">Faltan datos obligatorios.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Asientos o costo fuera de rango.</exception>
+    private static ViajeDatos ArmarViaje(string? origen, string? destino, string? hora, int asientos, string? comentario,
+                                         string? puntoPartida, decimal? costoTotal, out TimeSpan horaSalida)
+    {
+        // Validación temprana de la entrada
+        if (string.IsNullOrWhiteSpace(origen) || string.IsNullOrWhiteSpace(destino))
+            throw new ArgumentException("Completá el origen y el destino.");
+
+        if (string.IsNullOrWhiteSpace(hora))
+            throw new ArgumentException("Elegí un horario de salida.");
+
+        if (!FranjasHorarias.TryLeerHora(hora, out horaSalida))
+            throw new ArgumentException("La hora de salida no es válida.");
+
         if (asientos < 1 || asientos > 4)
             throw new ArgumentOutOfRangeException("Elegí entre 1 y 4 asientos disponibles.", innerException: null);
 
@@ -280,16 +372,11 @@ public class ServicioViajes
         // HU14: el costo es opcional, pero si viene tiene que ser razonable
         ValidarCosto(costoTotal);
 
-        // No puede manejar un viaje a la misma hora que otro donde ya participa
-        if (ViajeQueSeSuperpone(salida) is Viaje otro)
-            throw new HorarioOcupadoException(otro);
-
         var usuario = UsuarioRequerido;
-        var datos = new ViajeDatos
+        return new ViajeDatos
         {
             Origen = origen.Trim(),
             Destino = destino.Trim(),
-            Fecha = ConversorViajes.FechaATexto(fecha.Date),
             Hora = hora,
             ConductorUid = usuario.Uid,
             ConductorNombre = usuario.Nombre,
@@ -299,13 +386,14 @@ public class ServicioViajes
             PuntoPartida = partida,
             CostoTotal = costoTotal is > 0 ? costoTotal : null   // $0 es lo mismo que sin costo
         };
+    }
 
+    /// <summary>Guarda el viaje en Firebase y lo agrega a la lista (el evento lo dispara quien llama).</summary>
+    private async Task<Viaje> CrearAsync(ViajeDatos datos)
+    {
         string id = await _remoto.CrearAsync(datos);
         var viaje = ConversorViajes.AViaje(id, datos);
-
         _viajes.Add(viaje);
-        Eventos.Disparar(ViajeEvento.VIAJE_PUBLICADO, viaje);
-        GuardarCache();
         return viaje;
     }
 
@@ -410,6 +498,47 @@ public class ServicioViajes
         }
 
         throw new ConflictoException();
+    }
+
+    /// <summary>HU28: viajes de la misma rutina fija que todavía se pueden cancelar (este incluido), por fecha.</summary>
+    public IReadOnlyList<Viaje> QuedanDeLaSerie(Viaje viaje)
+    {
+        ArgumentNullException.ThrowIfNull(viaje);
+        if (!viaje.EsDeSerie) return Array.Empty<Viaje>();
+
+        return _viajes.Where(v => v.SerieId == viaje.SerieId && v.PuedeCancelar && !v.Iniciado)
+                      .OrderBy(v => v.Salida)
+                      .ToList();
+    }
+
+    /// <summary>
+    /// HU28: "Todos los que quedan". Cancela, uno por uno, los viajes de la serie que todavía no salieron.
+    /// Cada uno dispara su VIAJE_CANCELADO, así a los pasajeros de cada fecha les llega el aviso y la búsqueda de reemplazo.
+    /// Devuelve los que se cancelaron.
+    /// </summary>
+    /// <exception cref="ArgumentNullException">No se indicó el viaje.</exception>
+    /// <exception cref="NoEsConductorException">El viaje no es del usuario actual.</exception>
+    /// <exception cref="SinConexionException">No hay internet (los que ya se cancelaron quedan cancelados).</exception>
+    public async Task<IReadOnlyList<Viaje>> CancelarSerieAsync(Viaje viaje)
+    {
+        ArgumentNullException.ThrowIfNull(viaje);
+        if (viaje.ConductorUid != UsuarioRequerido.Uid) throw new NoEsConductorException();
+
+        var cancelados = new List<Viaje>();
+        foreach (var deLaSerie in QuedanDeLaSerie(viaje))
+        {
+            try
+            {
+                await CancelarViajeAsync(deLaSerie);
+                cancelados.Add(deLaSerie);
+            }
+            catch (ViajeException ex) when (ex is ViajeCanceladoException or ViajeVencidoException)
+            {
+                // Lo cancelaron desde otro dispositivo o justo salió: se sigue con los demás
+                RegistroErrores.RegistrarAviso(ex, "Cancelar rutina fija");
+            }
+        }
+        return cancelados;
     }
 
     /// <summary>
