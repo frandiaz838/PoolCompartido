@@ -19,6 +19,17 @@ public enum EstadoViaje
     Finalizado
 }
 
+/// <summary>HU29: cuántos lugares quedan, para el color de la etiqueta (siempre acompañado del texto).</summary>
+public enum NivelLugares
+{
+    /// <summary>3 o más lugares libres.</summary>
+    Varios,
+    /// <summary>1 o 2 lugares libres.</summary>
+    Pocos,
+    /// <summary>No queda lugar.</summary>
+    Completo
+}
+
 /// <summary>
 /// Un viaje publicado por un conductor.
 /// Implementa INotifyPropertyChanged: cuando cambia un dato, la pantalla se redibuja sola.
@@ -117,6 +128,7 @@ public class Viaje : INotifyPropertyChanged
             _asientosDisponibles = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(AsientosChip));   // HU29
+            OnPropertyChanged(nameof(Lugares));
         }
     }
 
@@ -318,6 +330,38 @@ public class Viaje : INotifyPropertyChanged
         1 => "💺 1 lugar libre",
         var n => $"💺 {n} lugares libres"
     };
+
+    /// <summary>HU29: verde con varios lugares, naranja con pocos, gris si está completo.</summary>
+    public NivelLugares Lugares => AsientosDisponibles switch
+    {
+        <= 0 => NivelLugares.Completo,
+        <= 2 => NivelLugares.Pocos,
+        _ => NivelLugares.Varios
+    };
+
+    // ───── HU30: coincide con mis horarios ─────
+
+    private string? _coincidencia;
+
+    /// <summary>
+    /// Con cuál de mis horarios habituales coincide este viaje ("lunes 07:30"), o null si con ninguno.
+    /// Lo calcula ServicioHorarios cada vez que se redibuja la lista.
+    /// </summary>
+    public string? Coincidencia
+    {
+        get => _coincidencia;
+        internal set
+        {
+            if (_coincidencia == value) return;
+            _coincidencia = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(CoincideConMiHorario));
+            OnPropertyChanged(nameof(CoincidenciaTexto));
+        }
+    }
+
+    public bool CoincideConMiHorario => _coincidencia is not null;
+    public string CoincidenciaTexto => _coincidencia is null ? "" : $"⭐ Coincide con tu horario del {_coincidencia}";
 
     /// <summary>Lo que le importa a cada uno: cuánto paga cada pasajero, o cuánto pagaría yo si me anoto.</summary>
     public string CostoChip

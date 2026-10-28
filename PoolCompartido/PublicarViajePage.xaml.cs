@@ -37,9 +37,12 @@ public partial class PublicarViajePage : ContentPage
             // HU14: vacío = sin costo. Puede lanzar FormatException o ArgumentOutOfRangeException
             decimal? costo = ServicioViajes.LeerCosto(entryCosto.Text);
 
-            await _servicio.PublicarAsync(entryOrigen.Text, entryDestino.Text, fecha,
+            var publicado = await _servicio.PublicarAsync(entryOrigen.Text, entryDestino.Text, fecha,
                                           FranjasHorarias.HoraATexto(hora), asientos, editorComentario.Text,
                                           entryPuntoPartida.Text, costo);
+
+            // HU32: si cargué mi teléfono, lo van a ver los que se anoten
+            await ServicioContactos.Instancia.CompartirEnViajeSinFallarAsync(publicado);
 
             await DisplayAlertAsync("Listo", "¡Viaje publicado! Ya lo pueden ver los demás.", "OK");
             await Navigation.PopAsync();

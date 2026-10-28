@@ -61,6 +61,7 @@ public class Notificacion : INotifyPropertyChanged
         ViajeEvento.PASAJERO_A_BORDO => "✅",
         ViajeEvento.MENSAJE_RECIBIDO => "💬",
         ViajeEvento.NO_SHOW_DETECTADO => "⏱️",
+        ViajeEvento.VIAJE_COINCIDENTE => "⭐",
         _ => "🔔"
     };
 

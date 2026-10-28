@@ -30,10 +30,11 @@
     <!-- HU19: colores de estado. Las pantallas los usan con DynamicResource y ServicioApariencia
          los cambia según el tema y la paleta para daltonismo (estos son solo los valores iniciales) -->
     <Color x:Key="ColorExito">#1B7F48</Color>
-    <Color x:Key="ColorExitoFondo">#E3F4EA</Color>
+    <Color x:Key="ColorExitoFondo">#EDF8F1</Color>
     <Color x:Key="ColorPeligro">#C62828</Color>
     <Color x:Key="ColorPeligroBorde">#F1B5B5</Color>
     <Color x:Key="ColorAviso">#A85A0A</Color>
+    <Color x:Key="ColorAvisoFondo">#FFF6E8</Color>
 
     <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource Primary}"/>
     <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource Secondary}"/>
