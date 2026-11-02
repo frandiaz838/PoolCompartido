@@ -2,118 +2,168 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="PoolCompartido.PublicarViajePage"
-             Title="Publicar un viaje">
+             Title="Publicar un viaje"
+             Shell.TabBarIsVisible="False"
+             SafeAreaEdges="All">
 
     <ScrollView>
-        <VerticalStackLayout Padding="16" Spacing="6">
+        <!-- Grid: así el formulario (con ancho máximo) queda centrado en la compu -->
+        <Grid>
+            <!-- En la compu el formulario queda en una columna central (no se estira de punta a punta) -->
+            <VerticalStackLayout Padding="{StaticResource RellenoFormulario}" Spacing="6"
+                                 MaximumWidthRequest="{StaticResource AnchoFormulario}">
 
-            <Label Text="Origen (barrio o localidad)" />
-            <!-- HU23: el origen se puede completar con la ubicación (solo el barrio, nunca la dirección) -->
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                <Entry x:Name="entryOrigen" Placeholder="Ej: Villa Allende" Unfocused="OnOrigenUnfocused" />
-                <Button x:Name="btnUbicacion"
-                        Grid.Column="1"
-                        Text="Usar mi ubicación"
-                        BackgroundColor="Transparent"
-                        TextColor="{AppThemeBinding Light=#512BD4, Dark=#AC99EA}"
-                        BorderColor="{AppThemeBinding Light=#512BD4, Dark=#AC99EA}"
-                        BorderWidth="1"
-                        Clicked="OnUsarUbicacionClicked" />
-            </Grid>
-            <!-- Ruta óptima: si el lugar aparece en el mapa (se completa al salir del campo) -->
-            <Label x:Name="lblMapaOrigen" FontSize="12" IsVisible="False" />
+                <Label Text="Origen (barrio o localidad)" Style="{StaticResource RotuloCampo}" Margin="0" />
+                <!-- HU23: el origen se puede completar con la ubicación (solo el barrio, nunca la dirección) -->
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource EspacioS}">
+                    <Entry x:Name="entryOrigen" Placeholder="Ej: Villa Allende" Unfocused="OnOrigenUnfocused"
+                           SemanticProperties.Description="Origen, barrio o localidad" />
+                    <Button x:Name="btnUbicacion"
+                            Grid.Column="1"
+                            Text="Usar mi ubicación"
+                            Style="{StaticResource BotonSecundario}"
+                            Margin="0"
+                            VerticalOptions="Center"
+                            Clicked="OnUsarUbicacionClicked" />
+                </Grid>
+                <!-- Ruta óptima: si el lugar aparece en el mapa (se completa al salir del campo) -->
+                <Label x:Name="lblMapaOrigen" Style="{StaticResource TextoAyuda}" IsVisible="False" />
 
-            <!-- Ruta óptima: el destino tiene que aparecer en el mapa ("la facu" no aparece) -->
-            <Label Text="Destino" Margin="0,8,0,0" />
-            <Entry x:Name="entryDestino" Placeholder="Nombre del lugar o dirección. Ej: Universidad Blas Pascal"
-                   Unfocused="OnDestinoUnfocused" />
-            <Label x:Name="lblMapaDestino" FontSize="12" IsVisible="False" />
+                <!-- Ruta óptima: el destino tiene que aparecer en el mapa ("la facu" no aparece) -->
+                <Label Text="Destino" Style="{StaticResource RotuloCampo}" />
+                <Entry x:Name="entryDestino" Placeholder="Nombre del lugar o dirección. Ej: Universidad Blas Pascal"
+                       SemanticProperties.Description="Destino"
+                       Unfocused="OnDestinoUnfocused" />
+                <Label x:Name="lblMapaDestino" Style="{StaticResource TextoAyuda}" IsVisible="False" />
 
-            <Label x:Name="lblFecha" Text="Fecha" Margin="0,8,0,0" />
-            <DatePicker x:Name="dpFecha" Format="dd/MM/yyyy" DateSelected="OnRepeticionCambiada" />
+                <Label x:Name="lblFecha" Text="Fecha" Style="{StaticResource RotuloCampo}" />
+                <DatePicker x:Name="dpFecha" Format="dd/MM/yyyy" DateSelected="OnRepeticionCambiada"
+                            SemanticProperties.Description="Fecha del viaje" />
 
-            <!-- HU28: rutina fija. Se publica un viaje por cada día elegido, hasta la fecha "Hasta" -->
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,8,0,0">
-                <VerticalStackLayout Spacing="2" VerticalOptions="Center">
-                    <Label Text="Repetir todas las semanas" />
-                    <Label Text="Para el viaje que hacés siempre. Ej: lunes y miércoles a las 8."
-                           Style="{StaticResource TextoSecundario}" FontSize="12" />
+                <!-- HU28: rutina fija. Se publica un viaje por cada día elegido, hasta la fecha "Hasta" -->
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource EspacioM}" Margin="0,12,0,0">
+                    <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                        <Label Text="Repetir todas las semanas" FontFamily="OpenSansSemibold" />
+                        <Label Text="Para el viaje que hacés siempre. Ej: lunes y miércoles a las 8."
+                               Style="{StaticResource TextoAyuda}" />
+                    </VerticalStackLayout>
+                    <Switch x:Name="swRepetir" Grid.Column="1" VerticalOptions="Center" Toggled="OnRepetirToggled"
+                            SemanticProperties.Description="Repetir todas las semanas" />
+                </Grid>
+                <VerticalStackLayout x:Name="panelRepetir" IsVisible="False" Spacing="6">
+                    <Label Text="Días" Style="{StaticResource RotuloCampo}" Margin="0,4,0,0" />
+                    <!-- Cada día es un chip con su casilla: se toca la casilla o el nombre del día.
+                         El elegido se ve violeta (estilo ChipDiaElegido) y con la casilla marcada (no depende solo del color) -->
+                    <FlexLayout Wrap="Wrap">
+                        <Border Style="{StaticResource ChipDia}">
+                            <HorizontalStackLayout>
+                                <CheckBox x:Name="chkLunes" VerticalOptions="Center" SemanticProperties.Description="Lunes" CheckedChanged="OnRepeticionCambiada" />
+                                <Label Text="Lun" VerticalOptions="Center" Padding="0,12" AutomationProperties.IsInAccessibleTree="False">
+                                    <Label.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnChipDiaTocado" />
+                                    </Label.GestureRecognizers>
+                                </Label>
+                            </HorizontalStackLayout>
+                        </Border>
+                        <Border Style="{StaticResource ChipDia}">
+                            <HorizontalStackLayout>
+                                <CheckBox x:Name="chkMartes" VerticalOptions="Center" SemanticProperties.Description="Martes" CheckedChanged="OnRepeticionCambiada" />
+                                <Label Text="Mar" VerticalOptions="Center" Padding="0,12" AutomationProperties.IsInAccessibleTree="False">
+                                    <Label.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnChipDiaTocado" />
+                                    </Label.GestureRecognizers>
+                                </Label>
+                            </HorizontalStackLayout>
+                        </Border>
+                        <Border Style="{StaticResource ChipDia}">
+                            <HorizontalStackLayout>
+                                <CheckBox x:Name="chkMiercoles" VerticalOptions="Center" SemanticProperties.Description="Miércoles" CheckedChanged="OnRepeticionCambiada" />
+                                <Label Text="Mié" VerticalOptions="Center" Padding="0,12" AutomationProperties.IsInAccessibleTree="False">
+                                    <Label.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnChipDiaTocado" />
+                                    </Label.GestureRecognizers>
+                                </Label>
+                            </HorizontalStackLayout>
+                        </Border>
+                        <Border Style="{StaticResource ChipDia}">
+                            <HorizontalStackLayout>
+                                <CheckBox x:Name="chkJueves" VerticalOptions="Center" SemanticProperties.Description="Jueves" CheckedChanged="OnRepeticionCambiada" />
+                                <Label Text="Jue" VerticalOptions="Center" Padding="0,12" AutomationProperties.IsInAccessibleTree="False">
+                                    <Label.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnChipDiaTocado" />
+                                    </Label.GestureRecognizers>
+                                </Label>
+                            </HorizontalStackLayout>
+                        </Border>
+                        <Border Style="{StaticResource ChipDia}">
+                            <HorizontalStackLayout>
+                                <CheckBox x:Name="chkViernes" VerticalOptions="Center" SemanticProperties.Description="Viernes" CheckedChanged="OnRepeticionCambiada" />
+                                <Label Text="Vie" VerticalOptions="Center" Padding="0,12" AutomationProperties.IsInAccessibleTree="False">
+                                    <Label.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnChipDiaTocado" />
+                                    </Label.GestureRecognizers>
+                                </Label>
+                            </HorizontalStackLayout>
+                        </Border>
+                        <Border Style="{StaticResource ChipDia}">
+                            <HorizontalStackLayout>
+                                <CheckBox x:Name="chkSabado" VerticalOptions="Center" SemanticProperties.Description="Sábado" CheckedChanged="OnRepeticionCambiada" />
+                                <Label Text="Sáb" VerticalOptions="Center" Padding="0,12" AutomationProperties.IsInAccessibleTree="False">
+                                    <Label.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnChipDiaTocado" />
+                                    </Label.GestureRecognizers>
+                                </Label>
+                            </HorizontalStackLayout>
+                        </Border>
+                    </FlexLayout>
+                    <Label Text="Hasta (como máximo 16 semanas)" Style="{StaticResource RotuloCampo}" Margin="0,4,0,0" />
+                    <DatePicker x:Name="dpHasta" Format="dd/MM/yyyy" DateSelected="OnRepeticionCambiada"
+                                SemanticProperties.Description="Repetir hasta" />
+                    <Label x:Name="lblCantidad" Style="{StaticResource TextoAyuda}" />
                 </VerticalStackLayout>
-                <Switch x:Name="swRepetir" Grid.Column="1" VerticalOptions="Center" Toggled="OnRepetirToggled" />
-            </Grid>
-            <VerticalStackLayout x:Name="panelRepetir" IsVisible="False" Spacing="6">
-                <Label Text="Días" />
-                <FlexLayout Wrap="Wrap">
-                    <HorizontalStackLayout Margin="0,0,12,0">
-                        <CheckBox x:Name="chkLunes" VerticalOptions="Center" CheckedChanged="OnRepeticionCambiada" />
-                        <Label Text="Lun" VerticalOptions="Center" />
-                    </HorizontalStackLayout>
-                    <HorizontalStackLayout Margin="0,0,12,0">
-                        <CheckBox x:Name="chkMartes" VerticalOptions="Center" CheckedChanged="OnRepeticionCambiada" />
-                        <Label Text="Mar" VerticalOptions="Center" />
-                    </HorizontalStackLayout>
-                    <HorizontalStackLayout Margin="0,0,12,0">
-                        <CheckBox x:Name="chkMiercoles" VerticalOptions="Center" CheckedChanged="OnRepeticionCambiada" />
-                        <Label Text="Mié" VerticalOptions="Center" />
-                    </HorizontalStackLayout>
-                    <HorizontalStackLayout Margin="0,0,12,0">
-                        <CheckBox x:Name="chkJueves" VerticalOptions="Center" CheckedChanged="OnRepeticionCambiada" />
-                        <Label Text="Jue" VerticalOptions="Center" />
-                    </HorizontalStackLayout>
-                    <HorizontalStackLayout Margin="0,0,12,0">
-                        <CheckBox x:Name="chkViernes" VerticalOptions="Center" CheckedChanged="OnRepeticionCambiada" />
-                        <Label Text="Vie" VerticalOptions="Center" />
-                    </HorizontalStackLayout>
-                    <HorizontalStackLayout Margin="0,0,12,0">
-                        <CheckBox x:Name="chkSabado" VerticalOptions="Center" CheckedChanged="OnRepeticionCambiada" />
-                        <Label Text="Sáb" VerticalOptions="Center" />
-                    </HorizontalStackLayout>
-                </FlexLayout>
-                <Label Text="Hasta (como máximo 16 semanas)" />
-                <DatePicker x:Name="dpHasta" Format="dd/MM/yyyy" DateSelected="OnRepeticionCambiada" />
-                <Label x:Name="lblCantidad" Style="{StaticResource TextoSecundario}" FontSize="12" />
+
+                <Label Text="Hora de salida" Style="{StaticResource RotuloCampo}" />
+                <!-- Cualquier hora (antes era una lista fija de 6 horarios) -->
+                <TimePicker x:Name="tpHora" Format="HH:mm" SemanticProperties.Description="Hora de salida" />
+
+                <Label Text="Asientos disponibles" Style="{StaticResource RotuloCampo}" />
+                <Picker x:Name="pickerAsientos" Title="Elegí la cantidad" SemanticProperties.Description="Asientos disponibles" />
+
+                <!-- HU24: un lugar público, nunca la casa del conductor -->
+                <Label Text="Desde dónde salís (opcional)" Style="{StaticResource RotuloCampo}" />
+                <Entry x:Name="entryPuntoPartida"
+                       Placeholder="Un lugar público. Ej: Plaza de Villa Allende"
+                       MaxLength="100"
+                       SemanticProperties.Description="Desde dónde salís, opcional"
+                       Unfocused="OnPartidaUnfocused" />
+                <Label x:Name="lblMapaPartida" Style="{StaticResource TextoAyuda}" IsVisible="False" />
+                <Label Text="La ruta arranca acá, pasa a buscar a cada pasajero en el mejor orden y termina en el destino. Si lo dejás vacío, arranca en el origen."
+                       Style="{StaticResource TextoAyuda}" />
+
+                <!-- HU14: el total se divide solo entre los pasajeros -->
+                <Label Text="Costo total del viaje (opcional)" Style="{StaticResource RotuloCampo}" />
+                <Entry x:Name="entryCosto"
+                       Keyboard="Numeric"
+                       Placeholder="Ej: 6000 (nafta + peajes). Se divide entre los pasajeros"
+                       SemanticProperties.Description="Costo total del viaje, opcional" />
+
+                <Label Text="Comentario (opcional)" Style="{StaticResource RotuloCampo}" />
+                <Editor x:Name="editorComentario"
+                        HeightRequest="88"
+                        Placeholder="Ej: llevo lugar para mochilas"
+                        SemanticProperties.Description="Comentario, opcional" />
+
+                <Label x:Name="lblError"
+                       Style="{StaticResource TextoError}"
+                       IsVisible="False"
+                       Margin="0,8,0,0" />
+
+                <Button x:Name="btnPublicar"
+                        Text="Publicar viaje"
+                        Margin="0,16,0,0"
+                        Clicked="OnConfirmarClicked" />
             </VerticalStackLayout>
-
-            <Label Text="Hora de salida" Margin="0,8,0,0" />
-            <!-- Cualquier hora (antes era una lista fija de 6 horarios) -->
-            <TimePicker x:Name="tpHora" Format="HH:mm" />
-
-            <Label Text="Asientos disponibles" Margin="0,8,0,0" />
-            <Picker x:Name="pickerAsientos" Title="Elegí la cantidad" />
-
-            <!-- HU24: un lugar público, nunca la casa del conductor -->
-            <Label Text="Desde dónde salís (opcional)" Margin="0,8,0,0" />
-            <Entry x:Name="entryPuntoPartida"
-                   Placeholder="Un lugar público. Ej: Plaza de Villa Allende"
-                   MaxLength="100"
-                   Unfocused="OnPartidaUnfocused" />
-            <Label x:Name="lblMapaPartida" FontSize="12" IsVisible="False" />
-            <Label Text="La ruta arranca acá, pasa a buscar a cada pasajero en el mejor orden y termina en el destino. Si lo dejás vacío, arranca en el origen."
-                   Style="{StaticResource TextoSecundario}"
-                   FontSize="12" />
-
-            <!-- HU14: el total se divide solo entre los pasajeros -->
-            <Label Text="Costo total del viaje (opcional)" Margin="0,8,0,0" />
-            <Entry x:Name="entryCosto"
-                   Keyboard="Numeric"
-                   Placeholder="Ej: 6000 (nafta + peajes). Se divide entre los pasajeros" />
-
-            <Label Text="Comentario (opcional)" Margin="0,8,0,0" />
-            <Editor x:Name="editorComentario"
-                    HeightRequest="80"
-                    Placeholder="Ej: llevo lugar para mochilas" />
-
-            <Label x:Name="lblError"
-                   TextColor="{DynamicResource ColorPeligro}"
-                   IsVisible="False"
-                   Margin="0,8,0,0" />
-
-            <Button x:Name="btnPublicar"
-                    Text="Publicar viaje"
-                    FontAttributes="Bold"
-                    Margin="0,12,0,0"
-                    Clicked="OnConfirmarClicked" />
-        </VerticalStackLayout>
+        </Grid>
     </ScrollView>
 
 </ContentPage>

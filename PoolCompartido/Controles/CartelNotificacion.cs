@@ -25,25 +25,31 @@ public class CartelNotificacion : ContentView
 
     public CartelNotificacion()
     {
+        // Colores con los tokens del tema: cambian solos cuando cambia el tema (como AppThemeBinding)
         _icono = new Label { FontSize = 18, VerticalOptions = LayoutOptions.Center };
+        AutomationProperties.SetIsInAccessibleTree(_icono, false);   // el emoji es decorativo
         _texto = new Label { FontSize = 14, LineBreakMode = LineBreakMode.WordWrap, MaxLines = 4, VerticalOptions = LayoutOptions.Center };
-        _texto.SetAppThemeColor(Label.TextColorProperty, Color.FromArgb("#1F1F1F"), Color.FromArgb("#F2F2F2"));
+        ColoresDelTema.Aplicar(_texto, Label.TextColorProperty, "ColorTexto");
 
+        // La ✕ con zona de toque de 44 × 44 (aunque el dibujo sea chico)
         var cerrar = new Label
         {
             Text = "✕",
-            FontSize = 14,
-            Padding = new Thickness(10, 4, 2, 4),
+            FontSize = 16,
+            WidthRequest = 44,
+            HeightRequest = 44,
+            HorizontalTextAlignment = TextAlignment.Center,
+            VerticalTextAlignment = TextAlignment.Center,
             VerticalOptions = LayoutOptions.Center
         };
-        cerrar.SetAppThemeColor(Label.TextColorProperty, Color.FromArgb("#6E6E6E"), Color.FromArgb("#ACACAC"));
+        ColoresDelTema.Aplicar(cerrar, Label.TextColorProperty, "ColorTextoSecundario");
         SemanticProperties.SetDescription(cerrar, "Cerrar aviso");
         cerrar.GestureRecognizers.Add(new TapGestureRecognizer { Command = new Command(() => _ = OcultarAsync(_version)) });
 
         var fila = new Grid
         {
             ColumnDefinitions = { new ColumnDefinition(GridLength.Auto), new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto) },
-            ColumnSpacing = 10
+            ColumnSpacing = 8
         };
         fila.Add(_icono, 0);
         fila.Add(_texto, 1);
@@ -52,13 +58,13 @@ public class CartelNotificacion : ContentView
         var caja = new Border
         {
             Content = fila,
-            Padding = new Thickness(14, 10),
+            Padding = new Thickness(14, 4, 4, 4),
             StrokeThickness = 1,
             StrokeShape = new RoundRectangle { CornerRadius = 14 },
-            Shadow = new Shadow { Brush = Brush.Black, Opacity = 0.25f, Radius = 12, Offset = new Point(0, 4) }
+            Shadow = new Shadow { Brush = new SolidColorBrush(ColorDelTema("ColorSombra")), Opacity = 0.25f, Radius = 12, Offset = new Point(0, 4) }
         };
-        caja.SetAppThemeColor(VisualElement.BackgroundColorProperty,Color.FromArgb("#FFFFFF"), Color.FromArgb("#2A2340"));
-        caja.SetAppTheme<Brush>(Border.StrokeProperty, new SolidColorBrush(Color.FromArgb("#D9D0F5")), new SolidColorBrush(Color.FromArgb("#4A3D7A")));
+        ColoresDelTema.Aplicar(caja, VisualElement.BackgroundColorProperty, "ColorSuperficie");
+        ColoresDelTema.AplicarPincel(caja, Border.StrokeProperty, "ColorBordeControl");
         caja.GestureRecognizers.Add(new TapGestureRecognizer { Command = new Command(async () => await AbrirAsync()) });
 
         Content = caja;
@@ -78,6 +84,10 @@ public class CartelNotificacion : ContentView
         Loaded += (s, e) => AlCargar();
         Unloaded += (s, e) => _registradoEn?.Quitar(EventoNotificacion.NOTIFICACION_NUEVA, _alLlegar);
     }
+
+    /// <summary>Un color fijo de Colors.xaml (la sombra es negra en los dos temas).</summary>
+    private static Color ColorDelTema(string token) =>
+        Application.Current?.Resources.TryGetValue(token, out var valor) == true && valor is Color color ? color : Colors.Transparent;
 
     /// <summary>
     /// Fija el ancho según la pantalla. Con un ancho fijo el texto se acomoda en varias líneas y el cartel

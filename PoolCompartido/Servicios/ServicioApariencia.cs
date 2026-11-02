@@ -93,7 +93,10 @@ public static class ServicioApariencia
             Eventos.Disparar(EventoApariencia.APARIENCIA_CAMBIADA, Actual);
     }
 
-    /// <summary>Reemplaza los colores de estado: todo lo que los usa con DynamicResource se actualiza solo.</summary>
+    /// <summary>
+    /// Reemplaza los colores de estado: todo lo que los usa con DynamicResource se actualiza solo.
+    /// (Los demás colores del tema van con AppThemeBinding y los cambia MAUI solo.)
+    /// </summary>
     private static void AplicarColores()
     {
         if (Application.Current is null) return;
@@ -106,24 +109,70 @@ public static class ServicioApariencia
         recursos["ColorPeligroBorde"] = Color.FromArgb(paleta.PeligroBorde);
         recursos["ColorAviso"] = Color.FromArgb(paleta.Aviso);
         recursos["ColorAvisoFondo"] = Color.FromArgb(paleta.AvisoFondo);   // HU29
+        recursos["ColorSobrePeligro"] = Color.FromArgb(paleta.SobrePeligro);
 
         AjustarBarraDeEstado();
+
+        // Con la app abierta, MAUI no actualiza bien los colores que vienen de los estilos: se reaplican
+        // en todas las pantallas (después de que termine el cambio de tema en curso)
+        Application.Current.Dispatcher.Dispatch(RefrescoDeTema.Aplicar);
     }
 
-    /// <summary>En Android, la barra de arriba (hora, batería) acompaña el tema.</summary>
+    /// <summary>
+    /// En Android, la barra de arriba (hora, batería) acompaña el tema.
+    /// En Windows, la ventana entera (incluidos los botones de minimizar, maximizar y cerrar) usa el tema de la app.
+    /// </summary>
     public static void AjustarBarraDeEstado()
     {
 #if ANDROID
         if (Platform.CurrentActivity?.Window is Android.Views.Window ventana)
             AjustarBarraDeEstado(ventana);
+#elif WINDOWS
+        if (Application.Current is null) return;
+        foreach (var ventana in Application.Current.Windows)
+            if (ventana.Handler?.PlatformView is Microsoft.UI.Xaml.Window nativa)
+                AjustarVentana(nativa);
 #endif
     }
+
+#if WINDOWS
+    /// <summary>
+    /// Windows dibuja la ventana con el tema del sistema aunque la app esté en otro: con Windows en oscuro y la app
+    /// en claro, al pasar el mouse los textos se ponían blancos sobre fondo claro y la franja de arriba quedaba oscura.
+    /// Acá se le pide a la ventana el mismo tema que la app.
+    /// </summary>
+    public static void AjustarVentana(Microsoft.UI.Xaml.Window nativa)
+    {
+        bool oscuro = EsOscuro;
+        if (nativa.Content is Microsoft.UI.Xaml.FrameworkElement raiz)
+            raiz.RequestedTheme = oscuro ? Microsoft.UI.Xaml.ElementTheme.Dark : Microsoft.UI.Xaml.ElementTheme.Light;
+
+        if (nativa.AppWindow?.TitleBar is Microsoft.UI.Windowing.AppWindowTitleBar barra)
+        {
+            var frente = oscuro ? Microsoft.UI.Colors.White : Microsoft.UI.Colors.Black;
+            barra.ButtonForegroundColor = frente;
+            barra.ButtonHoverForegroundColor = frente;
+            barra.ButtonPressedForegroundColor = frente;
+            barra.ButtonInactiveForegroundColor = Microsoft.UI.Colors.Gray;
+            barra.ButtonBackgroundColor = Microsoft.UI.Colors.Transparent;
+            barra.ButtonInactiveBackgroundColor = Microsoft.UI.Colors.Transparent;
+            barra.ButtonHoverBackgroundColor = oscuro
+                ? global::Windows.UI.Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF)
+                : global::Windows.UI.Color.FromArgb(0x1A, 0x00, 0x00, 0x00);
+            barra.ButtonPressedBackgroundColor = oscuro
+                ? global::Windows.UI.Color.FromArgb(0x55, 0xFF, 0xFF, 0xFF)
+                : global::Windows.UI.Color.FromArgb(0x33, 0x00, 0x00, 0x00);
+        }
+    }
+#endif
 
 #if ANDROID
     public static void AjustarBarraDeEstado(Android.Views.Window ventana)
     {
         bool oscuro = EsOscuro;
-        ventana.SetStatusBarColor(Android.Graphics.Color.ParseColor(oscuro ? "#1F1F1F" : "#FFFFFF"));
+        // Del mismo color que el fondo de la barra de título (token ColorFondo)
+        var fondo = ColoresDelTema.Buscar("ColorFondo", oscuro);
+        ventana.SetStatusBarColor(Android.Graphics.Color.ParseColor(fondo.ToArgbHex()));
         // Íconos oscuros sobre la barra clara, y al revés
         AndroidX.Core.View.WindowCompat.GetInsetsController(ventana, ventana.DecorView).AppearanceLightStatusBars = !oscuro;
     }

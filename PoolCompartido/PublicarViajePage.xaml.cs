@@ -26,12 +26,32 @@ public partial class PublicarViajePage : ContentPage
             (chkLunes, DayOfWeek.Monday), (chkMartes, DayOfWeek.Tuesday), (chkMiercoles, DayOfWeek.Wednesday),
             (chkJueves, DayOfWeek.Thursday), (chkViernes, DayOfWeek.Friday), (chkSabado, DayOfWeek.Saturday)
         };
+        // Solo diseño: el chip del día se pinta "elegido" cuando su casilla está marcada (estilo ChipDiaElegido)
+        foreach (var (casilla, _) in _dias)
+            casilla.CheckedChanged += (sender, e) => PintarChipDia(casilla);
         dpHasta.MinimumDate = DateTime.Today;
         dpHasta.Date = DateTime.Today.AddDays(4 * 7);
     }
 
     private IEnumerable<DayOfWeek> DiasElegidos() =>
         _dias.Where(d => d.Casilla.IsChecked).Select(d => d.Dia);
+
+    /// <summary>
+    /// HU28 (solo diseño): tocar el nombre del día en el chip marca o desmarca su casilla,
+    /// así toda la "pastilla" se puede tocar y no solo el cuadradito. La casilla avisa del cambio como siempre.
+    /// </summary>
+    private void OnChipDiaTocado(object? sender, TappedEventArgs e)
+    {
+        if (sender is Label { Parent: Layout fila } && fila.Children.OfType<CheckBox>().FirstOrDefault() is CheckBox casilla)
+            casilla.IsChecked = !casilla.IsChecked;
+    }
+
+    private static void PintarChipDia(CheckBox casilla)
+    {
+        if (casilla.Parent?.Parent is Border chip
+            && Application.Current?.Resources.TryGetValue(casilla.IsChecked ? "ChipDiaElegido" : "ChipDia", out var estilo) == true)
+            chip.Style = (Style)estilo;
+    }
 
     /// <summary>HU28: muestra u oculta los días y la fecha "hasta".</summary>
     private void OnRepetirToggled(object? sender, ToggledEventArgs e)

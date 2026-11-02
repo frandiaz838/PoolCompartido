@@ -23,31 +23,72 @@ internal static class Notificaciones
         capas.SizeChanged += (s, e) => cartel.AjustarAncho(capas.Width);
         pagina.Content = capas;
 
-        if (conCampana)
-            Shell.SetTitleView(pagina, ArmarTitulo(pagina));
+        // En Windows la flecha de volver de Shell queda en la franja de arriba de la ventana, que sigue el tema
+        // de Windows y no el de la app (en modo claro casi no se ve). Ahí se usa una flecha propia en la barra.
+        bool flechaPropia = DeviceInfo.Platform == DevicePlatform.WinUI;
+        if (flechaPropia)
+            Shell.SetBackButtonBehavior(pagina, new BackButtonBehavior { IsVisible = false });
+
+        if (conCampana || flechaPropia)
+            Shell.SetTitleView(pagina, ArmarTitulo(pagina, conCampana, flechaPropia));
     }
 
-    /// <summary>Título de la pantalla con la campanita a la derecha (en la barra de arriba).</summary>
-    private static View ArmarTitulo(ContentPage pagina)
+    /// <summary>Barra de arriba: (flecha para volver), título de la pantalla y la campanita a la derecha.</summary>
+    private static View ArmarTitulo(ContentPage pagina, bool conCampana, bool flechaPropia)
     {
+        bool windows = DeviceInfo.Platform == DevicePlatform.WinUI;
         var titulo = new Label
         {
-            FontSize = DeviceInfo.Platform == DevicePlatform.WinUI ? 22 : 20,
+            FontSize = windows ? 22 : 20,
             FontAttributes = FontAttributes.Bold,
             VerticalOptions = LayoutOptions.Center,
             LineBreakMode = LineBreakMode.TailTruncation
         };
         titulo.SetBinding(Label.TextProperty, new Binding(nameof(Page.Title), source: pagina));
-        titulo.SetAppThemeColor(Label.TextColorProperty, Color.FromArgb("#512BD4"), Color.FromArgb("#AC99EA"));
+        ColoresDelTema.Aplicar(titulo, Label.TextColorProperty, "ColorPrimario");
+        SemanticProperties.SetHeadingLevel(titulo, SemanticHeadingLevel.Level1);
 
         var barra = new Grid
         {
-            ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto) },
+            ColumnDefinitions =
+            {
+                new ColumnDefinition(GridLength.Auto), new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto)
+            },
             ColumnSpacing = 8,
-            Padding = new Thickness(DeviceInfo.Platform == DevicePlatform.WinUI ? 12 : 0, 0, 4, 0)
+            Padding = new Thickness(windows ? 8 : 0, 0, 4, 0)
         };
-        barra.Add(titulo, 0);
-        barra.Add(new Campana(), 1);
+
+        if (flechaPropia)
+        {
+            var atras = new Button
+            {
+                Text = "←",
+                FontSize = 20,
+                Padding = 0,
+                WidthRequest = 44,
+                HeightRequest = 44,
+                MinimumHeightRequest = 44,
+                CornerRadius = 22,
+                BackgroundColor = Colors.Transparent,
+                VerticalOptions = LayoutOptions.Center,
+                // Las pestañas no tienen a dónde volver; todas las demás pantallas se abren encima de otra
+                IsVisible = pagina is not (MainPage or MisViajesPage)
+            };
+            ColoresDelTema.Aplicar(atras, Button.TextColorProperty, "ColorPrimario");
+            SemanticProperties.SetDescription(atras, "Volver");
+            ToolTipProperties.SetText(atras, "Volver");
+            atras.Clicked += async (s, e) =>
+            {
+                var navegacion = Shell.Current?.Navigation ?? pagina.Navigation;
+                if (navegacion.NavigationStack.Count > 1)
+                    await navegacion.PopAsync();
+            };
+            barra.Add(atras, 0);
+        }
+
+        barra.Add(titulo, 1);
+        if (conCampana)
+            barra.Add(new Campana(), 2);
         return barra;
     }
 
