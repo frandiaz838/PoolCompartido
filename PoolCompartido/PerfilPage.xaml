@@ -3,163 +3,175 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:PoolCompartido"
              x:Class="PoolCompartido.PerfilPage"
-             Title="Mi perfil">
+             Title="Mi perfil"
+             Shell.TabBarIsVisible="False"
+             SafeAreaEdges="All">
 
     <ScrollView>
-        <VerticalStackLayout Padding="24" Spacing="10" MaximumWidthRequest="480">
+        <!-- Grid: así el formulario (con ancho máximo) queda centrado en la compu -->
+        <Grid>
+            <VerticalStackLayout Padding="{StaticResource RellenoFormulario}" Spacing="{StaticResource EspacioS}"
+                                 MaximumWidthRequest="{StaticResource AnchoFormulario}">
 
-            <!-- Avatar con las iniciales -->
-            <Border WidthRequest="96"
-                    HeightRequest="96"
-                    HorizontalOptions="Center"
-                    StrokeThickness="0"
-                    StrokeShape="RoundRectangle 48"
-                    BackgroundColor="#512BD4">
-                <Label x:Name="lblIniciales"
-                       FontSize="36"
-                       FontAttributes="Bold"
-                       TextColor="White"
-                       HorizontalOptions="Center"
-                       VerticalOptions="Center" />
-            </Border>
-
-            <Label x:Name="lblNombre" FontSize="22" FontAttributes="Bold" HorizontalOptions="Center" />
-            <!-- HU31: promedio de las calificaciones que recibí -->
-            <Label x:Name="lblCalificacion" FontSize="15" FontAttributes="Bold" HorizontalOptions="Center" />
-            <Label x:Name="lblEmail" FontSize="14" HorizontalOptions="Center" />
-            <Label x:Name="lblVerificacion" FontSize="13" HorizontalOptions="Center" />
-            <Button x:Name="btnReenviar"
-                    Text="Reenviar mail de verificación"
-                    IsVisible="False"
-                    BackgroundColor="Transparent"
-                    TextColor="{AppThemeBinding Light=#512BD4, Dark=#AC99EA}"
-                    Clicked="OnReenviarClicked" />
-
-            <!-- Cambiar nombre -->
-            <Label Text="Nombre que ven los demás" FontAttributes="Bold" Margin="0,16,0,0" />
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                <Entry x:Name="entryNombre" Placeholder="Tu nombre" />
-                <Button x:Name="btnGuardarNombre" Grid.Column="1" Text="Guardar" Clicked="OnGuardarNombreClicked" />
-            </Grid>
-            <Label Text="Los viajes que ya publicaste conservan el nombre anterior."
-                   FontSize="12"
-                   TextColor="Gray" />
-
-            <!-- HU32: teléfono de contacto (opcional) -->
-            <Label Text="Teléfono (opcional)" FontAttributes="Bold" Margin="0,16,0,0" />
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                <Entry x:Name="entryTelefono" Placeholder="Ej: 351 123 4567" Keyboard="Telephone" MaxLength="25" />
-                <Button x:Name="btnGuardarTelefono" Grid.Column="1" Text="Guardar" Clicked="OnGuardarTelefonoClicked" />
-            </Grid>
-            <Label x:Name="lblTelefono"
-                   Text="Solo lo ven las personas que viajan con vos, para llamarte o escribirte por WhatsApp. Nunca queda a la vista de todos."
-                   Style="{StaticResource TextoSecundario}" FontSize="12" />
-
-            <!-- HU30: mis horarios habituales -->
-            <Label Text="Mis horarios" FontAttributes="Bold" Margin="0,16,0,0" />
-            <Label Text="Los días y horas en que viajás siempre. Los viajes que coinciden aparecen primero y te avisamos cuando publican uno."
-                   Style="{StaticResource TextoSecundario}" FontSize="12" />
-            <VerticalStackLayout x:Name="listaHorarios" Spacing="8">
-                <BindableLayout.EmptyView>
-                    <Label Text="Todavía no cargaste ningún horario." Style="{StaticResource TextoSecundario}" />
-                </BindableLayout.EmptyView>
-                <BindableLayout.ItemTemplate>
-                    <DataTemplate x:DataType="local:HorarioHabitual">
-                        <Border Style="{StaticResource TarjetaViaje}" Padding="14,10">
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer Tapped="OnHorarioTocado" />
-                            </Border.GestureRecognizers>
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                <VerticalStackLayout Spacing="2">
-                                    <Label Text="{Binding Resumen}" FontAttributes="Bold" />
-                                    <Label Text="{Binding Ruta}" Style="{StaticResource TextoSecundario}" />
-                                </VerticalStackLayout>
-                                <Label Grid.Column="1" Text="Editar" VerticalOptions="Center" FontSize="13"
-                                       TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </BindableLayout.ItemTemplate>
-            </VerticalStackLayout>
-            <Button Text="+ Agregar horario" Style="{StaticResource BotonSecundario}" HorizontalOptions="Start"
-                    Clicked="OnAgregarHorarioClicked" />
-
-            <!-- HU18 + HU19: apariencia -->
-            <Label Text="Apariencia" FontAttributes="Bold" Margin="0,16,0,0" />
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                <Label Text="Tema" VerticalOptions="Center" />
-                <Picker x:Name="pickerTema"
-                        Grid.Column="1"
-                        WidthRequest="190"
-                        SelectedIndexChanged="OnTemaCambiado" />
-            </Grid>
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                <VerticalStackLayout Spacing="2" VerticalOptions="Center">
-                    <Label Text="Colores para daltonismo" />
-                    <Label Text="Cambia el verde y el rojo por azul y naranja, que se distinguen mejor."
-                           Style="{StaticResource TextoSecundario}" FontSize="12" />
-                </VerticalStackLayout>
-                <Switch x:Name="swDaltonico" Grid.Column="1" VerticalOptions="Center" Toggled="OnDaltonicoCambiado" />
-            </Grid>
-            <!-- Vista previa: así se ven los estados de los viajes con los colores elegidos.
-                 Cada estado tiene su texto, así nunca depende solo del color -->
-            <FlexLayout Wrap="Wrap" Margin="0,4,0,0">
-                <Border Style="{StaticResource Etiqueta}" BackgroundColor="{DynamicResource ColorExitoFondo}" Margin="0,0,8,8">
-                    <Label Text="✓ En curso" FontSize="12" FontAttributes="Bold" TextColor="{DynamicResource ColorExito}" />
+                <!-- Avatar con las iniciales -->
+                <Border WidthRequest="96"
+                        HeightRequest="96"
+                        HorizontalOptions="Center"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 48"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource ColorPrimarioClaro}, Dark={StaticResource ColorPrimarioOscuro}}">
+                    <Label x:Name="lblIniciales"
+                           FontSize="36"
+                           FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light={StaticResource ColorSobrePrimarioClaro}, Dark={StaticResource ColorSobrePrimarioOscuro}}"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center"
+                           AutomationProperties.IsInAccessibleTree="False" />
                 </Border>
-                <Border Style="{StaticResource Etiqueta}" Margin="0,0,8,8">
-                    <Label Text="Sale en menos de 5 minutos" FontSize="12" FontAttributes="Bold" TextColor="{DynamicResource ColorAviso}" />
-                </Border>
-                <Border Style="{StaticResource Etiqueta}" Margin="0,0,8,8">
-                    <Label Text="Cancelado" FontSize="12" FontAttributes="Bold" TextColor="{DynamicResource ColorPeligro}" />
-                </Border>
-            </FlexLayout>
 
-            <!-- Cuenta -->
-            <Label Text="Cuenta" FontAttributes="Bold" Margin="0,16,0,0" />
-            <Button x:Name="btnContrasena" Text="Cambiar contraseña" Clicked="OnCambiarContrasenaClicked" />
-            <Button Text="Registro de errores" Clicked="OnRegistroClicked" />
-            <Button Text="Cerrar sesión"
-                    BackgroundColor="Transparent"
-                    TextColor="{DynamicResource ColorPeligro}"
-                    BorderColor="{DynamicResource ColorPeligro}"
-                    BorderWidth="1"
-                    Margin="0,16,0,0"
-                    Clicked="OnCerrarSesionClicked" />
+                <Label x:Name="lblNombre" Style="{StaticResource Titulo}" HorizontalOptions="Center" HorizontalTextAlignment="Center" />
+                <!-- HU31: promedio de las calificaciones que recibí -->
+                <Label x:Name="lblCalificacion" FontSize="{StaticResource TamanoMediano}" FontAttributes="Bold" HorizontalOptions="Center" />
+                <Label x:Name="lblEmail" Style="{StaticResource TextoSecundario}" HorizontalOptions="Center" />
+                <Label x:Name="lblVerificacion" HorizontalOptions="Center" HorizontalTextAlignment="Center" />
+                <Button x:Name="btnReenviar"
+                        Text="Reenviar mail de verificación"
+                        Style="{StaticResource BotonTexto}"
+                        HorizontalOptions="Center"
+                        IsVisible="False"
+                        Clicked="OnReenviarClicked" />
 
-            <!-- HU21: borrar la cuenta. Primero se pide la contraseña -->
-            <Button x:Name="btnBorrarCuenta"
-                    Text="Borrar mi cuenta"
-                    BackgroundColor="{DynamicResource ColorPeligro}"
-                    TextColor="White"
-                    Clicked="OnBorrarCuentaClicked" />
-            <VerticalStackLayout x:Name="panelBorrar" IsVisible="False" Spacing="8">
-                <Label Text="Escribí tu contraseña para confirmar. Se cancelan los viajes que publicaste y te salís de los que estás anotado."
-                       FontSize="12"
-                       TextColor="Gray" />
-                <Grid>
-                    <local:EntryConIcono x:Name="entryContrasenaBorrar" Placeholder="Tu contraseña" IsPassword="True" />
-                    <ImageButton x:Name="btnVerContrasena"
-                                 Source="ojo.png"
-                                 WidthRequest="30"
-                                 HeightRequest="30"
-                                 Padding="6"
-                                 Margin="0,0,8,0"
-                                 HorizontalOptions="End"
-                                 VerticalOptions="Center"
-                                 BackgroundColor="Transparent"
-                                 SemanticProperties.Description="Mostrar contraseña"
-                                 Clicked="OnVerContrasenaClicked" />
+                <!-- Cambiar nombre -->
+                <Label Text="Nombre que ven los demás" Style="{StaticResource TituloSeccion}" />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource EspacioS}">
+                    <Entry x:Name="entryNombre" Placeholder="Tu nombre" SemanticProperties.Description="Nombre que ven los demás" />
+                    <Button x:Name="btnGuardarNombre" Grid.Column="1" Text="Guardar" Style="{StaticResource BotonSecundario}"
+                            Margin="0" VerticalOptions="Center" SemanticProperties.Description="Guardar el nombre"
+                            Clicked="OnGuardarNombreClicked" />
                 </Grid>
-                <Button x:Name="btnConfirmarBorrado"
-                        Text="Confirmar borrado"
-                        BackgroundColor="Transparent"
-                        TextColor="{DynamicResource ColorPeligro}"
-                        BorderColor="{DynamicResource ColorPeligro}"
-                        BorderWidth="1"
-                        Clicked="OnConfirmarBorradoClicked" />
+                <Label Text="Los viajes que ya publicaste conservan el nombre anterior." Style="{StaticResource TextoAyuda}" />
+
+                <!-- HU32: teléfono de contacto (opcional) -->
+                <Label Text="Teléfono (opcional)" Style="{StaticResource TituloSeccion}" />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource EspacioS}">
+                    <Entry x:Name="entryTelefono" Placeholder="Ej: 351 123 4567" Keyboard="Telephone" MaxLength="25"
+                           SemanticProperties.Description="Teléfono" />
+                    <Button x:Name="btnGuardarTelefono" Grid.Column="1" Text="Guardar" Style="{StaticResource BotonSecundario}"
+                            Margin="0" VerticalOptions="Center" SemanticProperties.Description="Guardar el teléfono"
+                            Clicked="OnGuardarTelefonoClicked" />
+                </Grid>
+                <Label x:Name="lblTelefono"
+                       Text="Solo lo ven las personas que viajan con vos, para llamarte o escribirte por WhatsApp. Nunca queda a la vista de todos."
+                       Style="{StaticResource TextoAyuda}" />
+
+                <!-- HU30: mis horarios habituales -->
+                <Label Text="Mis horarios" Style="{StaticResource TituloSeccion}" />
+                <Label Text="Los días y horas en que viajás siempre. Los viajes que coinciden aparecen primero y te avisamos cuando publican uno."
+                       Style="{StaticResource TextoAyuda}" />
+                <VerticalStackLayout x:Name="listaHorarios" Spacing="{StaticResource EspacioS}" Margin="0,4,0,0">
+                    <BindableLayout.EmptyView>
+                        <Label Text="Todavía no cargaste ningún horario." Style="{StaticResource TextoSecundario}" />
+                    </BindableLayout.EmptyView>
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="local:HorarioHabitual">
+                            <!-- Toda la tarjeta se toca para editar (con descripción para el lector de pantalla) -->
+                            <Border Style="{StaticResource TarjetaViaje}" Padding="14,10" MinimumHeightRequest="44"
+                                    SemanticProperties.Description="{Binding Resumen, StringFormat='Editar el horario {0}'}">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnHorarioTocado" />
+                                </Border.GestureRecognizers>
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource EspacioS}">
+                                    <VerticalStackLayout Spacing="2">
+                                        <Label Text="{Binding Resumen}" FontAttributes="Bold" />
+                                        <Label Text="{Binding Ruta}" Style="{StaticResource TextoSecundario}" />
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="1" Text="Editar ›" VerticalOptions="Center"
+                                           TextColor="{AppThemeBinding Light={StaticResource ColorPrimarioClaro}, Dark={StaticResource ColorPrimarioOscuro}}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+                <Button Text="+ Agregar horario" Style="{StaticResource BotonSecundario}" HorizontalOptions="Start"
+                        Margin="0,4,0,0" Clicked="OnAgregarHorarioClicked" />
+
+                <!-- HU18 + HU19: apariencia -->
+                <Label Text="Apariencia" Style="{StaticResource TituloSeccion}" />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource EspacioM}">
+                    <Label Text="Tema" VerticalOptions="Center" />
+                    <Picker x:Name="pickerTema"
+                            Grid.Column="1"
+                            WidthRequest="190"
+                            SemanticProperties.Description="Tema"
+                            SelectedIndexChanged="OnTemaCambiado" />
+                </Grid>
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource EspacioM}">
+                    <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                        <Label Text="Colores para daltonismo" />
+                        <Label Text="Cambia el verde y el rojo por azul y naranja, que se distinguen mejor."
+                               Style="{StaticResource TextoAyuda}" />
+                    </VerticalStackLayout>
+                    <Switch x:Name="swDaltonico" Grid.Column="1" VerticalOptions="Center"
+                            SemanticProperties.Description="Colores para daltonismo"
+                            Toggled="OnDaltonicoCambiado" />
+                </Grid>
+                <!-- Vista previa: así se ven los estados de los viajes con los colores elegidos.
+                     Cada estado tiene su texto, así nunca depende solo del color -->
+                <FlexLayout Wrap="Wrap" Margin="0,4,0,0">
+                    <Border Style="{StaticResource Etiqueta}" BackgroundColor="{DynamicResource ColorExitoFondo}" Margin="0,0,8,8">
+                        <Label Text="✓ En curso" Style="{StaticResource EtiquetaTexto}" TextColor="{DynamicResource ColorExito}" />
+                    </Border>
+                    <Border Style="{StaticResource Etiqueta}" BackgroundColor="{DynamicResource ColorAvisoFondo}" Margin="0,0,8,8">
+                        <Label Text="Sale en menos de 5 minutos" Style="{StaticResource EtiquetaTexto}" TextColor="{DynamicResource ColorAviso}" />
+                    </Border>
+                    <!-- Sin fondo violeta: el rojo sobre el violeta suave no llega al contraste mínimo -->
+                    <Border Style="{StaticResource Etiqueta}" Margin="0,0,8,8" BackgroundColor="Transparent"
+                            StrokeThickness="1" Stroke="{DynamicResource ColorPeligroBorde}">
+                        <Label Text="Cancelado" Style="{StaticResource EtiquetaTexto}" TextColor="{DynamicResource ColorPeligro}" />
+                    </Border>
+                </FlexLayout>
+
+                <!-- Cuenta -->
+                <Label Text="Cuenta" Style="{StaticResource TituloSeccion}" />
+                <Button x:Name="btnContrasena" Text="Cambiar contraseña" Style="{StaticResource BotonSecundario}"
+                        Margin="0" Clicked="OnCambiarContrasenaClicked" />
+                <Button Text="Registro de errores" Style="{StaticResource BotonSecundario}"
+                        Margin="0" Clicked="OnRegistroClicked" />
+                <Button Text="Cerrar sesión" Style="{StaticResource BotonPeligro}"
+                        Margin="0,16,0,0" Clicked="OnCerrarSesionClicked" />
+
+                <!-- HU21: borrar la cuenta. Primero se pide la contraseña -->
+                <Button x:Name="btnBorrarCuenta"
+                        Text="Borrar mi cuenta"
+                        Style="{StaticResource BotonPeligroLleno}"
+                        Margin="0"
+                        Clicked="OnBorrarCuentaClicked" />
+                <VerticalStackLayout x:Name="panelBorrar" IsVisible="False" Spacing="{StaticResource EspacioS}">
+                    <Label Text="Escribí tu contraseña para confirmar. Se cancelan los viajes que publicaste y te salís de los que estás anotado."
+                           Style="{StaticResource TextoAyuda}" />
+                    <Grid>
+                        <local:EntryConIcono x:Name="entryContrasenaBorrar" Placeholder="Tu contraseña" IsPassword="True"
+                                             SemanticProperties.Description="Tu contraseña" />
+                        <ImageButton x:Name="btnVerContrasena"
+                                     Source="ojo.png"
+                                     WidthRequest="44"
+                                     HeightRequest="44"
+                                     Padding="13"
+                                     Margin="0,0,2,0"
+                                     HorizontalOptions="End"
+                                     VerticalOptions="Center"
+                                     BackgroundColor="Transparent"
+                                     SemanticProperties.Description="Mostrar contraseña"
+                                     Clicked="OnVerContrasenaClicked" />
+                    </Grid>
+                    <Button x:Name="btnConfirmarBorrado"
+                            Text="Confirmar borrado"
+                            Style="{StaticResource BotonPeligro}"
+                            Margin="0"
+                            Clicked="OnConfirmarBorradoClicked" />
+                </VerticalStackLayout>
             </VerticalStackLayout>
-        </VerticalStackLayout>
+        </Grid>
     </ScrollView>
 
 </ContentPage>

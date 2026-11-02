@@ -29,7 +29,6 @@ public class Campana : ContentView
         {
             FontSize = 10,
             FontAttributes = FontAttributes.Bold,
-            TextColor = Colors.White,
             HorizontalOptions = LayoutOptions.Center,
             VerticalOptions = LayoutOptions.Center
         };
@@ -48,8 +47,10 @@ public class Campana : ContentView
             IsVisible = false
         };
         _globito.SetDynamicResource(VisualElement.BackgroundColorProperty, "ColorPeligro");
+        // Blanco sobre el rojo del tema claro y oscuro sobre el rojo claro del tema oscuro (contraste ≥ 4,5:1)
+        _cantidad.SetDynamicResource(Label.TextColorProperty, "ColorSobrePeligro");
 
-        var zona = new Grid { WidthRequest = 44, HeightRequest = 40 };
+        var zona = new Grid { WidthRequest = 44, HeightRequest = 44 };
         zona.Add(icono);
         zona.Add(_globito);
         zona.GestureRecognizers.Add(new TapGestureRecognizer { Command = new Command(async () => await AbrirCentroAsync()) });

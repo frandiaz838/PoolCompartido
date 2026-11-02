@@ -3,34 +3,39 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="PoolCompartido.HorarioPage"
              Title="Mi horario"
-             Shell.TabBarIsVisible="False">
+             Shell.TabBarIsVisible="False"
+             SafeAreaEdges="All">
 
     <!-- HU30: cargar o editar un horario habitual -->
     <ScrollView>
-        <VerticalStackLayout Padding="24" Spacing="8" MaximumWidthRequest="520">
+        <!-- Grid: así el formulario (con ancho máximo) queda centrado en la compu -->
+        <Grid>
+            <VerticalStackLayout Padding="{StaticResource RellenoFormulario}" Spacing="{StaticResource EspacioS}"
+                                 MaximumWidthRequest="{StaticResource AnchoFormulario}">
 
-            <Label Text="¿Qué días viajás?" FontAttributes="Bold" />
-            <!-- Los botones de los días se arman en el código (Lun a Dom); tocás para marcar o desmarcar -->
-            <FlexLayout x:Name="panelDias" Wrap="Wrap" Direction="Row" />
+                <Label Text="¿Qué días viajás?" Style="{StaticResource RotuloCampo}" Margin="0" />
+                <!-- Los botones de los días se arman en el código (Lun a Dom); tocás para marcar o desmarcar -->
+                <FlexLayout x:Name="panelDias" Wrap="Wrap" Direction="Row" />
 
-            <Label Text="¿A qué hora salís?" FontAttributes="Bold" Margin="0,12,0,0" />
-            <TimePicker x:Name="tpHora" Format="HH:mm" HorizontalOptions="Start" />
-            <Label Text="Te mostramos los viajes que salen hasta una hora antes o después."
-                   Style="{StaticResource TextoSecundario}" FontSize="12" />
+                <Label Text="¿A qué hora salís?" Style="{StaticResource RotuloCampo}" />
+                <TimePicker x:Name="tpHora" Format="HH:mm" HorizontalOptions="Start" SemanticProperties.Description="Hora de salida" />
+                <Label Text="Te mostramos los viajes que salen hasta una hora antes o después."
+                       Style="{StaticResource TextoAyuda}" />
 
-            <Label Text="Desde (opcional)" FontAttributes="Bold" Margin="0,12,0,0" />
-            <Entry x:Name="entryOrigen" Placeholder="Ej: Saldán" MaxLength="100" />
+                <Label Text="Desde (opcional)" Style="{StaticResource RotuloCampo}" />
+                <Entry x:Name="entryOrigen" Placeholder="Ej: Saldán" MaxLength="100" SemanticProperties.Description="Desde, opcional" />
 
-            <Label Text="Hacia" FontAttributes="Bold" Margin="0,12,0,0" />
-            <Entry x:Name="entryDestino" Placeholder="Ej: Universidad Blas Pascal" MaxLength="100" />
+                <Label Text="Hacia" Style="{StaticResource RotuloCampo}" />
+                <Entry x:Name="entryDestino" Placeholder="Ej: Universidad Blas Pascal" MaxLength="100" SemanticProperties.Description="Hacia" />
 
-            <Label x:Name="lblError" TextColor="{DynamicResource ColorPeligro}" IsVisible="False" Margin="0,8,0,0" />
+                <Label x:Name="lblError" Style="{StaticResource TextoError}" IsVisible="False" Margin="0,8,0,0" />
 
-            <Button x:Name="btnGuardar" Text="Guardar horario" Style="{StaticResource BotonPrincipal}"
-                    HorizontalOptions="Fill" Margin="0,16,0,0" Clicked="OnGuardarClicked" />
-            <Button x:Name="btnBorrar" Text="Borrar este horario" Style="{StaticResource BotonPeligro}"
-                    HorizontalOptions="Fill" IsVisible="False" Clicked="OnBorrarClicked" />
-        </VerticalStackLayout>
+                <Button x:Name="btnGuardar" Text="Guardar horario"
+                        Margin="0,16,0,0" Clicked="OnGuardarClicked" />
+                <Button x:Name="btnBorrar" Text="Borrar este horario" Style="{StaticResource BotonPeligro}"
+                        HorizontalOptions="Fill" Margin="0" IsVisible="False" Clicked="OnBorrarClicked" />
+            </VerticalStackLayout>
+        </Grid>
     </ScrollView>
 
 </ContentPage>

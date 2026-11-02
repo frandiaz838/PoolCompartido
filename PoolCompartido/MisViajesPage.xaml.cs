@@ -50,6 +50,17 @@ public partial class MisViajesPage : ContentPage
         await Navigation.PushAsync(new PerfilPage());
     }
 
+    // Botones de la lista vacía: llevan a buscar un viaje o a publicar uno
+    private async void OnBuscarViajesClicked(object? sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync("//MainPage");
+    }
+
+    private async void OnPublicarClicked(object? sender, EventArgs e)
+    {
+        await Navigation.PushAsync(new PublicarViajePage());
+    }
+
     /// <summary>
     /// HU32: llamar o escribir por WhatsApp a alguien del viaje (por ejemplo, al llegar al punto de encuentro).
     /// Solo aparecen los que cargaron su teléfono en Mi perfil.

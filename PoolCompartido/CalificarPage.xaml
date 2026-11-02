@@ -3,27 +3,31 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="PoolCompartido.CalificarPage"
              Title="Calificar"
-             Shell.TabBarIsVisible="False">
+             Shell.TabBarIsVisible="False"
+             SafeAreaEdges="All">
 
     <!-- HU31: calificar a cada persona con la que viajé (una sola vez por viaje) -->
     <ScrollView>
-        <VerticalStackLayout Padding="16" Spacing="12" MaximumWidthRequest="820">
-            <VerticalStackLayout Spacing="2">
-                <Label x:Name="lblRuta" FontSize="18" FontAttributes="Bold" />
-                <Label x:Name="lblDetalle" Style="{StaticResource TextoSecundario}" />
-                <Label Text="Elegí de 1 a 5 estrellas para cada uno. La calificación no se puede cambiar después."
-                       Style="{StaticResource TextoSecundario}" FontSize="12" Margin="0,4,0,0" />
+        <!-- Grid: así el formulario (con ancho máximo) queda centrado en la compu -->
+        <Grid>
+            <VerticalStackLayout Padding="{StaticResource RellenoFormulario}" Spacing="{StaticResource EspacioM}" MaximumWidthRequest="{StaticResource AnchoLectura}">
+                <VerticalStackLayout Spacing="2">
+                    <Label x:Name="lblRuta" Style="{StaticResource Titulo}" />
+                    <Label x:Name="lblDetalle" Style="{StaticResource TextoSecundario}" />
+                    <Label Text="Elegí de 1 a 5 estrellas para cada uno. La calificación no se puede cambiar después."
+                           Style="{StaticResource TextoAyuda}" Margin="0,4,0,0" />
+                </VerticalStackLayout>
+
+                <!-- Una tarjeta por persona: se arman desde el código -->
+                <VerticalStackLayout x:Name="panelPersonas" Spacing="12" />
+
+                <Label x:Name="lblListo"
+                       Text="✓ Ya calificaste a todos los de este viaje. ¡Gracias!"
+                       FontAttributes="Bold"
+                       TextColor="{DynamicResource ColorExito}"
+                       IsVisible="False" />
             </VerticalStackLayout>
-
-            <!-- Una tarjeta por persona: se arman desde el código -->
-            <VerticalStackLayout x:Name="panelPersonas" Spacing="12" />
-
-            <Label x:Name="lblListo"
-                   Text="✓ Ya calificaste a todos los de este viaje. ¡Gracias!"
-                   FontAttributes="Bold"
-                   TextColor="{DynamicResource ColorExito}"
-                   IsVisible="False" />
-        </VerticalStackLayout>
+        </Grid>
     </ScrollView>
 
 </ContentPage>

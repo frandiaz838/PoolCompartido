@@ -193,14 +193,54 @@ public partial class MainPage : ContentPage
         pickerDia.SelectedIndex = 0;
     }
 
-    private void OnFiltroTextoCambiado(object? sender, TextChangedEventArgs e) => Redibujar();
+    private void OnFiltroTextoCambiado(object? sender, TextChangedEventArgs e)
+    {
+        Redibujar();
+        MostrarLimpiar();
+    }
 
-    private void OnHorarioCambiado(object? sender, EventArgs e) => Redibujar();
+    private void OnHorarioCambiado(object? sender, EventArgs e)
+    {
+        Redibujar();
+        MostrarLimpiar();
+    }
+
+    /// <summary>Solo diseño: "Limpiar filtros" se ve únicamente si hay algún filtro puesto.</summary>
+    private void MostrarLimpiar()
+    {
+        btnLimpiar.IsVisible = !string.IsNullOrWhiteSpace(entryOrigen.Text) || !string.IsNullOrWhiteSpace(entryDestino.Text)
+                               || pickerDia.SelectedIndex > 0 || pickerHorario.SelectedIndex > 0;
+    }
 
     /// <summary>⇄: invierte desde y hacia, para buscar la vuelta.</summary>
     private void OnInvertirClicked(object? sender, EventArgs e)
     {
         (entryOrigen.Text, entryDestino.Text) = (entryDestino.Text, entryOrigen.Text);
+    }
+
+    /// <summary>📍 en "Desde": completa el filtro con el barrio donde estoy (el mismo servicio que usa Publicar).</summary>
+    private async void OnUbicacionDesdeClicked(object? sender, EventArgs e)
+    {
+        btnUbicacionDesde.IsEnabled = false;
+        try
+        {
+            UbicacionActual ubicacion = await ServicioUbicacion.ObtenerAsync();
+            entryOrigen.Text = ubicacion.Barrio;   // al cambiar el texto se filtra la lista
+        }
+        catch (UbicacionNoDisponibleException ex)
+        {
+            RegistroErrores.RegistrarAviso(ex, "Usar mi ubicación en el filtro");
+            ServicioNotificaciones.Instancia.Avisar(ex.Message);
+        }
+        catch (Exception ex) when (ex is SinConexionException or ServidorException)
+        {
+            RegistroErrores.RegistrarError(ex, "Usar mi ubicación en el filtro");
+            ServicioNotificaciones.Instancia.Avisar("No pudimos buscar tu barrio: " + ex.Message);
+        }
+        finally
+        {
+            btnUbicacionDesde.IsEnabled = true;
+        }
     }
 
     private void OnLimpiarClicked(object? sender, EventArgs e)

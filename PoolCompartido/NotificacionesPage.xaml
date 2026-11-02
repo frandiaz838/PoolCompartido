@@ -11,16 +11,17 @@
     </ContentPage.ToolbarItems>
 
     <!-- HU26: centro de notificaciones. En la compu, una columna central -->
-    <Grid Padding="16" RowSpacing="10" RowDefinitions="Auto,*" MaximumWidthRequest="720">
+    <Grid Padding="{StaticResource RellenoPagina}" RowSpacing="10" RowDefinitions="Auto,*" MaximumWidthRequest="{StaticResource AnchoLectura}">
 
-        <Label x:Name="lblResumen" Grid.Row="0" Style="{StaticResource TextoSecundario}" FontSize="14" />
+        <Label x:Name="lblResumen" Grid.Row="0" Style="{StaticResource TextoSecundario}" />
 
         <CollectionView x:Name="listaNotificaciones" Grid.Row="1" SelectionMode="None">
             <CollectionView.EmptyView>
-                <VerticalStackLayout HorizontalOptions="Center" Margin="0,40" Spacing="6">
-                    <Label Text="🔔" FontSize="36" HorizontalOptions="Center" />
-                    <Label Text="Todavía no tenés notificaciones." HorizontalOptions="Center" FontAttributes="Bold" />
-                    <Label Text="Acá van a aparecer los avisos de tus viajes." Style="{StaticResource TextoSecundario}" HorizontalOptions="Center" />
+                <VerticalStackLayout HorizontalOptions="Center" Margin="0,40" Spacing="{StaticResource EspacioS}" Padding="16,0">
+                    <Label Text="🔔" Style="{StaticResource EstadoVacioIcono}" />
+                    <Label Text="Todavía no tenés notificaciones" Style="{StaticResource EstadoVacioTitulo}" />
+                    <Label Text="Acá van a aparecer los avisos de tus viajes: quién se anotó, cambios de horario, mensajes nuevos."
+                           Style="{StaticResource EstadoVacioTexto}" />
                 </VerticalStackLayout>
             </CollectionView.EmptyView>
             <CollectionView.ItemsLayout>
@@ -29,10 +30,13 @@
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="local:Notificacion">
                     <Border Padding="12,10"
+                            MinimumHeightRequest="44"
                             StrokeShape="RoundRectangle 12"
                             StrokeThickness="1"
-                            Stroke="{AppThemeBinding Light=#EEEAF6, Dark=#333333}"
-                            BackgroundColor="{AppThemeBinding Light=White, Dark=#262626}">
+                            Stroke="{AppThemeBinding Light={StaticResource ColorBordeClaro}, Dark={StaticResource ColorBordeOscuro}}"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource ColorSuperficieClaro}, Dark={StaticResource ColorSuperficieOscuro}}"
+                            SemanticProperties.Description="{Binding Texto}"
+                            SemanticProperties.Hint="Tocá para abrir el aviso">
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnNotificacionTocada" />
                         </Border.GestureRecognizers>
@@ -40,7 +44,7 @@
                         <!-- Las no leídas: barrita violeta a la izquierda, texto en negrita y un punto (no depende solo del color) -->
                         <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="12">
                             <BoxView WidthRequest="4" CornerRadius="2" VerticalOptions="Fill"
-                                     Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                                     Color="{AppThemeBinding Light={StaticResource ColorPrimarioClaro}, Dark={StaticResource ColorPrimarioOscuro}}"
                                      Opacity="0"
                                      IsVisible="True">
                                 <BoxView.Triggers>
@@ -49,21 +53,23 @@
                                     </DataTrigger>
                                 </BoxView.Triggers>
                             </BoxView>
-                            <Label Grid.Column="1" Text="{Binding Icono}" FontSize="20" VerticalOptions="Start" />
+                            <Label Grid.Column="1" Text="{Binding Icono}" FontSize="20" VerticalOptions="Start"
+                                   AutomationProperties.IsInAccessibleTree="False" />
                             <VerticalStackLayout Grid.Column="2" Spacing="2">
-                                <Label Text="{Binding Texto}" FontSize="14" LineBreakMode="WordWrap">
+                                <Label Text="{Binding Texto}" LineBreakMode="WordWrap">
                                     <Label.Triggers>
                                         <DataTrigger TargetType="Label" Binding="{Binding NoLeida}" Value="True">
                                             <Setter Property="FontAttributes" Value="Bold" />
                                         </DataTrigger>
                                     </Label.Triggers>
                                 </Label>
-                                <Label Text="{Binding HoraTexto}" Style="{StaticResource TextoSecundario}" FontSize="12" />
+                                <Label Text="{Binding HoraTexto}" Style="{StaticResource TextoAyuda}" />
                             </VerticalStackLayout>
                             <!-- Punto de "nuevo" -->
                             <BoxView Grid.Column="3" WidthRequest="10" HeightRequest="10" CornerRadius="5" VerticalOptions="Center"
-                                     Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
-                                     IsVisible="{Binding NoLeida}" />
+                                     Color="{AppThemeBinding Light={StaticResource ColorPrimarioClaro}, Dark={StaticResource ColorPrimarioOscuro}}"
+                                     IsVisible="{Binding NoLeida}"
+                                     SemanticProperties.Description="Sin leer" />
                         </Grid>
                     </Border>
                 </DataTemplate>
