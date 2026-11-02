@@ -166,7 +166,8 @@
             </CollectionView.ItemsLayout>
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="local:Viaje">
-                    <Border Style="{StaticResource TarjetaViaje}">
+                    <!-- En Windows la barra de desplazamiento va encima del contenido: margen a la derecha para que no tape la tarjeta -->
+                    <Border Style="{StaticResource TarjetaViaje}" Margin="{OnPlatform Default='0', WinUI='0,0,14,0'}">
                         <VerticalStackLayout Spacing="10">
                             <!-- HU30: coincide con uno de mis horarios habituales -->
                             <Border Style="{StaticResource Etiqueta}" HorizontalOptions="Start" IsVisible="{Binding CoincideConMiHorario}"
@@ -247,9 +248,17 @@
                                     <Label Text="{Binding CostoChip}" Style="{StaticResource ChipTexto}" />
                                 </Border>
                                 <!-- HU31: promedio de calificaciones del conductor, para saber con quién me anoto -->
-                                <Border Style="{StaticResource Chip}" IsVisible="{Binding TieneCalificacionChip}">
-                                    <Label Text="{Binding CalificacionChip}" Style="{StaticResource ChipTexto}" />
-                                </Border>
+                                <!-- En mis propios viajes no se muestra (sería mi calificación) -->
+                                <ContentView>
+                                    <ContentView.Triggers>
+                                        <DataTrigger TargetType="ContentView" Binding="{Binding EsDelUsuarioActual}" Value="True">
+                                            <Setter Property="IsVisible" Value="False" />
+                                        </DataTrigger>
+                                    </ContentView.Triggers>
+                                    <Border Style="{StaticResource Chip}" IsVisible="{Binding TieneCalificacionChip}">
+                                        <Label Text="{Binding CalificacionChip}" Style="{StaticResource ChipTexto}" />
+                                    </Border>
+                                </ContentView>
                             </FlexLayout>
 
                             <!-- Acciones -->

@@ -51,7 +51,8 @@
             </CollectionView.ItemsLayout>
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="local:Viaje">
-                    <Border Style="{StaticResource TarjetaViaje}">
+                    <!-- En Windows la barra de desplazamiento va encima del contenido: margen a la derecha para que no tape la tarjeta -->
+                    <Border Style="{StaticResource TarjetaViaje}" Margin="{OnPlatform Default='0', WinUI='0,0,14,0'}">
                         <!-- El viaje en curso se resalta con borde verde -->
                         <Border.Triggers>
                             <DataTrigger TargetType="Border" Binding="{Binding Estado}" Value="{x:Static local:EstadoViaje.EnCurso}">
@@ -102,9 +103,12 @@
                                 <Border Style="{StaticResource Chip}">
                                     <Label Text="{Binding HoraChip}" Style="{StaticResource ChipTexto}" />
                                 </Border>
-                                <!-- Lugares con color según cuántos quedan (siempre con el texto) -->
+                                <!-- Lugares con color según cuántos quedan (siempre con el texto). En un viaje terminado no se muestra -->
                                 <Border Style="{StaticResource ChipLugares}">
                                     <Border.Triggers>
+                                        <DataTrigger TargetType="Border" Binding="{Binding Terminado}" Value="True">
+                                            <Setter Property="IsVisible" Value="False" />
+                                        </DataTrigger>
                                         <DataTrigger TargetType="Border" Binding="{Binding Lugares}" Value="{x:Static local:NivelLugares.Pocos}">
                                             <Setter Property="BackgroundColor" Value="{DynamicResource ColorAvisoFondo}" />
                                         </DataTrigger>
@@ -128,16 +132,24 @@
                                     <Label Text="{Binding CostoChip}" Style="{StaticResource ChipTexto}" />
                                 </Border>
                                 <!-- HU31: promedio de calificaciones del conductor -->
-                                <Border Style="{StaticResource Chip}" IsVisible="{Binding TieneCalificacionChip}">
-                                    <Label Text="{Binding CalificacionChip}" Style="{StaticResource ChipTexto}" />
-                                </Border>
+                                <!-- En mis propios viajes no se muestra (sería mi calificación) -->
+                                <ContentView>
+                                    <ContentView.Triggers>
+                                        <DataTrigger TargetType="ContentView" Binding="{Binding EsDelUsuarioActual}" Value="True">
+                                            <Setter Property="IsVisible" Value="False" />
+                                        </DataTrigger>
+                                    </ContentView.Triggers>
+                                    <Border Style="{StaticResource Chip}" IsVisible="{Binding TieneCalificacionChip}">
+                                        <Label Text="{Binding CalificacionChip}" Style="{StaticResource ChipTexto}" />
+                                    </Border>
+                                </ContentView>
                             </FlexLayout>
 
                             <!-- Datos del viaje -->
                             <VerticalStackLayout Spacing="3">
                                 <!-- El conductor ve los nombres de sus pasajeros -->
                                 <Label Text="{Binding PasajerosTexto}" Style="{StaticResource TextoSecundario}" IsVisible="{Binding EsDelUsuarioActual}" />
-                                <!-- Estado según la hora: sale en menos de 5 minutos, en curso o cancelado -->
+                                <!-- Estado según la hora: sale en menos de 5 minutos, en curso, cancelado (rojo) o finalizado (gris) -->
                                 <Label Text="{Binding EstadoTexto}"
                                        FontAttributes="Bold"
                                        TextColor="{DynamicResource ColorPeligro}"
@@ -148,6 +160,9 @@
                                         </DataTrigger>
                                         <DataTrigger TargetType="Label" Binding="{Binding Estado}" Value="{x:Static local:EstadoViaje.PorSalir}">
                                             <Setter Property="TextColor" Value="{DynamicResource ColorAviso}" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Label" Binding="{Binding Estado}" Value="{x:Static local:EstadoViaje.Finalizado}">
+                                            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource ColorTextoSecundarioClaro}, Dark={StaticResource ColorTextoSecundarioOscuro}}" />
                                         </DataTrigger>
                                     </Label.Triggers>
                                 </Label>
