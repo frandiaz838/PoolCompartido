@@ -36,7 +36,7 @@ namespace PoolCompartido
 
         /// <summary>
         /// Android: la línea de abajo de los campos (texto, listas, fecha y hora) con el color de borde de la app,
-        /// que tiene contraste suficiente (≥ 3:1), y violeta mientras se escribe en el campo.
+        /// que tiene contraste suficiente (≥ 3:1), y azul mientras se escribe en el campo.
         /// Se vuelve a pintar cada vez que cambia el color del texto (con AppThemeBinding), o sea también al cambiar de tema.
         /// </summary>
         private static void ConfigurarSubrayado()

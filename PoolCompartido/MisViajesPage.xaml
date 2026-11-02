@@ -79,8 +79,9 @@
                             </Grid>
 
                             <!-- HU29: quiénes viajan (conductor primero) -->
-                            <!-- Grid (no HorizontalStackLayout): así en el celular el texto se acomoda en vez de cortarse -->
-                            <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="10">
+                            <!-- Grid (no HorizontalStackLayout): así en el celular el texto se acomoda en vez de cortarse.
+                                 Sin ColumnSpacing: si no hay "+N", la columna vacía dejaba un hueco doble antes del texto -->
+                            <Grid ColumnDefinitions="Auto,Auto,*">
                                 <HorizontalStackLayout Grid.Column="0" Spacing="-8" BindableLayout.ItemsSource="{Binding AvataresVisibles}" VerticalOptions="Center">
                                     <BindableLayout.ItemTemplate>
                                         <DataTemplate x:DataType="local:Participante">
@@ -92,9 +93,9 @@
                                         </DataTemplate>
                                     </BindableLayout.ItemTemplate>
                                 </HorizontalStackLayout>
-                                <Label Grid.Column="1" Text="{Binding AvataresExtra}" IsVisible="{Binding HayAvataresExtra}"
+                                <Label Grid.Column="1" Text="{Binding AvataresExtra}" IsVisible="{Binding HayAvataresExtra}" Margin="6,0,0,0"
                                        Style="{StaticResource TextoSecundario}" FontAttributes="Bold" VerticalOptions="Center" />
-                                <Label Grid.Column="2" Text="{Binding ParticipantesTexto}" Style="{StaticResource TextoSecundario}"
+                                <Label Grid.Column="2" Text="{Binding ParticipantesTexto}" Style="{StaticResource TextoSecundario}" Margin="10,0,0,0"
                                        VerticalOptions="Center" MaxLines="2" LineBreakMode="WordWrap" />
                             </Grid>
 

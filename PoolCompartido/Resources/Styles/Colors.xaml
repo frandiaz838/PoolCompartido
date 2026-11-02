@@ -6,10 +6,10 @@
     <!-- Note: For Android please see also Platforms\Android\Resources\values\colors.xml -->
 
     <!-- ═════════════════ Colores de la marca ═════════════════
-         Solo de referencia (el mismo violeta está en Platforms\Android\Resources\values\colors.xml).
+         Solo de referencia (el mismo azul está en Platforms\Android\Resources\values\colors.xml).
          Las pantallas no los usan directo: usan ColorPrimario, que cambia con el tema. -->
-    <Color x:Key="Primary">#512BD4</Color>
-    <Color x:Key="PrimaryDark">#AC99EA</Color>
+    <Color x:Key="Primary">#0044EB</Color>
+    <Color x:Key="PrimaryDark">#7AA2FF</Color>
 
     <!-- ═════════════════ Tokens de diseño ═════════════════
          Cada color del tema tiene su versión "Claro" y "Oscuro". Las pantallas los usan con AppThemeBinding
@@ -19,35 +19,35 @@
          Contrastes medidos (norma WCAG AA): texto ≥ 4,5:1 y bordes de controles ≥ 3:1 contra el fondo y la superficie. -->
 
     <!-- Fondo de las pantallas y superficie de las tarjetas -->
-    <Color x:Key="ColorFondoClaro">#F7F6FB</Color>
-    <Color x:Key="ColorFondoOscuro">#1A1A1D</Color>
+    <Color x:Key="ColorFondoClaro">#F6F7FB</Color>
+    <Color x:Key="ColorFondoOscuro">#14161C</Color>
 
     <Color x:Key="ColorSuperficieClaro">#FFFFFF</Color>
-    <Color x:Key="ColorSuperficieOscuro">#25242A</Color>
+    <Color x:Key="ColorSuperficieOscuro">#1E222B</Color>
 
     <!-- Superficie gris suave: chip "Completo", globo de chat de los demás -->
-    <Color x:Key="ColorSuperficieAlternativaClaro">#F0EEF5</Color>
-    <Color x:Key="ColorSuperficieAlternativaOscuro">#312F37</Color>
+    <Color x:Key="ColorSuperficieAlternativaClaro">#EEF1F6</Color>
+    <Color x:Key="ColorSuperficieAlternativaOscuro">#2A2F3A</Color>
 
     <!-- Bordes: decorativo (tarjetas, separadores) y de controles (campos, botones con contorno: ≥ 3:1) -->
-    <Color x:Key="ColorBordeClaro">#E3DEEF</Color>
-    <Color x:Key="ColorBordeOscuro">#3A3842</Color>
+    <Color x:Key="ColorBordeClaro">#DDE3EF</Color>
+    <Color x:Key="ColorBordeOscuro">#333A47</Color>
 
-    <Color x:Key="ColorBordeControlClaro">#8B83A3</Color>
-    <Color x:Key="ColorBordeControlOscuro">#8D879C</Color>
+    <Color x:Key="ColorBordeControlClaro">#7D879C</Color>
+    <Color x:Key="ColorBordeControlOscuro">#858FA3</Color>
 
     <!-- Textos -->
-    <Color x:Key="ColorTextoClaro">#1C1B1F</Color>
-    <Color x:Key="ColorTextoOscuro">#F2F1F5</Color>
+    <Color x:Key="ColorTextoClaro">#111827</Color>
+    <Color x:Key="ColorTextoOscuro">#EEF1F6</Color>
 
-    <Color x:Key="ColorTextoSecundarioClaro">#5C5868</Color>
-    <Color x:Key="ColorTextoSecundarioOscuro">#B9B5C4</Color>
+    <Color x:Key="ColorTextoSecundarioClaro">#4B5568</Color>
+    <Color x:Key="ColorTextoSecundarioOscuro">#B3BACB</Color>
 
-    <Color x:Key="ColorTextoDeshabilitadoClaro">#8E8A99</Color>
-    <Color x:Key="ColorTextoDeshabilitadoOscuro">#86828F</Color>
+    <Color x:Key="ColorTextoDeshabilitadoClaro">#8A93A6</Color>
+    <Color x:Key="ColorTextoDeshabilitadoOscuro">#7E8698</Color>
 
-    <Color x:Key="ColorPlaceholderClaro">#6B6778</Color>
-    <Color x:Key="ColorPlaceholderOscuro">#A19DAD</Color>
+    <Color x:Key="ColorPlaceholderClaro">#667085</Color>
+    <Color x:Key="ColorPlaceholderOscuro">#9AA2B3</Color>
 
     <!-- Fondo de los campos (texto, listas, fecha, hora). En Windows el campo necesita fondo para que se vea la caja;
          en Android va transparente y se ve la línea de abajo -->
@@ -55,63 +55,63 @@
         <On Platform="WinUI" Value="#FFFFFF" />
     </OnPlatform>
     <OnPlatform x:Key="ColorFondoCampoOscuro" x:TypeArguments="Color" Default="Transparent">
-        <On Platform="WinUI" Value="#25242A" />
+        <On Platform="WinUI" Value="#1E222B" />
     </OnPlatform>
 
     <!-- Botón deshabilitado: fondo gris con el texto legible (antes era el mismo botón al 50 %) -->
-    <Color x:Key="ColorDeshabilitadoFondoClaro">#E4E2EA</Color>
-    <Color x:Key="ColorDeshabilitadoFondoOscuro">#34323A</Color>
+    <Color x:Key="ColorDeshabilitadoFondoClaro">#E3E7EF</Color>
+    <Color x:Key="ColorDeshabilitadoFondoOscuro">#2B303B</Color>
 
-    <Color x:Key="ColorDeshabilitadoTextoClaro">#6F6B7A</Color>
-    <Color x:Key="ColorDeshabilitadoTextoOscuro">#9D99A8</Color>
+    <Color x:Key="ColorDeshabilitadoTextoClaro">#646E80</Color>
+    <Color x:Key="ColorDeshabilitadoTextoOscuro">#9AA2B3</Color>
 
-    <!-- Violeta de la app y lo que va encima -->
-    <Color x:Key="ColorPrimarioClaro">#512BD4</Color>
-    <Color x:Key="ColorPrimarioOscuro">#AC99EA</Color>
+    <!-- Azul de la app (el del logo) y lo que va encima -->
+    <Color x:Key="ColorPrimarioClaro">#0044EB</Color>
+    <Color x:Key="ColorPrimarioOscuro">#7AA2FF</Color>
 
     <Color x:Key="ColorSobrePrimarioClaro">#FFFFFF</Color>
-    <Color x:Key="ColorSobrePrimarioOscuro">#1C1B1F</Color>
+    <Color x:Key="ColorSobrePrimarioOscuro">#0B1530</Color>
 
-    <!-- Violeta suave: chips, etiquetas ("Tu viaje"), día elegido -->
-    <Color x:Key="ColorPrimarioSuaveClaro">#EFEAFB</Color>
-    <Color x:Key="ColorPrimarioSuaveOscuro">#352D52</Color>
+    <!-- Azul suave: chips, etiquetas ("Tu viaje"), día elegido -->
+    <Color x:Key="ColorPrimarioSuaveClaro">#E8EFFE</Color>
+    <Color x:Key="ColorPrimarioSuaveOscuro">#1D2C55</Color>
 
-    <Color x:Key="ColorSobrePrimarioSuaveClaro">#3B2A80</Color>
-    <Color x:Key="ColorSobrePrimarioSuaveOscuro">#DDD4FA</Color>
+    <Color x:Key="ColorSobrePrimarioSuaveClaro">#0A2F8C</Color>
+    <Color x:Key="ColorSobrePrimarioSuaveOscuro">#CFDDFF</Color>
 
     <!-- Línea del recorrido en las tarjetas (decorativa) -->
-    <Color x:Key="ColorLineaRecorridoClaro">#C9BEF2</Color>
-    <Color x:Key="ColorLineaRecorridoOscuro">#5B4E86</Color>
+    <Color x:Key="ColorLineaRecorridoClaro">#B9CCFA</Color>
+    <Color x:Key="ColorLineaRecorridoOscuro">#34508F</Color>
 
-    <!-- Tarjeta "Tu próximo viaje": degradé violeta con texto blanco en los dos temas -->
+    <!-- Tarjeta "Tu próximo viaje": degradé azul con texto blanco en los dos temas -->
     <LinearGradientBrush x:Key="FondoHeroClaro" StartPoint="0,0" EndPoint="1,1">
-        <GradientStop Color="#512BD4" Offset="0" />
-        <GradientStop Color="#6A45D9" Offset="1" />
+        <GradientStop Color="#0038C7" Offset="0" />
+        <GradientStop Color="#1A5CF0" Offset="1" />
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="FondoHeroOscuro" StartPoint="0,0" EndPoint="1,1">
-        <GradientStop Color="#4A2CB8" Offset="0" />
-        <GradientStop Color="#5E40C9" Offset="1" />
+        <GradientStop Color="#0038C7" Offset="0" />
+        <GradientStop Color="#1F55D6" Offset="1" />
     </LinearGradientBrush>
 
     <Color x:Key="ColorSobreHero">#FFFFFF</Color>
-    <Color x:Key="ColorSobreHeroSuave">#EDE7FF</Color>
+    <Color x:Key="ColorSobreHeroSuave">#E3ECFF</Color>
     <!-- Contorno de los botones secundarios sobre el degradé (≥ 3:1) -->
-    <Color x:Key="ColorHeroBorde">#D9CCFF</Color>
-    <!-- Etiqueta de estado sobre el degradé (oscurece un poco el violeta: el texto blanco queda con ≥ 4,5:1) -->
+    <Color x:Key="ColorHeroBorde">#C2D5FF</Color>
+    <!-- Etiqueta de estado sobre el degradé (oscurece un poco el azul: el texto blanco queda con ≥ 4,5:1) -->
     <Color x:Key="ColorHeroEtiqueta">#33000000</Color>
-    <!-- Texto del botón blanco de la tarjeta: el violeta oscuro en los dos temas -->
-    <Color x:Key="ColorTextoBotonHero">#512BD4</Color>
+    <!-- Texto del botón blanco de la tarjeta: el azul del logo en los dos temas -->
+    <Color x:Key="ColorTextoBotonHero">#0044EB</Color>
 
-    <!-- Chat: mi globo (violeta) y el de los demás (gris) -->
-    <Color x:Key="ColorBurbujaPropiaClaro">#512BD4</Color>
-    <Color x:Key="ColorBurbujaPropiaOscuro">#5B45A8</Color>
+    <!-- Chat: mi globo (azul) y el de los demás (gris) -->
+    <Color x:Key="ColorBurbujaPropiaClaro">#0044EB</Color>
+    <Color x:Key="ColorBurbujaPropiaOscuro">#2557D6</Color>
 
     <Color x:Key="ColorSobreBurbuja">#FFFFFF</Color>
-    <Color x:Key="ColorSobreBurbujaSuave">#E4DCFF</Color>
+    <Color x:Key="ColorSobreBurbujaSuave">#D6E3FF</Color>
 
     <!-- Barra de pestañas: un tono apenas distinto del fondo -->
-    <Color x:Key="ColorBarraPestanasClaro">#F1EEF9</Color>
-    <Color x:Key="ColorBarraPestanasOscuro">#232227</Color>
+    <Color x:Key="ColorBarraPestanasClaro">#EEF2FC</Color>
+    <Color x:Key="ColorBarraPestanasOscuro">#1A1E26</Color>
 
     <Color x:Key="ColorSombra">#000000</Color>
 

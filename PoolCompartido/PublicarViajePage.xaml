@@ -53,7 +53,7 @@
                 <VerticalStackLayout x:Name="panelRepetir" IsVisible="False" Spacing="6">
                     <Label Text="Días" Style="{StaticResource RotuloCampo}" Margin="0,4,0,0" />
                     <!-- Cada día es un chip con su casilla: se toca la casilla o el nombre del día.
-                         El elegido se ve violeta (estilo ChipDiaElegido) y con la casilla marcada (no depende solo del color) -->
+                         El elegido se ve azul (estilo ChipDiaElegido) y con la casilla marcada (no depende solo del color) -->
                     <FlexLayout Wrap="Wrap">
                         <Border Style="{StaticResource ChipDia}">
                             <HorizontalStackLayout>

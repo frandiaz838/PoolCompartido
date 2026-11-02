@@ -41,7 +41,7 @@
                             <TapGestureRecognizer Tapped="OnNotificacionTocada" />
                         </Border.GestureRecognizers>
 
-                        <!-- Las no leídas: barrita violeta a la izquierda, texto en negrita y un punto (no depende solo del color) -->
+                        <!-- Las no leídas: barrita azul a la izquierda, texto en negrita y un punto (no depende solo del color) -->
                         <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="12">
                             <BoxView WidthRequest="4" CornerRadius="2" VerticalOptions="Fill"
                                      Color="{AppThemeBinding Light={StaticResource ColorPrimarioClaro}, Dark={StaticResource ColorPrimarioOscuro}}"
