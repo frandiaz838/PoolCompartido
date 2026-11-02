@@ -86,7 +86,27 @@ internal static class Notificaciones
             barra.Add(atras, 0);
         }
 
-        barra.Add(titulo, 1);
+        // En las pestañas (Viajes disponibles y Mis viajes) va el logo completo de Coopul en lugar del título:
+        // la pestaña elegida ya dice en qué pantalla estás. En las demás pantallas, el título.
+        if (pagina is MainPage or MisViajesPage)
+        {
+            var logo = new Image
+            {
+                HeightRequest = 36,
+                WidthRequest = 87,
+                Aspect = Aspect.AspectFit,
+                HorizontalOptions = LayoutOptions.Start,
+                VerticalOptions = LayoutOptions.Center
+            };
+            logo.SetAppTheme<ImageSource>(Image.SourceProperty, "logo_coopul.png", "logo_coopul_oscuro.png");
+            // Para el lector de pantalla: el nombre de la app y de la pantalla, como título
+            logo.SetBinding(SemanticProperties.DescriptionProperty,
+                new Binding(nameof(Page.Title), source: pagina, stringFormat: "Coopul, {0}"));
+            SemanticProperties.SetHeadingLevel(logo, SemanticHeadingLevel.Level1);
+            barra.Add(logo, 1);
+        }
+        else
+            barra.Add(titulo, 1);
         if (conCampana)
             barra.Add(new Campana(), 2);
         return barra;

@@ -216,7 +216,7 @@
         </Setter>
     </Style>
 
-    <!-- Interruptor: encendido en violeta; apagado con la perilla en gris con contraste suficiente -->
+    <!-- Interruptor: encendido en azul; apagado con la perilla en gris con contraste suficiente -->
     <Style TargetType="Switch">
         <Setter Property="OnColor" Value="{AppThemeBinding Light={StaticResource ColorPrimarioClaro}, Dark={StaticResource ColorPrimarioOscuro}}" />
         <Setter Property="ThumbColor" Value="{AppThemeBinding Light={StaticResource ColorSuperficieClaro}, Dark={StaticResource ColorSuperficieOscuro}}" />
@@ -273,7 +273,7 @@
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource ColorFondoClaro}, Dark={StaticResource ColorFondoOscuro}}" />
     </Style>
 
-    <!-- Barra de arriba del color del fondo; pestañas abajo con la elegida en violeta -->
+    <!-- Barra de arriba del color del fondo; pestañas abajo con la elegida en azul -->
     <Style TargetType="Shell" ApplyToDerivedTypes="True">
         <Setter Property="Shell.BackgroundColor" Value="{AppThemeBinding Light={StaticResource ColorFondoClaro}, Dark={StaticResource ColorFondoOscuro}}" />
         <Setter Property="Shell.ForegroundColor" Value="{AppThemeBinding Light={StaticResource ColorTextoClaro}, Dark={StaticResource ColorTextoOscuro}}" />
@@ -492,7 +492,7 @@
         <Setter Property="Margin" Value="0" />
     </Style>
 
-    <!-- Botones de la tarjeta "Tu próximo viaje" (sobre el degradé violeta) -->
+    <!-- Botones de la tarjeta "Tu próximo viaje" (sobre el degradé azul) -->
     <Style x:Key="BotonHero" TargetType="Button" BasedOn="{StaticResource BotonPrincipal}">
         <Setter Property="BackgroundColor" Value="{StaticResource ColorSobreHero}" />
         <Setter Property="TextColor" Value="{StaticResource ColorTextoBotonHero}" />
@@ -533,7 +533,7 @@
     </Style>
 
     <!-- HU28: día para repetir el viaje (un chip con su casilla). El elegido usa ChipDiaElegido (lo cambia el código):
-         violeta suave con borde violeta, además de la casilla marcada -->
+         azul suave con borde azul, además de la casilla marcada -->
     <Style x:Key="ChipDia" TargetType="Border">
         <Setter Property="Padding" Value="0,0,14,0" />
         <Setter Property="Margin" Value="0,0,8,8" />

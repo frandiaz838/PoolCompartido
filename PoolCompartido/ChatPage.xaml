@@ -81,7 +81,7 @@
                             </VerticalStackLayout>
                         </Border>
 
-                        <!-- Mensaje mío: globo violeta a la derecha -->
+                        <!-- Mensaje mío: globo azul a la derecha -->
                         <Border IsVisible="{Binding EsMioNormal}"
                                 HorizontalOptions="End"
                                 MaximumWidthRequest="420"

@@ -124,7 +124,7 @@
                     <Border Style="{StaticResource Etiqueta}" BackgroundColor="{DynamicResource ColorAvisoFondo}" Margin="0,0,8,8">
                         <Label Text="Sale en menos de 5 minutos" Style="{StaticResource EtiquetaTexto}" TextColor="{DynamicResource ColorAviso}" />
                     </Border>
-                    <!-- Sin fondo violeta: el rojo sobre el violeta suave no llega al contraste mínimo -->
+                    <!-- Sin fondo de color: el rojo sobre el fondo suave no llega al contraste mínimo -->
                     <Border Style="{StaticResource Etiqueta}" Margin="0,0,8,8" BackgroundColor="Transparent"
                             StrokeThickness="1" Stroke="{DynamicResource ColorPeligroBorde}">
                         <Label Text="Cancelado" Style="{StaticResource EtiquetaTexto}" TextColor="{DynamicResource ColorPeligro}" />

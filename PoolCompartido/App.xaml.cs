@@ -39,7 +39,8 @@ namespace PoolCompartido
 
         protected override Window CreateWindow(IActivationState? activationState)
         {
-            return new Window(new LoginPage());
+            // Nombre de la app en la ventana de Windows
+            return new Window(new LoginPage()) { Title = "Coopul" };
         }
 
         /// <summary>Después de iniciar sesión: carga los viajes, muestra la app y arranca la sincronización.</summary>
