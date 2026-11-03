@@ -35,18 +35,22 @@ namespace PoolCompartido
         }
 
         /// <summary>
-        /// Android: la línea de abajo de los campos (texto, listas, fecha y hora) con el color de borde de la app,
-        /// que tiene contraste suficiente (≥ 3:1), y azul mientras se escribe en el campo.
-        /// Se vuelve a pintar cada vez que cambia el color del texto (con AppThemeBinding), o sea también al cambiar de tema.
+        /// Android: cada campo (texto, listas, fecha y hora) es una caja con fondo de superficie, esquinas redondeadas
+        /// y un borde del color de los controles (contraste ≥ 3:1), que se pone azul mientras se escribe en el campo.
+        /// Se vuelve a pintar cuando cambia el fondo o el color del texto (o sea, también al cambiar de tema).
+        /// (Antes se teñía el fondo nativo para la línea de abajo, pero en algunos celulares eso pintaba la caja entera de gris.)
         /// </summary>
         private static void ConfigurarSubrayado()
         {
 #if ANDROID
-            EntryHandler.Mapper.AppendToMapping(nameof(Entry.TextColor), (handler, _) => Subrayar(handler.PlatformView));
-            EditorHandler.Mapper.AppendToMapping(nameof(Editor.TextColor), (handler, _) => Subrayar(handler.PlatformView));
-            PickerHandler.Mapper.AppendToMapping(nameof(Picker.TextColor), (handler, _) => Subrayar(handler.PlatformView));
-            DatePickerHandler.Mapper.AppendToMapping(nameof(DatePicker.TextColor), (handler, _) => Subrayar(handler.PlatformView));
-            TimePickerHandler.Mapper.AppendToMapping(nameof(TimePicker.TextColor), (handler, _) => Subrayar(handler.PlatformView));
+            foreach (var clave in new[] { "Background", "TextColor" })
+            {
+                EntryHandler.Mapper.AppendToMapping(clave, (handler, campo) => PintarCampo(handler.PlatformView, campo is EntryConIcono));
+                EditorHandler.Mapper.AppendToMapping(clave, (handler, _) => PintarCampo(handler.PlatformView, false));
+                PickerHandler.Mapper.AppendToMapping(clave, (handler, _) => PintarCampo(handler.PlatformView, false));
+                DatePickerHandler.Mapper.AppendToMapping(clave, (handler, _) => PintarCampo(handler.PlatformView, false));
+                TimePickerHandler.Mapper.AppendToMapping(clave, (handler, _) => PintarCampo(handler.PlatformView, false));
+            }
 #endif
         }
 
@@ -72,14 +76,21 @@ namespace PoolCompartido
         }
 
 #if ANDROID
-        private static void Subrayar(Android.Views.View vista)
+        private static void PintarCampo(Android.Views.View vista, bool conIcono)
         {
-            var colorBorde = ColoresDelTema.Actual("ColorBordeControl");
-            var colorPrimario = ColoresDelTema.Actual("ColorPrimario");
+            float densidad = vista.Context?.Resources?.DisplayMetrics?.Density ?? 1f;
+            int Dp(double valor) => (int)Math.Round(valor * densidad);
 
+            var fondo = new Android.Graphics.Drawables.GradientDrawable();
+            fondo.SetColor(ParaAndroid(ColoresDelTema.Actual("ColorSuperficie")));
+            fondo.SetCornerRadius(Dp(10));
             int[][] estados = { new[] { Android.Resource.Attribute.StateFocused }, System.Array.Empty<int>() };
-            int[] colores = { ParaAndroid(colorPrimario), ParaAndroid(colorBorde) };
-            vista.BackgroundTintList = new Android.Content.Res.ColorStateList(estados, colores);
+            int[] bordes = { ParaAndroid(ColoresDelTema.Actual("ColorPrimario")), ParaAndroid(ColoresDelTema.Actual("ColorBordeControl")) };
+            fondo.SetStroke(Math.Max(1, Dp(1)), new Android.Content.Res.ColorStateList(estados, bordes));
+            vista.Background = fondo;
+
+            // El texto no pegado al borde; el EntryConIcono deja lugar a la derecha para el ojo de la contraseña
+            vista.SetPadding(Dp(12), Dp(8), conIcono ? Dp(EntryConIcono.EspacioIcono) : Dp(12), Dp(8));
         }
 
         private static int ParaAndroid(Color color) => Android.Graphics.Color.ParseColor(color.ToArgbHex()).ToArgb();

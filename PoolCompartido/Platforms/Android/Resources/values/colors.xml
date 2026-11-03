@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- colorPrimary: Android lo usa para la franja de arriba (hora, batería) y para los botones de los diálogos
+         del sistema (Aceptar / Cancelar del calendario y del reloj), así que va el azul de la marca:
+         se lee bien sobre el diálogo blanco y la franja queda azul con íconos blancos. -->
     <color name="colorPrimary">#0044EB</color>
-    <color name="colorPrimaryDark">#14161C</color>
-    <color name="colorAccent">#0038C7</color>
-</resources>
+    <color name="colorPrimaryDark">#0044EB</color>
+    <color name="colorAccent">#0044EB</color>
+</resources>

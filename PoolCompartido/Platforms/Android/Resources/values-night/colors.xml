@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tema oscuro: un azul más claro, para que Aceptar / Cancelar se lean sobre el diálogo oscuro -->
+    <color name="colorPrimary">#4D86FF</color>
+    <color name="colorPrimaryDark">#4D86FF</color>
+    <color name="colorAccent">#7AA2FF</color>
+</resources>
