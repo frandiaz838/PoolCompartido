@@ -107,12 +107,12 @@
                 </Grid>
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource EspacioM}">
                     <VerticalStackLayout Spacing="2" VerticalOptions="Center">
-                        <Label Text="Colores para daltonismo" />
-                        <Label Text="Cambia el verde y el rojo por azul y naranja, que se distinguen mejor."
+                        <Label Text="Colores accesibles" />
+                        <Label Text="Para daltonismo: cambia el verde y el rojo por azul y naranja, que se distinguen mejor."
                                Style="{StaticResource TextoAyuda}" />
                     </VerticalStackLayout>
                     <Switch x:Name="swDaltonico" Grid.Column="1" VerticalOptions="Center"
-                            SemanticProperties.Description="Colores para daltonismo"
+                            SemanticProperties.Description="Colores accesibles para daltonismo"
                             Toggled="OnDaltonicoCambiado" />
                 </Grid>
                 <!-- Vista previa: así se ven los estados de los viajes con los colores elegidos.

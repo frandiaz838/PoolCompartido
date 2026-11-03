@@ -20,6 +20,7 @@ namespace PoolCompartido
             ConfigurarEntryConIcono();
             ConfigurarSubrayado();
             ConfigurarListas();
+            ConfigurarCursor();
 
 #if WINDOWS
             // La ventana de Windows usa el tema de la app (y no el del sistema) cada vez que se activa
@@ -74,6 +75,37 @@ namespace PoolCompartido
             SwitchHandler.Mapper.AppendToMapping("SinHueco", (handler, _) => handler.PlatformView.MinWidth = 0);
 #endif
         }
+
+        /// <summary>
+        /// Windows: el mouse se pone en forma de manito arriba de lo que se puede tocar: botones, botones con imagen
+        /// y todo lo que tiene un TapGestureRecognizer (chips de días, tarjetas de horario, etc.).
+        /// En los botones deshabilitados vuelve a la flecha. WinUI guarda el cursor en ProtectedCursor,
+        /// que no es público, por eso se usa reflexión. Solo cambia la apariencia: no toca ningún evento.
+        /// </summary>
+        private static void ConfigurarCursor()
+        {
+#if WINDOWS
+            ButtonHandler.Mapper.AppendToMapping(nameof(IView.IsEnabled), (handler, boton) => PonerManito(handler.PlatformView, boton.IsEnabled));
+            ImageButtonHandler.Mapper.AppendToMapping(nameof(IView.IsEnabled), (handler, boton) => PonerManito(handler.PlatformView, boton.IsEnabled));
+            ViewHandler.ViewMapper.AppendToMapping("ManitoSiSeToca", (handler, vista) =>
+            {
+                if (vista is View control && control.GestureRecognizers.Any(g => g is TapGestureRecognizer)
+                    && handler.PlatformView is Microsoft.UI.Xaml.UIElement elemento)
+                    PonerManito(elemento, true);
+            });
+#endif
+        }
+
+#if WINDOWS
+        private static readonly System.Reflection.PropertyInfo? PropiedadCursor = typeof(Microsoft.UI.Xaml.UIElement)
+            .GetProperty("ProtectedCursor", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+        private static void PonerManito(Microsoft.UI.Xaml.UIElement elemento, bool habilitado)
+        {
+            var forma = habilitado ? Microsoft.UI.Input.InputSystemCursorShape.Hand : Microsoft.UI.Input.InputSystemCursorShape.Arrow;
+            PropiedadCursor?.SetValue(elemento, Microsoft.UI.Input.InputSystemCursor.Create(forma));
+        }
+#endif
 
 #if ANDROID
         private static void PintarCampo(Android.Views.View vista, bool conIcono)
