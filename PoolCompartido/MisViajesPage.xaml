@@ -32,7 +32,8 @@
         </VerticalStackLayout>
 
         <!-- HU8: viajes del usuario como conductor y como pasajero -->
-        <CollectionView x:Name="listaMisViajes" Grid.Row="1" SelectionMode="None">
+        <!-- En Windows la lista se estira 16 a la derecha y las tarjetas dejan ese espacio: la barra queda al costado -->
+        <CollectionView x:Name="listaMisViajes" Grid.Row="1" SelectionMode="None" Margin="{OnPlatform Default='0', WinUI='0,0,-16,0'}">
             <!-- Lista vacía: qué pasó y qué se puede hacer -->
             <CollectionView.EmptyView>
                 <VerticalStackLayout HorizontalOptions="Center" Margin="0,32" Spacing="{StaticResource EspacioS}" Padding="16,0">
@@ -51,8 +52,10 @@
             </CollectionView.ItemsLayout>
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="local:Viaje">
-                    <!-- En Windows la barra de desplazamiento va encima del contenido: margen a la derecha para que no tape la tarjeta -->
-                    <Border Style="{StaticResource TarjetaViaje}" Margin="{OnPlatform Default='0', WinUI='0,0,14,0'}">
+                    <!-- En Windows: espacio a la derecha para la barra de desplazamiento (ver la lista).
+                         Va como relleno de un Grid porque Windows no respeta el margen de la tarjeta dentro de la lista -->
+                    <Grid Padding="{OnPlatform Default='0', WinUI='0,0,20,0'}">
+                    <Border Style="{StaticResource TarjetaViaje}">
                         <!-- El viaje en curso se resalta con borde verde -->
                         <Border.Triggers>
                             <DataTrigger TargetType="Border" Binding="{Binding Estado}" Value="{x:Static local:EstadoViaje.EnCurso}">
@@ -215,6 +218,7 @@
                             </FlexLayout>
                         </VerticalStackLayout>
                     </Border>
+                    </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>

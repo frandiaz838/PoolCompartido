@@ -19,7 +19,7 @@ Pulir la experiencia: que ningún aviso se pierda, que la app se vea moderna, qu
 | HU28 | Rutina fija: publicar un viaje que se repite toda la semana o el cuatrimestre | Compañero 2 (Octavio) | HECHA |
 | HU31 | Calificaciones después del viaje | Compañero 2 (Octavio) | HECHA |
 
-Backlog futuro: HU9 (cuántas veces viajé con alguien), HU20 (ingreso con Google), HU27 (registro solo con mail de la facultad; se dejó para más adelante porque limita las pruebas y a usuarios de otras facultades) y HU33 ("Busco pasajeros", idea de Carpoolear).
+El backlog quedó solo con las historias que hicimos. HU9, HU20, HU27 y la vieja HU33 se sacaron y sus números quedan libres. La HU33 ahora es "Pulido de la interfaz y marca Coopul" (Sprint 7, ver sección 6).
 
 ---
 
@@ -54,7 +54,7 @@ Igual que en el Sprint 5:
 
 ### HU18 + HU19 – Apariencia (`Servicios/ServicioApariencia.cs`, `Servicios/Paleta.cs`)
 - `ServicioApariencia` guarda el tema (`Tema.Sistema / Claro / Oscuro`) y la paleta para daltonismo en `Preferences`, y dispara `EventoApariencia.APARIENCIA_CAMBIADA` con una **tercera instancia del despachador genérico**: `Despachador<EventoApariencia, Apariencia>`.
-- Los colores de estado son recursos con nombre: `ColorExito`, `ColorExitoFondo`, `ColorPeligro`, `ColorPeligroBorde`, `ColorAviso`. **En XAML usar siempre `{DynamicResource ColorExito}`** (no colores fijos como `#2E7D32`), así cambian solos con la paleta. En código: `label.SetDynamicResource(Label.TextColorProperty, "ColorAviso")`.
+- Los colores de estado son recursos con nombre: `ColorExito`, `ColorExitoFondo`, `ColorPeligro`, `ColorPeligroBorde`, `ColorAviso`. **En XAML usar siempre `{DynamicResource ColorExito}`** (no colores fijos como `#2E7D32`), así cambian solos con la paleta. Para el resto de los colores ver la sección 6 (Sprint 7). En código: `label.SetDynamicResource(Label.TextColorProperty, "ColorAviso")`.
 - Estilos reutilizables en `Styles.xaml`: `TarjetaViaje`, `TextoSecundario`, `Etiqueta`, `BotonPrincipal`, `BotonSecundario`, `BotonPeligro`.
 
 ### HU25 – Chat grupal (`Servicios/ServicioChat.cs`, `ChatPage`)
@@ -161,12 +161,19 @@ Criterios de aceptación:
 - Validaciones: estrellas fuera de 1–5 → `ArgumentOutOfRangeException`; viaje no finalizado o no viajó → `ViajeException` correspondiente.
 - Idea para la materia: el promedio con un método genérico (por ejemplo `Estadisticas.Promedio<T>(lista, selector)`).
 
-## 6. Backlog futuro
+## 6. Sprint 7: pulido de la interfaz y marca Coopul (Francisco)
 
-- **HU9** – Ver cuántas veces viajé antes con otra persona.
-- **HU20** – Ingreso con Google.
-- **HU27** (US E6-27) – Registro solo con mail de la facultad. Se deja para más adelante: limita las pruebas, la demo y a usuarios de otras facultades. Si se retoma, que sea con un interruptor para apagarlo.
-- **HU33** (US E1-33) – "Busco pasajeros" (idea de Carpoolear): el conductor ve cuántos pasajeros tienen cargado un horario parecido (HU30) y puede publicar justo ese viaje.
+- **HU33** (US E11-33) – Pulido de la interfaz y marca Coopul. **HECHA.**
+- La app pasó a llamarse **Coopul**: logo en el login y en la barra de arriba, ícono, pantalla de carga y paleta azul (`#0044EB`).
+- Modo claro y oscuro revisados (contraste WCAG AA) y cambio de tema y de paleta para daltonismo en vivo, sin reiniciar.
+- Ajustes de Android: cajas de los campos, barra de estado y de navegación, botones del calendario y estado vacío de las listas.
+- Mejoras de uso: filtros en una fila en pantallas anchas, 📍 para la ubicación en "Desde", flecha para volver atrás en Windows y sin pestañas en las pantallas internas.
+
+### Colores (reemplaza lo de la sección 3)
+
+- Los colores del tema están en `Colors.xaml` en pares `...Claro` / `...Oscuro`. En XAML van con `AppThemeBinding` (por ejemplo `{AppThemeBinding Light={StaticResource ColorTextoClaro}, Dark={StaticResource ColorTextoOscuro}}`). En código se usa `ColoresDelTema.Aplicar(...)`.
+- Solo los colores de estado (`ColorExito`, `ColorExitoFondo`, `ColorPeligro`, `ColorPeligroBorde`, `ColorAviso`, `ColorAvisoFondo`, `ColorSobrePeligro`) van con `DynamicResource`, porque también cambian con la paleta para daltonismo.
+- `RefrescoDeTema` vuelve a aplicar los estilos de las pantallas abiertas cuando cambia el tema (MAUI no lo hace bien solo).
 
 ---
 
