@@ -32,7 +32,7 @@
                 <!-- Desde con el botón 📍 para completarlo con el barrio donde estoy (como en Publicar) -->
                 <Grid Grid.Row="1" Grid.Column="0" ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource EspacioXS}">
                     <Entry x:Name="entryOrigen"
-                           Placeholder="Ej: Villa Allende"
+                           Placeholder="Ej: Saldán"
                            SemanticProperties.Description="Desde, filtrar por origen"
                            TextChanged="OnFiltroTextoCambiado" />
                     <Button x:Name="btnUbicacionDesde"
@@ -152,15 +152,18 @@
             </CollectionView.Header>
 
             <!-- Lista vacía: qué pasó y qué se puede hacer -->
-            <CollectionView.EmptyView>
-                <VerticalStackLayout HorizontalOptions="Center" Margin="0,32" Spacing="{StaticResource EspacioS}" Padding="16,0">
+            <!-- Lista vacía: va como pie de la lista (no como EmptyView), porque en Android el EmptyView junto con el
+                 encabezado ("Tu próximo viaje") quedaba cortado. Se muestra solo cuando no hay viajes (MainPage.xaml.cs) -->
+            <CollectionView.Footer>
+                <VerticalStackLayout x:Name="panelVacio" IsVisible="False" HorizontalOptions="Center" Margin="0,32"
+                                     Spacing="{StaticResource EspacioS}" Padding="16,0">
                     <Label Text="🚗" Style="{StaticResource EstadoVacioIcono}" />
                     <Label Text="No hay viajes para mostrar" Style="{StaticResource EstadoVacioTitulo}" />
                     <!-- Sin botones acá: "Publicar un viaje" ya está abajo y "Limpiar filtros" aparece arriba si hay filtros -->
                     <Label Text="Probá con otros filtros o publicá el tuyo con el botón de abajo para que se sumen otros."
                            Style="{StaticResource EstadoVacioTexto}" />
                 </VerticalStackLayout>
-            </CollectionView.EmptyView>
+            </CollectionView.Footer>
             <CollectionView.ItemsLayout>
                 <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
             </CollectionView.ItemsLayout>

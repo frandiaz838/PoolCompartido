@@ -170,11 +170,19 @@ public static class ServicioApariencia
     public static void AjustarBarraDeEstado(Android.Views.Window ventana)
     {
         bool oscuro = EsOscuro;
-        // Del mismo color que el fondo de la barra de título (token ColorFondo)
-        var fondo = ColoresDelTema.Buscar("ColorFondo", oscuro);
-        ventana.SetStatusBarColor(Android.Graphics.Color.ParseColor(fondo.ToArgbHex()));
-        // Íconos oscuros sobre la barra clara, y al revés
-        AndroidX.Core.View.WindowCompat.GetInsetsController(ventana, ventana.DecorView).AppearanceLightStatusBars = !oscuro;
+        // Arriba: el azul de la marca (el mismo colorPrimary que Android usa en Android 15, ver Resources/values/colors.xml)
+        ventana.SetStatusBarColor(Android.Graphics.Color.ParseColor(oscuro ? "#4D86FF" : "#0044EB"));
+
+        // Abajo (los botones del celular): del color de la barra de pestañas, que es lo que queda justo arriba.
+        // En Android 15 las barras son transparentes y se ve lo que está detrás de la ventana: también se pinta eso.
+        var abajo = ColoresDelTema.Buscar("ColorBarraPestanas", oscuro);
+        ventana.SetNavigationBarColor(Android.Graphics.Color.ParseColor(abajo.ToArgbHex()));
+        ventana.DecorView.SetBackgroundColor(Android.Graphics.Color.ParseColor(abajo.ToArgbHex()));
+
+        // Arriba, íconos blancos sobre el azul; abajo, oscuros sobre la barra clara y al revés
+        var barras = AndroidX.Core.View.WindowCompat.GetInsetsController(ventana, ventana.DecorView);
+        barras.AppearanceLightStatusBars = false;
+        barras.AppearanceLightNavigationBars = !oscuro;
     }
 #endif
 }

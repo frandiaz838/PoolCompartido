@@ -17,6 +17,9 @@ public partial class MainPage : ContentPage
         Notificaciones.Preparar(this);
 
         listaViajes.ItemsSource = _viajesVisibles;
+        // Solo diseño: el aviso "No hay viajes para mostrar" aparece cuando la lista queda vacía
+        _viajesVisibles.CollectionChanged += (sender, e) => panelVacio.IsVisible = _viajesVisibles.Count == 0;
+        panelVacio.IsVisible = true;
         pickerHorario.ItemsSource = FranjasHorarias.Nombres;
         pickerHorario.SelectedIndex = 0;
         CargarDias();
@@ -218,10 +221,16 @@ public partial class MainPage : ContentPage
         (entryOrigen.Text, entryDestino.Text) = (entryDestino.Text, entryOrigen.Text);
     }
 
-    /// <summary>📍 en "Desde": completa el filtro con el barrio donde estoy (el mismo servicio que usa Publicar).</summary>
+    /// <summary>
+    /// 📍 en "Desde": completa el filtro con el barrio donde estoy. Hace lo mismo que "Usar mi ubicación" en Publicar
+    /// (ServicioUbicacion.ObtenerAsync y los mismos errores); mientras busca, el botón muestra que está trabajando.
+    /// </summary>
     private async void OnUbicacionDesdeClicked(object? sender, EventArgs e)
     {
         btnUbicacionDesde.IsEnabled = false;
+        string textoBoton = btnUbicacionDesde.Text;
+        btnUbicacionDesde.Text = "⏳";
+        SemanticProperties.SetDescription(btnUbicacionDesde, "Buscando tu ubicación");
         try
         {
             UbicacionActual ubicacion = await ServicioUbicacion.ObtenerAsync();
@@ -239,6 +248,8 @@ public partial class MainPage : ContentPage
         }
         finally
         {
+            btnUbicacionDesde.Text = textoBoton;
+            SemanticProperties.SetDescription(btnUbicacionDesde, "Usar mi ubicación en Desde");
             btnUbicacionDesde.IsEnabled = true;
         }
     }
