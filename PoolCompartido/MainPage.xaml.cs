@@ -17,6 +17,8 @@ public partial class MainPage : ContentPage
         Notificaciones.Preparar(this);
 
         listaViajes.ItemsSource = _viajesVisibles;
+        // Diseño adaptable: en una ventana ancha los filtros van en una sola fila
+        SizeChanged += (sender, e) => AcomodarFiltros();
         // Solo diseño: el aviso "No hay viajes para mostrar" aparece cuando la lista queda vacía
         _viajesVisibles.CollectionChanged += (sender, e) => panelVacio.IsVisible = _viajesVisibles.Count == 0;
         panelVacio.IsVisible = true;
@@ -219,6 +221,30 @@ public partial class MainPage : ContentPage
     private void OnInvertirClicked(object? sender, EventArgs e)
     {
         (entryOrigen.Text, entryDestino.Text) = (entryDestino.Text, entryOrigen.Text);
+    }
+
+    /// <summary>Ancho desde el que los cuatro filtros entran en una sola fila (compu; en el celular nunca).</summary>
+    private const double AnchoFiltrosEnFila = 900;
+
+    private bool? _filtrosEnFila;
+
+    /// <summary>
+    /// Solo diseño: en una ventana ancha, "Desde / Hacia" y "Día / Horario" van uno al lado del otro
+    /// (deja más lugar para las tarjetas); en una angosta, uno abajo del otro.
+    /// </summary>
+    private void AcomodarFiltros()
+    {
+        bool enFila = Width >= AnchoFiltrosEnFila;
+        if (Width <= 0 || _filtrosEnFila == enFila) return;
+        _filtrosEnFila = enFila;
+
+        gridFiltros.ColumnDefinitions.Clear();
+        gridFiltros.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+        if (enFila)
+            gridFiltros.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+
+        Grid.SetRow(gridDiaHorario, enFila ? 0 : 1);
+        Grid.SetColumn(gridDiaHorario, enFila ? 1 : 0);
     }
 
     /// <summary>

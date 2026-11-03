@@ -26,66 +26,71 @@
             <Label Text="¿A dónde querés viajar?" Style="{StaticResource Titulo}" FontSize="{StaticResource TamanoGrande}" />
 
             <!-- Rótulo arriba de cada campo y un ejemplo adentro. Fila 0: rótulos; fila 1: campos -->
-            <Grid ColumnDefinitions="*,Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="{StaticResource EspacioS}" RowSpacing="{StaticResource EspacioXS}">
-                <Label Grid.Row="0" Grid.Column="0" Text="Desde" Style="{StaticResource RotuloCampo}" Margin="0" />
-                <Label Grid.Row="0" Grid.Column="2" Text="Hacia" Style="{StaticResource RotuloCampo}" Margin="0" />
-                <!-- Desde con el botón 📍 para completarlo con el barrio donde estoy (como en Publicar) -->
-                <Grid Grid.Row="1" Grid.Column="0" ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource EspacioXS}">
-                    <Entry x:Name="entryOrigen"
-                           Placeholder="Ej: Saldán"
-                           SemanticProperties.Description="Desde, filtrar por origen"
-                           TextChanged="OnFiltroTextoCambiado" />
-                    <Button x:Name="btnUbicacionDesde"
+            <!-- En el celular: desde/hacia arriba y día/horario abajo. En una ventana ancha (compu) van los cuatro en una
+                 sola fila, así entran más tarjetas sin bajar (lo acomoda AcomodarFiltros en el código) -->
+            <Grid x:Name="gridFiltros" ColumnDefinitions="*" RowDefinitions="Auto,Auto"
+                  ColumnSpacing="{StaticResource EspacioL}" RowSpacing="{StaticResource EspacioS}">
+                <Grid Grid.Row="0" Grid.Column="0" ColumnDefinitions="*,Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="{StaticResource EspacioS}" RowSpacing="{StaticResource EspacioXS}">
+                    <Label Grid.Row="0" Grid.Column="0" Text="Desde" Style="{StaticResource RotuloCampo}" Margin="0" />
+                    <Label Grid.Row="0" Grid.Column="2" Text="Hacia" Style="{StaticResource RotuloCampo}" Margin="0" />
+                    <!-- Desde con el botón 📍 para completarlo con el barrio donde estoy (como en Publicar) -->
+                    <Grid Grid.Row="1" Grid.Column="0" ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource EspacioXS}">
+                        <Entry x:Name="entryOrigen"
+                               Placeholder="Ej: Saldán"
+                               SemanticProperties.Description="Desde, filtrar por origen"
+                               TextChanged="OnFiltroTextoCambiado" />
+                        <Button x:Name="btnUbicacionDesde"
+                                Grid.Column="1"
+                                Text="📍"
+                                FontSize="{StaticResource TamanoMediano}"
+                                Padding="0"
+                                WidthRequest="44"
+                                Style="{StaticResource BotonSecundario}"
+                                Margin="0"
+                                VerticalOptions="Center"
+                                SemanticProperties.Description="Usar mi ubicación en Desde"
+                                ToolTipProperties.Text="Usar mi ubicación"
+                                Clicked="OnUbicacionDesdeClicked" />
+                    </Grid>
+                    <!-- Invierte desde y hacia (para buscar la vuelta) -->
+                    <Button Grid.Row="1"
                             Grid.Column="1"
-                            Text="📍"
-                            FontSize="{StaticResource TamanoMediano}"
-                            Padding="0"
-                            WidthRequest="44"
+                            Text="⇄"
+                            FontSize="{StaticResource TamanoGrande}"
+                            Padding="12,0"
                             Style="{StaticResource BotonSecundario}"
                             Margin="0"
                             VerticalOptions="Center"
-                            SemanticProperties.Description="Usar mi ubicación en Desde"
-                            ToolTipProperties.Text="Usar mi ubicación"
-                            Clicked="OnUbicacionDesdeClicked" />
+                            SemanticProperties.Description="Invertir desde y hacia"
+                            ToolTipProperties.Text="Invertir desde y hacia"
+                            Clicked="OnInvertirClicked" />
+                    <Entry x:Name="entryDestino"
+                           Grid.Row="1"
+                           Grid.Column="2"
+                           Placeholder="Ej: UBP"
+                           SemanticProperties.Description="Hacia, filtrar por destino"
+                           TextChanged="OnFiltroTextoCambiado" />
                 </Grid>
-                <!-- Invierte desde y hacia (para buscar la vuelta) -->
-                <Button Grid.Row="1"
-                        Grid.Column="1"
-                        Text="⇄"
-                        FontSize="{StaticResource TamanoGrande}"
-                        Padding="12,0"
-                        Style="{StaticResource BotonSecundario}"
-                        Margin="0"
-                        VerticalOptions="Center"
-                        SemanticProperties.Description="Invertir desde y hacia"
-                        ToolTipProperties.Text="Invertir desde y hacia"
-                        Clicked="OnInvertirClicked" />
-                <Entry x:Name="entryDestino"
-                       Grid.Row="1"
-                       Grid.Column="2"
-                       Placeholder="Ej: UBP"
-                       SemanticProperties.Description="Hacia, filtrar por destino"
-                       TextChanged="OnFiltroTextoCambiado" />
-            </Grid>
 
-            <!-- Día y franja a lo ancho, así se lee la opción completa ("Cualquier día") también en el celular.
-                 El rótulo va aparte (igual que Desde y Hacia). El Title es el título de la lista que se abre en Android;
-                 en Windows va vacío porque ahí se muestra como un segundo rótulo repetido -->
-            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="{StaticResource EspacioS}" RowSpacing="{StaticResource EspacioXS}">
-                <Label Grid.Row="0" Grid.Column="0" Text="Día" Style="{StaticResource RotuloCampo}" Margin="0" />
-                <Label Grid.Row="0" Grid.Column="1" Text="Horario" Style="{StaticResource RotuloCampo}" Margin="0" />
-                <Picker x:Name="pickerDia"
-                        Grid.Row="1"
-                        Grid.Column="0"
-                        Title="{OnPlatform Default='Día', WinUI=''}"
-                        SemanticProperties.Description="Filtrar por día"
-                        SelectedIndexChanged="OnHorarioCambiado" />
-                <Picker x:Name="pickerHorario"
-                        Grid.Row="1"
-                        Grid.Column="1"
-                        Title="{OnPlatform Default='Horario', WinUI=''}"
-                        SemanticProperties.Description="Filtrar por horario"
-                        SelectedIndexChanged="OnHorarioCambiado" />
+                <!-- Día y franja a lo ancho, así se lee la opción completa ("Cualquier día") también en el celular.
+                     El rótulo va aparte (igual que Desde y Hacia). El Title es el título de la lista que se abre en Android;
+                     en Windows va vacío porque ahí se muestra como un segundo rótulo repetido -->
+                <Grid x:Name="gridDiaHorario" Grid.Row="1" Grid.Column="0" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="{StaticResource EspacioS}" RowSpacing="{StaticResource EspacioXS}">
+                    <Label Grid.Row="0" Grid.Column="0" Text="Día" Style="{StaticResource RotuloCampo}" Margin="0" />
+                    <Label Grid.Row="0" Grid.Column="1" Text="Horario" Style="{StaticResource RotuloCampo}" Margin="0" />
+                    <Picker x:Name="pickerDia"
+                            Grid.Row="1"
+                            Grid.Column="0"
+                            Title="{OnPlatform Default='Día', WinUI=''}"
+                            SemanticProperties.Description="Filtrar por día"
+                            SelectedIndexChanged="OnHorarioCambiado" />
+                    <Picker x:Name="pickerHorario"
+                            Grid.Row="1"
+                            Grid.Column="1"
+                            Title="{OnPlatform Default='Horario', WinUI=''}"
+                            SemanticProperties.Description="Filtrar por horario"
+                            SelectedIndexChanged="OnHorarioCambiado" />
+                </Grid>
             </Grid>
             <!-- Aparece solo cuando hay algún filtro puesto (así no ocupa lugar en el celular) -->
             <Button x:Name="btnLimpiar"
@@ -98,14 +103,16 @@
         </VerticalStackLayout>
 
         <!-- HU2: lista de viajes -->
-        <CollectionView x:Name="listaViajes" Grid.Row="1" SelectionMode="None">
+        <!-- En Windows la lista se estira 16 a la derecha (sobre el margen de la página) y las tarjetas dejan ese espacio:
+             así la barra de desplazamiento queda al costado de las tarjetas y no encima -->
+        <CollectionView x:Name="listaViajes" Grid.Row="1" SelectionMode="None" Margin="{OnPlatform Default='0', WinUI='0,0,-16,0'}">
             <!-- La tarjeta "Tu próximo viaje" va como encabezado de la lista: en el celular se va con el scroll
                  y deja lugar para ver los viajes (los filtros quedan fijos arriba) -->
             <CollectionView.Header>
                 <!-- HU29: "Tu próximo viaje" — lo primero que se ve, con las acciones del momento -->
                 <Border x:Name="tarjetaProximo"
                         x:DataType="local:Viaje"
-                        Margin="0,0,0,12"
+                        Margin="{OnPlatform Default='0,0,0,12', WinUI='0,0,20,12'}"
                         IsVisible="False"
                         Padding="18,16"
                         StrokeThickness="0"
@@ -169,8 +176,10 @@
             </CollectionView.ItemsLayout>
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="local:Viaje">
-                    <!-- En Windows la barra de desplazamiento va encima del contenido: margen a la derecha para que no tape la tarjeta -->
-                    <Border Style="{StaticResource TarjetaViaje}" Margin="{OnPlatform Default='0', WinUI='0,0,14,0'}">
+                    <!-- En Windows: espacio a la derecha para la barra de desplazamiento (ver la lista).
+                         Va como relleno de un Grid porque Windows no respeta el margen de la tarjeta dentro de la lista -->
+                    <Grid Padding="{OnPlatform Default='0', WinUI='0,0,20,0'}">
+                    <Border Style="{StaticResource TarjetaViaje}">
                         <VerticalStackLayout Spacing="10">
                             <!-- HU30: coincide con uno de mis horarios habituales -->
                             <Border Style="{StaticResource Etiqueta}" HorizontalOptions="Start" IsVisible="{Binding CoincideConMiHorario}"
@@ -276,6 +285,7 @@
                             </FlexLayout>
                         </VerticalStackLayout>
                     </Border>
+                    </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
